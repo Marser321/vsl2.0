@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { use, useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, use, useCallback, useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import ScriptMarkdown from "@/components/ScriptMarkdown";
+import ScriptEditor from "@/components/ScriptEditor";
 import HookLab from "@/components/HookLab";
 import CritiquePanel from "@/components/CritiquePanel";
 import LearningsPanel from "@/components/LearningsPanel";
@@ -27,6 +29,7 @@ type Version = {
   versionNumber: number;
   content: string;
   refinementInstruction: string | null;
+  source: "ai" | "manual" | "template";
   usage: Usage;
   createdAt: string;
 };
@@ -36,6 +39,7 @@ type ScriptDetail = {
   title: string;
   status: string;
   outcome: string;
+  format?: string;
   provider: string;
   model: string;
   client: { id: number; name: string } | null;
@@ -43,14 +47,19 @@ type ScriptDetail = {
   versions: Version[];
 };
 
-export default function GuionPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = use(params);
+function versionTooltip(v: Version): string {
+  if (v.source === "manual") return "Edición manual";
+  if (v.source === "template") return "Creado desde plantilla";
+  return v.refinementInstruction ?? "Versión original";
+}
+
+function GuionDetail({ id }: { id: string }) {
+  const searchParams = useSearchParams();
   const [script, setScript] = useState<ScriptDetail | null>(null);
   const [activeVersion, setActiveVersion] = useState<number | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [pinnedSuggestions, setPinnedSuggestions] = useState<string[]>([]);
+  const [wpm, setWpm] = useState(150);
   const [refining, setRefining] = useState(false);
   const [refineOutput, setRefineOutput] = useState("");
   const [aiStatus, setAiStatus] = useState("");
@@ -58,6 +67,7 @@ export default function GuionPage({
   const [promoted, setPromoted] = useState(false);
   const refineRef = useRef<HTMLTextAreaElement>(null);
   const outputRef = useRef<HTMLDivElement>(null);
+  const openedFromQuery = useRef(false);
 
   const load = useCallback(async () => {
     const data = await (await fetch(`/api/scripts/${id}`)).json();
@@ -65,11 +75,25 @@ export default function GuionPage({
     if (data.versions?.length) {
       setActiveVersion(data.versions[data.versions.length - 1].versionNumber);
     }
+    return data as ScriptDetail;
   }, [id]);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    load().then(() => {
+      // ?edit=1: aterrizar directo en el editor (flujo "usar plantilla")
+      if (!openedFromQuery.current && searchParams.get("edit") === "1") {
+        openedFromQuery.current = true;
+        setEditing(true);
+      }
+    });
+  }, [load, searchParams]);
+
+  useEffect(() => {
+    fetch("/api/settings")
+      .then((r) => r.json())
+      .then((s) => setWpm(Number(s.wpm_es) || 150))
+      .catch(() => {});
+  }, []);
 
   const current = script?.versions.find(
     (v) => v.versionNumber === activeVersion
@@ -178,9 +202,14 @@ export default function GuionPage({
     <div className="max-w-5xl">
       <PageTitle
         title={script.title}
-        subtitle={`${script.client?.name ?? "—"}${script.framework ? ` · ${script.framework.name}` : ""} · ${script.model}`}
+        subtitle={`${script.client?.name ?? "—"}${script.framework ? ` · ${script.framework.name}` : ""} · ${script.model}${script.format === "reel" ? " · Reel vertical" : ""}`}
         actions={
           <div className="flex gap-2">
+            {!editing && (
+              <button className={btnSecondary} onClick={() => setEditing(true)}>
+                ✎ Editar guion
+              </button>
+            )}
             <Link
               href={`/guiones/${id}/teleprompter`}
               className={btnSecondary}
@@ -229,14 +258,20 @@ export default function GuionPage({
           <button
             key={v.id}
             onClick={() => setActiveVersion(v.versionNumber)}
-            title={v.refinementInstruction ?? "Versión original"}
-            className={`rounded-full px-3 py-1 text-xs font-medium border transition-colors ${
+            disabled={editing && v.versionNumber !== activeVersion}
+            title={
+              editing && v.versionNumber !== activeVersion
+                ? "Cerrá el editor para cambiar de versión"
+                : versionTooltip(v)
+            }
+            className={`rounded-full px-3 py-1 text-xs font-medium border transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
               v.versionNumber === activeVersion
                 ? "bg-brand-blue text-white border-brand-blue"
                 : "bg-white text-slate-600 border-slate-300 hover:border-brand-blue"
             }`}
           >
             v{v.versionNumber}
+            {v.source === "manual" && <span className="ml-1">✎</span>}
           </button>
         ))}
         {cachePct !== null && (
@@ -252,20 +287,44 @@ export default function GuionPage({
         </div>
       )}
 
-      <Card className="p-6 mb-6">
-        {refining ? (
-          <div>
-            <div className="text-xs text-brand-blue animate-pulse mb-3">
-              {aiStatus || "Los modelos están trabajando"}
+      {editing && current ? (
+        <ScriptEditor
+          scriptId={script.id}
+          version={{
+            id: current.id,
+            versionNumber: current.versionNumber,
+            content: current.content,
+          }}
+          latestVersionNumber={
+            script.versions[script.versions.length - 1].versionNumber
+          }
+          wpm={wpm}
+          pinnedSuggestions={pinnedSuggestions}
+          onDismissSuggestion={(i) =>
+            setPinnedSuggestions((prev) => prev.filter((_, j) => j !== i))
+          }
+          onSaved={async (v) => {
+            await load();
+            setActiveVersion(v.versionNumber);
+          }}
+          onCancel={() => setEditing(false)}
+        />
+      ) : (
+        <Card className="p-6 mb-6">
+          {refining ? (
+            <div>
+              <div className="text-xs text-brand-blue animate-pulse mb-3">
+                {aiStatus || "Los modelos están trabajando"}
+              </div>
+              <div ref={outputRef} className="max-h-[55vh] overflow-y-auto">
+                <ScriptMarkdown content={refineOutput || "…"} />
+              </div>
             </div>
-            <div ref={outputRef} className="max-h-[55vh] overflow-y-auto">
-              <ScriptMarkdown content={refineOutput || "…"} />
-            </div>
-          </div>
-        ) : (
-          <ScriptMarkdown content={current?.content ?? ""} />
-        )}
-      </Card>
+          ) : (
+            <ScriptMarkdown content={current?.content ?? ""} />
+          )}
+        </Card>
+      )}
 
       {error && (
         <div className="rounded-lg bg-rose-50 border border-rose-200 px-4 py-3 text-sm text-rose-800 mb-4">
@@ -286,10 +345,15 @@ export default function GuionPage({
           rows={2}
           className={inputCls}
           placeholder='Ej: "Hacé el gancho más agresivo y acortá la historia a la mitad"'
-          disabled={refining}
+          disabled={refining || editing}
         />
         <div className="flex items-center justify-between mt-3">
-          <button className={btnPrimary} onClick={handleRefine} disabled={refining}>
+          <button
+            className={btnPrimary}
+            onClick={handleRefine}
+            disabled={refining || editing}
+            title={editing ? "Cerrá el editor para refinar" : undefined}
+          >
             {refining ? "Refinando…" : "Refinar → nueva versión"}
           </button>
           {script.outcome !== "lost" && script.outcome !== "won" && (
@@ -305,7 +369,17 @@ export default function GuionPage({
 
       <div className="mt-6 space-y-6">
         <HookLab scriptId={script.id} />
-        <CritiquePanel scriptId={script.id} versionId={current?.id ?? null} />
+        <CritiquePanel
+          scriptId={script.id}
+          versionId={current?.id ?? null}
+          onApplySuggestion={(text) => {
+            setPinnedSuggestions((prev) =>
+              prev.includes(text) ? prev : [...prev, text]
+            );
+            setEditing(true);
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          }}
+        />
         <LearningsPanel scriptId={script.id} outcome={script.outcome} />
       </div>
 
@@ -315,5 +389,18 @@ export default function GuionPage({
         </Link>
       </div>
     </div>
+  );
+}
+
+export default function GuionPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = use(params);
+  return (
+    <Suspense fallback={<div className="text-sm text-slate-400">Cargando…</div>}>
+      <GuionDetail id={id} />
+    </Suspense>
   );
 }

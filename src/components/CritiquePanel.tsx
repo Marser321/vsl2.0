@@ -29,9 +29,11 @@ function scoreColor(n: number) {
 export default function CritiquePanel({
   scriptId,
   versionId,
+  onApplySuggestion,
 }: {
   scriptId: number;
   versionId: number | null;
+  onApplySuggestion?: (text: string) => void;
 }) {
   const [critiquesList, setCritiquesList] = useState<Critique[]>([]);
   const [loading, setLoading] = useState(false);
@@ -122,9 +124,18 @@ export default function CritiquePanel({
             </div>
             <ul className="space-y-1.5">
               {latest.data.edicionesSugeridas.map((e, i) => (
-                <li key={i} className="text-sm text-slate-700 flex gap-2">
+                <li key={i} className="text-sm text-slate-700 flex gap-2 items-start">
                   <span className="text-brand-blue font-semibold shrink-0">{i + 1}.</span>
-                  {e}
+                  <span className="flex-1">{e}</span>
+                  {onApplySuggestion && (
+                    <button
+                      className="shrink-0 text-xs text-brand-blue hover:underline"
+                      onClick={() => onApplySuggestion(e)}
+                      title="Fijar esta sugerencia en el editor manual"
+                    >
+                      ✎ Aplicar en editor
+                    </button>
+                  )}
                 </li>
               ))}
             </ul>
