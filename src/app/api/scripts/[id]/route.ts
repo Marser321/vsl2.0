@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/db";
-import { scripts, scriptVersions, clients, frameworks } from "@/db/schema";
-import { asc, eq } from "drizzle-orm";
+import { scripts, scriptVersions, scriptRatings, clients, frameworks } from "@/db/schema";
+import { asc, eq, inArray } from "drizzle-orm";
 import { guardAdminRequest } from "@/lib/auth/session";
 
 type Params = { params: Promise<{ id: string }> };
@@ -32,7 +32,19 @@ export async function GET(_req: NextRequest, { params }: Params) {
     .where(eq(scriptVersions.scriptId, script.id))
     .orderBy(asc(scriptVersions.versionNumber));
 
-  return NextResponse.json({ ...script, client, framework, versions });
+  const ratings = versions.length
+    ? await db
+        .select()
+        .from(scriptRatings)
+        .where(inArray(scriptRatings.scriptVersionId, versions.map((v) => v.id)))
+    : [];
+  const byVersion = new Map(ratings.map((r) => [r.scriptVersionId, r]));
+  const versionsWithRating = versions.map((v) => ({
+    ...v,
+    rating: byVersion.get(v.id) ?? null,
+  }));
+
+  return NextResponse.json({ ...script, client, framework, versions: versionsWithRating });
 }
 
 export async function PATCH(req: NextRequest, { params }: Params) {

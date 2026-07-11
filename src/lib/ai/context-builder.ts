@@ -15,7 +15,8 @@ import {
   type ScriptBrief,
   type ScriptFormat,
 } from "@/db/schema";
-import { and, asc, eq, isNull, inArray } from "drizzle-orm";
+import { and, asc, eq, isNull, inArray, sql } from "drizzle-orm";
+import { scriptRatings, scriptVersions } from "@/db/schema";
 import { getSetting } from "@/lib/settings";
 import type { ChatMessage, SystemBlock } from "./provider";
 import {
@@ -189,8 +190,19 @@ export async function buildContext(args: {
   };
 }
 
-/** Docs sugeridos para pre-seleccionar en el wizard: los del cliente + winning_scripts globales. */
-export async function suggestedDocuments(clientId: number): Promise<Document[]> {
+export type SuggestedDocument = Document & {
+  /** Promedio de puntuación del equipo sobre el guion de origen (si existe). */
+  avgRating: number | null;
+  /** Si el wizard debe dejarlo tildado por defecto (los mal puntuados no). */
+  preselect: boolean;
+};
+
+/**
+ * Docs sugeridos para pre-seleccionar en el wizard: los del cliente +
+ * winning_scripts globales, rankeados por la puntuación del equipo sobre el
+ * guion de origen (feedback loop). Sin puntuaciones → comportamiento clásico.
+ */
+export async function suggestedDocuments(clientId: number): Promise<SuggestedDocument[]> {
   const db = getDb();
   const clientDocs = await db
     .select()
@@ -210,5 +222,26 @@ export async function suggestedDocuments(clientId: number): Promise<Document[]> 
     )
     .orderBy(asc(documents.id));
 
-  return [...clientDocs, ...globalWinners];
+  const all = [...clientDocs, ...globalWinners];
+  const sourceIds = [
+    ...new Set(all.map((d) => d.sourceScriptId).filter((x): x is number => x !== null)),
+  ];
+  const avgByScript = new Map<number, number>();
+  if (sourceIds.length) {
+    const rows = await db
+      .select({
+        scriptId: scriptVersions.scriptId,
+        avg: sql<number>`avg(${scriptRatings.score})`,
+      })
+      .from(scriptRatings)
+      .innerJoin(scriptVersions, eq(scriptRatings.scriptVersionId, scriptVersions.id))
+      .where(inArray(scriptVersions.scriptId, sourceIds))
+      .groupBy(scriptVersions.scriptId);
+    for (const r of rows) avgByScript.set(r.scriptId, Number(r.avg));
+  }
+
+  return all.map((d) => {
+    const avgRating = d.sourceScriptId != null ? (avgByScript.get(d.sourceScriptId) ?? null) : null;
+    return { ...d, avgRating, preselect: avgRating === null || avgRating >= 3 };
+  });
 }

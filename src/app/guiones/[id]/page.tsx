@@ -5,6 +5,7 @@ import { Suspense, use, useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import ScriptMarkdown from "@/components/ScriptMarkdown";
 import ScriptEditor from "@/components/ScriptEditor";
+import RatingWidget, { type VersionRating } from "@/components/RatingWidget";
 import HookLab from "@/components/HookLab";
 import CritiquePanel from "@/components/CritiquePanel";
 import LearningsPanel from "@/components/LearningsPanel";
@@ -32,6 +33,7 @@ type Version = {
   source: "ai" | "manual" | "template";
   usage: Usage;
   createdAt: string;
+  rating: VersionRating;
 };
 
 type ScriptDetail = {
@@ -285,6 +287,19 @@ function GuionDetail({ id }: { id: string }) {
         <div className="text-xs text-slate-500 mb-3">
           Instrucción de esta versión: “{current.refinementInstruction}”
         </div>
+      )}
+
+      {current && !editing && (
+        <RatingWidget
+          scriptId={script.id}
+          versionId={current.id}
+          rating={current.rating}
+          onRated={async () => {
+            const prev = activeVersion;
+            await load();
+            if (prev !== null) setActiveVersion(prev);
+          }}
+        />
       )}
 
       {editing && current ? (

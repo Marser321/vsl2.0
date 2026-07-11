@@ -53,6 +53,8 @@ export async function POST(req: NextRequest, { params }: Params) {
       extractedText: lastVersion.content,
       tokenCount,
       tags: ["promovido"],
+      // Enlace al guion de origen: permite rankear este ejemplar por su puntuación.
+      sourceScriptId: script.id,
     })
     .returning();
 

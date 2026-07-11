@@ -22,7 +22,11 @@ type Doc = {
   kind: string;
   clientId: number | null;
   tokenCount: number;
+  avgRating?: number | null;
+  preselect?: boolean;
 };
+
+type FrameworkStat = { frameworkId: number | null; n: number; avgScore: number };
 
 const TOKEN_BUDGET = 150_000;
 
@@ -34,6 +38,7 @@ function GenerarWizard() {
   const [format, setFormat] = useState<"vsl" | "reel">("vsl");
   const [clients, setClients] = useState<Client[]>([]);
   const [frameworksList, setFrameworksList] = useState<Framework[]>([]);
+  const [frameworkStats, setFrameworkStats] = useState<FrameworkStat[]>([]);
   const [docs, setDocs] = useState<Doc[]>([]);
 
   const [clientId, setClientId] = useState<number | null>(
@@ -86,6 +91,10 @@ function GenerarWizard() {
     fetch(`/api/frameworks?format=${format}`)
       .then((r) => r.json())
       .then(setFrameworksList);
+    fetch(`/api/stats?format=${format}`)
+      .then((r) => r.json())
+      .then((s) => setFrameworkStats(s.byFramework ?? []))
+      .catch(() => setFrameworkStats([]));
   }, [format]);
 
   useEffect(() => {
@@ -105,7 +114,8 @@ function GenerarWizard() {
       .then((r) => r.json())
       .then((d: Doc[]) => {
         setDocs(d);
-        setSelectedDocs(new Set(d.map((x) => x.id)));
+        // Los ejemplares mal puntuados por el equipo quedan destildados por defecto.
+        setSelectedDocs(new Set(d.filter((x) => x.preselect !== false).map((x) => x.id)));
       });
   }, [clientId]);
 
@@ -330,27 +340,47 @@ function GenerarWizard() {
             ¿Qué estructura usamos?
           </h2>
           <div className="grid grid-cols-2 gap-3">
-            {frameworksList.map((f) => (
-              <button
-                key={f.id}
-                onClick={() => {
-                  setFrameworkId(f.id);
-                  setStep(4);
-                }}
-                className={`rounded-lg border p-4 text-left transition-colors ${
-                  frameworkId === f.id
-                    ? "border-brand-blue bg-blue-50"
-                    : "border-slate-200 hover:border-brand-blue"
-                }`}
-              >
-                <div className="text-sm font-semibold text-brand-navy">
-                  {f.name}
-                </div>
-                <div className="text-xs text-slate-500 mt-1">
-                  {f.description}
-                </div>
-              </button>
-            ))}
+            {frameworksList.map((f) => {
+              const stat = frameworkStats.find((s) => s.frameworkId === f.id);
+              const eligible = frameworkStats.filter((s) => s.n >= 3);
+              const isRecommended =
+                stat &&
+                stat.n >= 3 &&
+                eligible.length > 0 &&
+                stat.avgScore === Math.max(...eligible.map((s) => s.avgScore));
+              return (
+                <button
+                  key={f.id}
+                  onClick={() => {
+                    setFrameworkId(f.id);
+                    setStep(4);
+                  }}
+                  className={`rounded-lg border p-4 text-left transition-colors ${
+                    frameworkId === f.id
+                      ? "border-brand-blue bg-blue-50"
+                      : "border-slate-200 hover:border-brand-blue"
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <div className="text-sm font-semibold text-brand-navy flex-1">
+                      {f.name}
+                    </div>
+                    {isRecommended && <Badge tone="green">Recomendado</Badge>}
+                    {stat && stat.n > 0 && (
+                      <span
+                        className="text-[11px] text-amber-600 font-medium shrink-0"
+                        title="Puntuación promedio del equipo con este framework"
+                      >
+                        ★ {stat.avgScore.toFixed(1)} · {stat.n}
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-xs text-slate-500 mt-1">
+                    {f.description}
+                  </div>
+                </button>
+              );
+            })}
             <button
               onClick={() => {
                 setFrameworkId(null);
@@ -538,6 +568,14 @@ function GenerarWizard() {
                         {KIND_LABELS[d.kind] ?? d.kind}
                       </Badge>
                       <span className="flex-1">{d.title}</span>
+                      {d.avgRating != null && (
+                        <span
+                          className={`text-[11px] font-medium ${d.avgRating >= 3 ? "text-amber-600" : "text-rose-500"}`}
+                          title="Puntuación promedio del equipo al guion de origen"
+                        >
+                          ★ {d.avgRating.toFixed(1)}
+                        </span>
+                      )}
                       {d.clientId === null && (
                         <span className="text-[10px] text-slate-400">
                           global
