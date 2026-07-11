@@ -108,6 +108,37 @@ function GenerarWizard() {
       });
   }, [campaignId]);
 
+  // Prefill desde una plantilla (?templateId=): formato + framework + brief base.
+  const templateIdParam = searchParams.get("templateId");
+  useEffect(() => {
+    if (!templateIdParam) return;
+    fetch("/api/templates")
+      .then((r) => r.json())
+      .then(
+        (
+          list: Array<{
+            id: number;
+            format: "vsl" | "reel";
+            frameworkId: number | null;
+            briefDefaults: Record<string, unknown>;
+          }>
+        ) => {
+          const t = list.find((x) => x.id === Number(templateIdParam));
+          if (!t) return;
+          setFormat(t.format);
+          setFrameworkId(t.frameworkId);
+          const strings: Record<string, string> = {};
+          for (const [k, v] of Object.entries(t.briefDefaults)) {
+            if (typeof v === "string" && v) strings[k] = v;
+            else if (typeof v === "number") strings[k] = String(v);
+          }
+          setAutofill(strings);
+          setAutofillKey((key) => key + 1);
+          setStep(2);
+        }
+      );
+  }, [templateIdParam]);
+
   useEffect(() => {
     if (!clientId) return;
     fetch(`/api/documents?suggestedFor=${clientId}`)
@@ -481,7 +512,7 @@ function GenerarWizard() {
                     <input
                       name="duracionSeg"
                       type="number"
-                      defaultValue={45}
+                      defaultValue={autofill?.duracionSeg ?? 45}
                       min={15}
                       max={90}
                       className={inputCls}

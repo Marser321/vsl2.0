@@ -1,0 +1,204 @@
+"use client";
+
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import ScriptMarkdown from "@/components/ScriptMarkdown";
+import { Badge, Card, PageTitle, btnPrimary, btnSecondary, inputCls } from "@/components/ui";
+import { analyzeScript, fmtTime } from "@/lib/readtime";
+
+type Template = {
+  id: number;
+  slug: string;
+  title: string;
+  format: "vsl" | "reel";
+  frameworkId: number | null;
+  frameworkName: string | null;
+  description: string | null;
+  briefDefaults: Record<string, unknown>;
+  contentMd: string;
+  isBuiltin: boolean;
+};
+
+type Client = { id: number; name: string };
+
+function TemplateCard({
+  template,
+  clients,
+  onUsed,
+  onDeleted,
+}: {
+  template: Template;
+  clients: Client[];
+  onUsed: (scriptId: number) => void;
+  onDeleted: () => void;
+}) {
+  const [preview, setPreview] = useState(false);
+  const [clientId, setClientId] = useState<number | "">("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const stats = useMemo(() => analyzeScript(template.contentMd, 150), [template.contentMd]);
+
+  async function use() {
+    if (!clientId) {
+      setError("Elegí un cliente para crear el guion");
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    const res = await fetch(`/api/templates/${template.id}/use`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ clientId }),
+    });
+    const data = await res.json();
+    setBusy(false);
+    if (!res.ok) {
+      setError(data.error || "Error al usar la plantilla");
+      return;
+    }
+    onUsed(data.scriptId);
+  }
+
+  async function remove() {
+    if (!confirm(`¿Eliminar la plantilla "${template.title}"?`)) return;
+    await fetch(`/api/templates/${template.id}`, { method: "DELETE" });
+    onDeleted();
+  }
+
+  return (
+    <Card className="p-5">
+      <div className="flex items-start gap-2">
+        <div className="flex-1">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-semibold text-brand-navy">{template.title}</span>
+            <Badge tone={template.format === "reel" ? "violet" : "blue"}>
+              {template.format === "reel" ? "Reel" : "VSL"}
+            </Badge>
+          </div>
+          <div className="text-xs text-slate-500 mt-1">
+            {template.frameworkName ?? "Estructura libre"} ·{" "}
+            {stats.totalWords.toLocaleString("es")} palabras · ~{fmtTime(stats.totalSec)}
+            {!template.isBuiltin && " · propia"}
+          </div>
+          {template.description && (
+            <p className="text-xs text-slate-600 mt-2">{template.description}</p>
+          )}
+        </div>
+        {!template.isBuiltin && (
+          <button
+            className="text-xs text-slate-400 hover:text-rose-600 shrink-0"
+            onClick={remove}
+            title="Eliminar plantilla"
+          >
+            ✕
+          </button>
+        )}
+      </div>
+
+      <div className="flex items-center gap-2 mt-4 flex-wrap">
+        <select
+          className={`${inputCls} !w-auto`}
+          value={clientId}
+          onChange={(e) => setClientId(e.target.value ? Number(e.target.value) : "")}
+        >
+          <option value="">Cliente…</option>
+          {clients.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name}
+            </option>
+          ))}
+        </select>
+        <button className={btnPrimary} onClick={use} disabled={busy}>
+          {busy ? "Creando…" : "✎ Usar plantilla"}
+        </button>
+        <Link href={`/generar?templateId=${template.id}`} className={btnSecondary}>
+          ✦ Usar en generador
+        </Link>
+        <button
+          className="text-xs text-brand-blue hover:underline ml-auto"
+          onClick={() => setPreview((p) => !p)}
+        >
+          {preview ? "Ocultar vista previa" : "Vista previa"}
+        </button>
+      </div>
+      {error && <div className="text-xs text-rose-600 mt-2">{error}</div>}
+
+      {preview && (
+        <div className="mt-4 max-h-[40vh] overflow-y-auto rounded-lg border border-slate-200 bg-brand-mist p-4">
+          <ScriptMarkdown content={template.contentMd} />
+        </div>
+      )}
+    </Card>
+  );
+}
+
+export default function PlantillasPage() {
+  const router = useRouter();
+  const [rows, setRows] = useState<Template[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [loaded, setLoaded] = useState(false);
+
+  async function load() {
+    const data = await (await fetch("/api/templates")).json();
+    setRows(data);
+    setLoaded(true);
+  }
+  useEffect(() => {
+    load();
+    fetch("/api/clients")
+      .then((r) => r.json())
+      .then(setClients);
+  }, []);
+
+  const vsl = rows.filter((t) => t.format === "vsl");
+  const reels = rows.filter((t) => t.format === "reel");
+
+  return (
+    <div className="max-w-5xl">
+      <PageTitle
+        title="Plantillas"
+        subtitle="Estructuras probadas listas para completar en el editor — con marcadores {{ }} que se rellenan solos con los datos del cliente"
+      />
+      {loaded && rows.length === 0 && (
+        <Card className="p-10 text-center text-sm text-slate-400">
+          No hay plantillas. Corré <code className="text-brand-blue">npm run db:seed-corpus</code>{" "}
+          para cargar las plantillas base, o guardá un guion como plantilla desde su página.
+        </Card>
+      )}
+      {vsl.length > 0 && (
+        <>
+          <h2 className="font-semibold text-brand-navy text-sm mb-3">🎬 VSL</h2>
+          <div className="grid grid-cols-2 gap-4 mb-8">
+            {vsl.map((t) => (
+              <TemplateCard
+                key={t.id}
+                template={t}
+                clients={clients}
+                onUsed={(id) => router.push(`/guiones/${id}?edit=1`)}
+                onDeleted={load}
+              />
+            ))}
+          </div>
+        </>
+      )}
+      {reels.length > 0 && (
+        <>
+          <h2 className="font-semibold text-brand-navy text-sm mb-3">📱 Reels</h2>
+          <div className="grid grid-cols-2 gap-4">
+            {reels.map((t) => (
+              <TemplateCard
+                key={t.id}
+                template={t}
+                clients={clients}
+                onUsed={(id) => router.push(`/guiones/${id}?edit=1`)}
+                onDeleted={load}
+              />
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}

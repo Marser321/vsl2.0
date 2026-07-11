@@ -17,6 +17,7 @@ import {
   btnSecondary,
   inputCls,
 } from "@/components/ui";
+import { slugify } from "@/lib/templates";
 
 type Usage = {
   inputTokens: number;
@@ -44,6 +45,7 @@ type ScriptDetail = {
   format?: string;
   provider: string;
   model: string;
+  brief?: Record<string, unknown>;
   client: { id: number; name: string } | null;
   framework: { id: number; name: string } | null;
   versions: Version[];
@@ -172,6 +174,27 @@ function GuionDetail({ id }: { id: string }) {
     }
   }
 
+  async function saveAsTemplate() {
+    if (!current || !script) return;
+    const title = prompt("Nombre de la plantilla:", script.title);
+    if (!title) return;
+    const res = await fetch("/api/templates", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        slug: slugify(title),
+        title,
+        format: script.format === "reel" ? "reel" : "vsl",
+        frameworkId: script.framework?.id ?? null,
+        description: `Guardada desde "${script.title}"`,
+        briefDefaults: script.brief ?? {},
+        contentMd: current.content,
+      }),
+    });
+    const data = await res.json();
+    alert(res.ok ? `✓ Plantilla "${title}" creada — la tenés en Plantillas.` : data.error || "Error al crear la plantilla");
+  }
+
   function exportMd() {
     if (!current || !script) return;
     const blob = new Blob([current.content], { type: "text/markdown" });
@@ -220,6 +243,13 @@ function GuionDetail({ id }: { id: string }) {
             </Link>
             <button className={btnSecondary} onClick={exportMd}>
               ⬇ Exportar .md
+            </button>
+            <button
+              className={btnSecondary}
+              onClick={saveAsTemplate}
+              title="Guardar la versión activa como plantilla reutilizable"
+            >
+              ▤ Plantilla
             </button>
             {script.outcome !== "won" ? (
               <button className={btnPrimary} onClick={() => markOutcome("won")}>

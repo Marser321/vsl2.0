@@ -14,7 +14,7 @@
  * Uso: npm run db:seed-corpus
  */
 import { getDb } from "./index";
-import { documents, frameworks, type DocumentKind } from "./schema";
+import { documents, frameworks, templates, type DocumentKind, type ScriptBrief, type ScriptFormat } from "./schema";
 import { and, eq, isNull } from "drizzle-orm";
 import { countTokens } from "../lib/ai/anthropic";
 
@@ -442,6 +442,242 @@ const REEL_FRAMEWORKS: Array<{
 ];
 
 // ──────────────────────────────────────────────────────────────────────────────
+// Plantillas builtin: esqueletos con {{TOKENS}} (se resuelven con datos del
+// cliente) y bloques [GUÍA] por beat. Skip-if-exists por slug (no pisa ediciones).
+// ──────────────────────────────────────────────────────────────────────────────
+
+const TEMPLATES: Array<{
+  slug: string;
+  title: string;
+  format: ScriptFormat;
+  frameworkSlug: string | null;
+  description: string;
+  briefDefaults: Partial<ScriptBrief>;
+  contentMd: string;
+}> = [
+  {
+    slug: "vsl-clasica-5min",
+    title: "VSL clásica de 5 minutos",
+    format: "vsl",
+    frameworkSlug: "vsl-clasico",
+    description:
+      "La estructura completa de respuesta directa en formato compacto: gancho, dolor, mecanismo, prueba, oferta y doble CTA.",
+    briefDefaults: { duracionMin: 5 },
+    contentMd: `# VSL — {{PRODUCTO}} para {{AUDIENCIA}}
+
+## Gancho (0:00–0:25)
+> [GUÍA: elegí UN ángulo — dolor, curiosidad o contrarian. Sin saludos, sin logos: la primera frase ya vende la permanencia.]
+
+Si {{DOLOR}}, lo que vas a escuchar en los próximos minutos te va a cambiar la forma de verlo.
+
+Y no, no es lo que ya probaste. Quedate hasta el final porque te voy a mostrar exactamente cómo funciona — y por qué esta vez sí.
+
+## El problema real (0:25–1:10)
+> [GUÍA: describí el dolor con detalles cotidianos que el avatar reconozca como propios. Terminá con la validación: no es su culpa, el método era el problema.]
+
+Seguro te pasa esto: {{DOLOR}}. Y ya intentaste resolverlo — {{OTRAS_SOLUCIONES_FALLIDAS}}.
+
+La verdad es que nada de eso funciona por una razón muy simple que nadie te dijo: {{RAZON_DEL_FRACASO}}.
+
+## El descubrimiento y el mecanismo (1:10–2:20)
+> [GUÍA: mini historia de origen (fundador o cliente) → epifanía → el mecanismo con nombre propio. El "porqué funciona" en lenguaje simple.]
+
+{{HISTORIA_DE_ORIGEN}}
+
+Ahí nació {{NOMBRE_DEL_METODO}}: {{EXPLICACION_SIMPLE_DEL_MECANISMO}}.
+
+## Prueba (2:20–3:10)
+> [GUÍA: 2-3 capas de prueba, la más fuerte primero. Números concretos, nombres, plazos. Un testimonio espejo del avatar.]
+
+{{PRUEBA_1_RESULTADO_CON_NUMEROS}}
+
+{{PRUEBA_2_TESTIMONIO_ESPEJO}}
+
+## La oferta (3:10–4:15)
+> [GUÍA: stack completo → ancla de precio → precio real → garantía inmediatamente después. Sin disculpas por el precio.]
+
+Esto es todo lo que te llevás con {{PRODUCTO}}: {{OFERTA}}.
+
+> [VISUAL: stack de la oferta en pantalla, componente por componente]
+
+Hacerlo por tu cuenta te costaría {{ANCLA_DE_PRECIO}}. Hoy accedés por {{PRECIO}}.
+
+Y lo hacés sin riesgo: {{GARANTIA}}.
+
+## Cierre y CTA (4:15–5:00)
+> [GUÍA: CTA doble — lógico primero, emocional después. Describí el paso siguiente exacto. Cortá seco tras el último CTA.]
+
+{{CTA}}. Hacés clic, {{QUE_PASA_DESPUES}}, y empezás hoy mismo.
+
+Podés cerrar este video y seguir como hasta ahora — o podés ser la persona que en {{PLAZO}} mira para atrás y agradece haber empezado hoy. {{CTA}}.`,
+  },
+  {
+    slug: "vsl-webinar-15min",
+    title: "VSL estilo webinar de 15 minutos",
+    format: "vsl",
+    frameworkSlug: "star-story-solution",
+    description:
+      "Formato educativo-narrativo para ticket alto: historia de transformación, demolición de 3 creencias y transición con permiso a la oferta.",
+    briefDefaults: { duracionMin: 15 },
+    contentMd: `# Masterclass — {{PRODUCTO}}
+
+## Gancho + contrato (0:00–1:00)
+> [GUÍA: promesa dimensionada + qué se lleva por quedarse + descalificación honesta ("esto NO es para..."). El primer loop: prometé revelar el método completo hacia el final.]
+
+En los próximos minutos te voy a mostrar cómo {{PROMESA_PRINCIPAL}} — aunque {{OBJECION_PRINCIPAL}}.
+
+Esto no es para cualquiera: si buscás {{ATAJO_FALSO}}, cerrá el video. Pero si {{IDENTIDAD_DEL_AVATAR}}, esto te sirve.
+
+## La historia (1:00–4:00)
+> [GUÍA: puente de epifanía completo — mismo pozo que el avatar, intentos fallidos, el muro, la epifanía concreta, el plan. Incluí el conflicto interno: sin duda no hay historia creíble.]
+
+{{HISTORIA_COMPLETA_DE_TRANSFORMACION}}
+
+## Creencia falsa #1: el vehículo (4:00–7:00)
+> [GUÍA: "para lograr X necesitás Y" — la creencia que frena la compra. Validala, quebrala con datos/historia, reemplazala. Cerrá con prueba espejo.]
+
+Seguro pensás que {{CREENCIA_FALSA_1}}. Es lógico — {{VALIDACION}}. Pero mirá esto: {{QUIEBRE_CON_EVIDENCIA}}.
+
+## Creencia falsa #2: interna (7:00–9:30)
+> [GUÍA: "yo no puedo porque..." — respondela con el testimonio de alguien MENOS preparado que el avatar.]
+
+{{CREENCIA_INTERNA_Y_QUIEBRE}}
+
+## Creencia falsa #3: externa (9:30–11:30)
+> [GUÍA: "no tengo tiempo/plata/mi caso es distinto" — testimonio con la MISMA restricción.]
+
+{{CREENCIA_EXTERNA_Y_QUIEBRE}}
+
+## El método con nombre (11:30–12:30)
+> [GUÍA: el sistema en 3-5 pasos con nombres memorables. Es el payoff del loop del gancho.]
+
+{{NOMBRE_DEL_METODO}}: {{PASOS_DEL_METODO}}
+
+## Transición con permiso + oferta (12:30–14:00)
+> [GUÍA: pregunta puente ("¿querés que te acompañe a implementarlo?") → stack → ancla → precio → garantía.]
+
+{{OFERTA}}
+
+{{PRECIO_Y_GARANTIA}}
+
+## Cierre en tres pasadas (14:00–15:00)
+> [GUÍA: CTA lógico (la matemática), CTA emocional (la escena a 6 meses), CTA de urgencia (razón operativa real). Corte seco.]
+
+{{CTA}}`,
+  },
+  {
+    slug: "reel-ugc-30s",
+    title: "Reel UGC / testimonio de 30 segundos",
+    format: "reel",
+    frameworkSlug: "reel-ugc-testimonio",
+    description:
+      "Hablado a cámara estilo usuario real: problema → descubrimiento con escepticismo → resultado con números → recomendación de amigo.",
+    briefDefaults: { duracionMin: 1, duracionSeg: 30 },
+    contentMd: `# Reel UGC — {{PRODUCTO}}
+
+## Gancho (0:00–0:03)
+> [VISUAL: cara a cámara, luz natural, en medio de una acción cotidiana — nunca "acomodándose" para hablar]
+> [TEXTO EN PANTALLA: no puedo creer que ESTO funcionó]
+
+No puedo creer que esto me haya funcionado — y mirá que yo era de las que no creen en nada.
+
+## El problema (0:03–0:10)
+> [VISUAL: b-roll del problema en la vida real]
+> [GUÍA: el "antes" con un detalle cotidiano imperfecto que dé credibilidad]
+
+Yo estaba igual que vos: {{DOLOR}}. Probé de todo y nada.
+
+## El descubrimiento (0:10–0:17)
+> [VISUAL: unboxing / primera vez usando {{PRODUCTO}}]
+> [TEXTO EN PANTALLA: le di una chance 👀]
+
+Hasta que encontré {{PRODUCTO}}. Te juro que pensé que era humo… pero lo probé igual.
+
+## El resultado (0:17–0:25)
+> [VISUAL: el después, mostrado no contado]
+> [TEXTO EN PANTALLA: {{RESULTADO_EN_3_PALABRAS}}]
+
+{{RESULTADO_CON_NUMERO_O_PLAZO}}. En serio. {{DETALLE_INESPERADO_DEL_RESULTADO}}.
+
+## Recomendación + CTA (0:25–0:30)
+> [VISUAL: cara a cámara, tono de amiga]
+> [TEXTO EN PANTALLA: {{CTA}}]
+
+Si estás como yo estaba, {{CTA}}. Después me contás.`,
+  },
+  {
+    slug: "reel-autoridad-45s",
+    title: "Reel de autoridad: lista de 45 segundos",
+    format: "reel",
+    frameworkSlug: "reel-lista",
+    description:
+      "Los N errores/razones/señales del nicho, con el mejor ítem al final. Educa, posiciona autoridad y alimenta la retención.",
+    briefDefaults: { duracionMin: 1, duracionSeg: 45 },
+    contentMd: `# Reel — 3 errores de {{AUDIENCIA}}
+
+## Gancho numerado (0:00–0:04)
+> [VISUAL: a cámara, energía alta, o texto grande sobre b-roll potente]
+> [TEXTO EN PANTALLA: 3 errores que te cuestan {{COSTO}}]
+
+Estos son los 3 errores por los que {{DOLOR}} — y el tercero lo comete casi todo el mundo.
+
+## Error #1 (0:04–0:14)
+> [VISUAL: cambio de plano o zoom; número 1 grande en pantalla]
+> [GUÍA: el error más común, enunciado + por qué duele en una frase]
+
+Primero: {{ERROR_1}}. {{POR_QUE_DUELE_1}}.
+
+## Error #2 (0:14–0:24)
+> [VISUAL: cambio de plano; número 2 en pantalla]
+
+Segundo: {{ERROR_2}}. {{POR_QUE_DUELE_2}}.
+
+## Error #3 — el importante (0:24–0:37)
+> [VISUAL: acercamiento, ritmo más lento — señal de que llega lo prometido]
+> [TEXTO EN PANTALLA: el que comete TODO el mundo]
+
+Y el tercero, el que nadie ve: {{ERROR_3_EL_MEJOR}}. {{EXPLICACION_BREVE}}.
+
+## Cierre + CTA (0:37–0:45)
+> [VISUAL: a cámara]
+> [TEXTO EN PANTALLA: {{CTA}}]
+
+Si te viste en alguno, {{CTA}} — y guardate este video para no repetirlos.`,
+  },
+  {
+    slug: "reel-oferta-20s",
+    title: "Reel de oferta directa de 20 segundos",
+    format: "reel",
+    frameworkSlug: "reel-oferta-directa",
+    description:
+      "Respuesta directa pura para retargeting o audiencia caliente: promesa, prueba en una frase, oferta y CTA doble. Sin vueltas.",
+    briefDefaults: { duracionMin: 1, duracionSeg: 20 },
+    contentMd: `# Reel oferta — {{PRODUCTO}}
+
+## Promesa directa (0:00–0:03)
+> [VISUAL: el resultado a la vista desde el frame 1]
+> [TEXTO EN PANTALLA: {{PROMESA_EN_5_PALABRAS}}]
+
+{{PROMESA_DIRECTA_CON_PLAZO}} — sin {{SACRIFICIO_ODIADO}}.
+
+## Prueba en una frase (0:03–0:07)
+> [VISUAL: testimonio en texto, número grande o demo veloz]
+
+{{PRUEBA_EN_UNA_FRASE}}.
+
+## La oferta (0:07–0:15)
+> [VISUAL: el producto/servicio + el deal en pantalla]
+> [TEXTO EN PANTALLA: {{OFERTA_EN_POCAS_PALABRAS}}]
+
+{{OFERTA}}. Y con garantía: {{GARANTIA_SIMPLE}}.
+
+## CTA doble (0:15–0:20)
+> [VISUAL: flecha/gesto al botón o link]
+> [TEXTO EN PANTALLA: {{CTA}} ⬇️]
+
+{{CTA}} ahora — {{URGENCIA_REAL}}. De nuevo: {{CTA}}.`,
+  },
+];
 
 async function seedCorpus() {
   const db = getDb();
@@ -495,8 +731,32 @@ async function seedCorpus() {
       });
   }
 
+  // Plantillas builtin: skip-if-exists por slug (para no pisar ediciones del usuario).
+  const allFrameworks = await db
+    .select({ id: frameworks.id, slug: frameworks.slug })
+    .from(frameworks);
+  const frameworkIdBySlug = new Map(allFrameworks.map((f) => [f.slug, f.id]));
+  let templatesInserted = 0;
+  for (const t of TEMPLATES) {
+    const [row] = await db
+      .insert(templates)
+      .values({
+        slug: t.slug,
+        title: t.title,
+        format: t.format,
+        frameworkId: t.frameworkSlug ? (frameworkIdBySlug.get(t.frameworkSlug) ?? null) : null,
+        description: t.description,
+        briefDefaults: t.briefDefaults,
+        contentMd: t.contentMd,
+        isBuiltin: true,
+      })
+      .onConflictDoNothing({ target: templates.slug })
+      .returning({ id: templates.id });
+    if (row) templatesInserted++;
+  }
+
   console.log(
-    `Corpus OK: ${inserted} docs nuevos, ${skipped} existentes, ${REEL_FRAMEWORKS.length} frameworks de reel (upsert).`
+    `Corpus OK: ${inserted} docs nuevos, ${skipped} existentes, ${REEL_FRAMEWORKS.length} frameworks de reel (upsert), ${templatesInserted}/${TEMPLATES.length} plantillas nuevas.`
   );
 }
 
