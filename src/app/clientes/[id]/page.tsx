@@ -21,6 +21,8 @@ type ScriptRow = {
   createdAt: string;
 };
 
+type RadarDoc = { id: number; title: string; createdAt: string };
+
 export default function ClientePage({
   params,
 }: {
@@ -30,15 +32,43 @@ export default function ClientePage({
   const [client, setClient] = useState<Client | null>(null);
   const [scripts, setScripts] = useState<ScriptRow[]>([]);
   const [editing, setEditing] = useState(false);
+  const [radar, setRadar] = useState<RadarDoc | null>(null);
+  const [radarBusy, setRadarBusy] = useState(false);
+  const [radarErr, setRadarErr] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    const [c, s] = await Promise.all([
+    const [c, s, docs] = await Promise.all([
       fetch(`/api/clients/${id}`).then((r) => r.json()),
       fetch(`/api/scripts?clientId=${id}`).then((r) => r.json()),
+      fetch(`/api/documents?clientId=${id}`).then((r) => r.json()),
     ]);
     setClient(c);
     setScripts(s);
+    const radarDoc = Array.isArray(docs)
+      ? docs.find(
+          (d: { isActive: boolean; tags: string[] }) =>
+            d.isActive && Array.isArray(d.tags) && d.tags.includes("radar")
+        )
+      : null;
+    setRadar(radarDoc ?? null);
   }, [id]);
+
+  async function updateRadar() {
+    setRadarBusy(true);
+    setRadarErr(null);
+    const res = await fetch(`/api/clients/${id}/radar`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({}),
+    });
+    const data = await res.json();
+    setRadarBusy(false);
+    if (!res.ok) {
+      setRadarErr(data.error || "Error al actualizar el radar");
+      return;
+    }
+    load();
+  }
 
   useEffect(() => {
     load();
@@ -70,6 +100,18 @@ export default function ClientePage({
         subtitle={client.industry || undefined}
         actions={
           <div className="flex gap-2">
+            <button
+              className={btnSecondary}
+              onClick={updateRadar}
+              disabled={radarBusy || !client.industry}
+              title={
+                !client.industry
+                  ? "Definí la industria del cliente para leer noticias del rubro"
+                  : "Lee noticias recientes del rubro y genera ángulos de oportunidad"
+              }
+            >
+              {radarBusy ? "Leyendo noticias…" : "◎ Actualizar radar"}
+            </button>
             <button className={btnSecondary} onClick={() => setEditing(!editing)}>
               {editing ? "Cancelar" : "Editar"}
             </button>
@@ -79,6 +121,32 @@ export default function ClientePage({
           </div>
         }
       />
+
+      {radarErr && (
+        <div className="rounded-lg bg-rose-50 border border-rose-200 px-4 py-2 text-sm text-rose-800 mb-4">
+          {radarErr}
+        </div>
+      )}
+      {radar && (
+        <Card className="px-5 py-3 mb-4 flex items-center gap-3 text-sm">
+          {(() => {
+            const days = Math.floor(
+              (Date.now() - new Date(radar.createdAt).getTime()) / (24 * 60 * 60 * 1000)
+            );
+            return (
+              <>
+                <Badge tone={days < 7 ? "green" : "yellow"}>
+                  ◎ Radar {days === 0 ? "de hoy" : `de hace ${days} día${days === 1 ? "" : "s"}`}
+                </Badge>
+                <span className="text-slate-600 flex-1">{radar.title}</span>
+                <span className="text-xs text-slate-400">
+                  Entra como documento sugerido en las próximas generaciones
+                </span>
+              </>
+            );
+          })()}
+        </Card>
+      )}
 
       {editing ? (
         <Card className="p-5 mb-6">

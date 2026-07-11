@@ -28,7 +28,7 @@ export async function assertPublicUrl(raw: string): Promise<URL> {
   return url;
 }
 
-async function fetchLimited(raw: string, redirect = 0): Promise<{ response: Response; bytes: Uint8Array; finalUrl: string }> {
+export async function fetchLimited(raw: string, redirect = 0): Promise<{ response: Response; bytes: Uint8Array; finalUrl: string }> {
   const url = await assertPublicUrl(raw);
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 10_000);
