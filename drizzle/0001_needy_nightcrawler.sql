@@ -1,0 +1,1 @@
+ALTER TABLE "intake_submissions" ADD COLUMN "submitted_snapshots" jsonb DEFAULT '[]'::jsonb NOT NULL;

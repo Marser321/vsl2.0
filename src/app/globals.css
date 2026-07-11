@@ -1,26 +1,62 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Paleta AD Media Solution */
+  --brand-sky: #81e7ff;
+  --brand-blue: #488eff;
+  --brand-navy: #01327f;
+  --brand-ink: #2e3033;
+  --brand-mist: #f3fafd;
+  --brand-white: #fefefe;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-brand-sky: var(--brand-sky);
+  --color-brand-blue: var(--brand-blue);
+  --color-brand-navy: var(--brand-navy);
+  --color-brand-ink: var(--brand-ink);
+  --color-brand-mist: var(--brand-mist);
   --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--brand-mist);
+  color: var(--brand-ink);
+}
+
+/* Render de guiones en Markdown */
+.script-md h1 {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--brand-navy);
+  margin: 1.25rem 0 0.75rem;
+}
+.script-md h2 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--brand-blue);
+  margin: 1.5rem 0 0.5rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #e2e8f0;
+}
+.script-md p {
+  margin: 0.6rem 0;
+  line-height: 1.7;
+}
+.script-md blockquote {
+  border-left: 3px solid var(--brand-sky);
+  background: var(--brand-mist);
+  padding: 0.4rem 0.8rem;
+  margin: 0.6rem 0;
+  font-style: italic;
+  color: #475569;
+  font-size: 0.9rem;
+}
+.script-md ul,
+.script-md ol {
+  margin: 0.6rem 0 0.6rem 1.4rem;
+  list-style: disc;
+}
+.script-md strong {
+  color: var(--brand-navy);
 }

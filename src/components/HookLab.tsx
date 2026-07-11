@@ -1,0 +1,85 @@
+"use client";
+
+import { useCallback, useEffect, useState } from "react";
+import { Badge, Card, btnSecondary } from "./ui";
+
+type HookVariant = { angulo: string; texto: string };
+type HookSet = { id: number; hooks: HookVariant[]; createdAt: string };
+
+export default function HookLab({ scriptId }: { scriptId: number }) {
+  const [sets, setSets] = useState<HookSet[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    const res = await fetch(`/api/scripts/${scriptId}/hooks`);
+    if (res.ok) setSets(await res.json());
+  }, [scriptId]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  async function generate() {
+    setLoading(true);
+    setError(null);
+    const res = await fetch(`/api/scripts/${scriptId}/hooks`, { method: "POST" });
+    const data = await res.json();
+    setLoading(false);
+    if (!res.ok) {
+      setError(data.error || "Error al generar ganchos");
+      return;
+    }
+    load();
+  }
+
+  function copy(texto: string) {
+    navigator.clipboard.writeText(texto);
+    setCopied(texto);
+    setTimeout(() => setCopied(null), 1500);
+  }
+
+  const latest = sets[0];
+
+  return (
+    <Card className="p-5">
+      <div className="flex items-center justify-between mb-2">
+        <h3 className="font-semibold text-brand-navy text-sm">
+          🧪 Hook Lab — variantes A/B del gancho
+        </h3>
+        <button className={btnSecondary} onClick={generate} disabled={loading}>
+          {loading ? "Generando 10 ganchos…" : latest ? "↻ Regenerar" : "Generar 10 ganchos"}
+        </button>
+      </div>
+      <p className="text-xs text-slate-500 mb-3">
+        Diez aperturas con ángulos distintos para testear en ads. Reusa el
+        contexto cacheado del cliente — cuesta centavos.
+      </p>
+      {error && (
+        <div className="rounded-lg bg-rose-50 border border-rose-200 px-4 py-2 text-sm text-rose-800 mb-3">
+          {error}
+        </div>
+      )}
+      {latest && (
+        <ul className="space-y-2">
+          {latest.hooks.map((h, i) => (
+            <li
+              key={i}
+              className="flex items-start gap-3 rounded-lg border border-slate-200 p-3 text-sm hover:border-brand-blue group"
+            >
+              <Badge tone="blue">{h.angulo}</Badge>
+              <span className="flex-1 leading-relaxed">{h.texto}</span>
+              <button
+                onClick={() => copy(h.texto)}
+                className="text-xs text-slate-400 hover:text-brand-blue opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+              >
+                {copied === h.texto ? "✓ Copiado" : "Copiar"}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Card>
+  );
+}
