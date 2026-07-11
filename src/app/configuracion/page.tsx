@@ -91,7 +91,7 @@ export default function ConfiguracionPage() {
         )}
         <p className="text-xs text-slate-500 mt-2">
           Las claves se configuran en el archivo <code>.env.local</code> del
-          servidor (<code>OPENROUTER_API_KEY</code>, <code>ANTHROPIC_API_KEY</code> y <code>OPENAI_API_KEY</code>)
+          servidor (<code>OPENROUTER_API_KEYS</code>, <code>ANTHROPIC_API_KEY</code> y <code>OPENAI_API_KEY</code>)
           y requieren reiniciar la app.
         </p>
       </Card>

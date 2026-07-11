@@ -10,7 +10,7 @@ export async function GET() {
     ...all,
     anthropic_key_set: Boolean(process.env.ANTHROPIC_API_KEY),
     openai_key_set: Boolean(process.env.OPENAI_API_KEY),
-    openrouter_key_set: Boolean(process.env.OPENROUTER_API_KEY),
+    openrouter_key_set: Boolean(process.env.OPENROUTER_API_KEYS || process.env.OPENROUTER_API_KEY),
     openrouter_quota: quota,
   });
 }
