@@ -63,14 +63,17 @@ export function analyzeScript(markdown: string, wpm = 150): ReadtimeAnalysis {
   flush();
 
   const nonEmpty = sections.filter((s) => s.words > 0);
+  const totalSecEstimate = Math.round(
+    (nonEmpty.reduce((a, s) => a + s.words, 0) / wpm) * 60
+  );
   let cursor = 0;
   for (const s of nonEmpty) {
     s.startSec = cursor;
     s.durationSec = Math.round((s.words / wpm) * 60);
     cursor += s.durationSec;
 
-    // Heurísticas de fuga
-    if (s.durationSec > 120)
+    // Heurísticas de fuga (la de sección larga no aplica a formatos cortos tipo reel)
+    if (s.durationSec > 120 && totalSecEstimate >= 120)
       s.leakFlags.push("Sección larga (>2 min) — considerá partirla o sumar un re-enganche");
     const paragraphs = s.text.split(/\n\n+/).filter(Boolean);
     if (paragraphs.some((p) => countWords(p) > 90))

@@ -64,8 +64,9 @@ export async function POST(req: NextRequest, { params }: Params) {
     frameworkId: script.frameworkId,
     documentIds: lastVersion.generationParams.documentIds,
     brief: script.brief,
+    format: script.format,
     history: [
-      { role: "user", content: renderBriefMessage({ brief: script.brief, framework }) },
+      { role: "user", content: renderBriefMessage({ brief: script.brief, framework, format: script.format }) },
       { role: "assistant", content: lastVersion.content },
       {
         role: "user",

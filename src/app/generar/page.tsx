@@ -31,6 +31,7 @@ function GenerarWizard() {
   const searchParams = useSearchParams();
 
   const [step, setStep] = useState(1);
+  const [format, setFormat] = useState<"vsl" | "reel">("vsl");
   const [clients, setClients] = useState<Client[]>([]);
   const [frameworksList, setFrameworksList] = useState<Framework[]>([]);
   const [docs, setDocs] = useState<Doc[]>([]);
@@ -79,10 +80,13 @@ function GenerarWizard() {
     fetch("/api/clients")
       .then((r) => r.json())
       .then(setClients);
-    fetch("/api/frameworks")
+  }, []);
+
+  useEffect(() => {
+    fetch(`/api/frameworks?format=${format}`)
       .then((r) => r.json())
       .then(setFrameworksList);
-  }, []);
+  }, [format]);
 
   useEffect(() => {
     if (!campaignId) return;
@@ -129,7 +133,7 @@ function GenerarWizard() {
     setOutput("");
     setError(null);
     setAiStatus("Preparando arnés 5+1");
-    setStep(4);
+    setStep(5);
 
     const payload = {
       clientId,
@@ -139,13 +143,20 @@ function GenerarWizard() {
       frameworkId,
       documentIds: Array.from(selectedDocs),
       title: (fd.get("title") as string) || "Guion sin título",
+      format,
       brief: {
         producto: fd.get("producto") as string,
         audiencia: fd.get("audiencia") as string,
         oferta: fd.get("oferta") as string,
         dolores: fd.get("dolores") as string,
         objeciones: (fd.get("objeciones") as string) || "",
-        duracionMin: Number(fd.get("duracionMin") || 10),
+        duracionMin: format === "reel" ? 1 : Number(fd.get("duracionMin") || 10),
+        ...(format === "reel"
+          ? {
+              duracionSeg: Number(fd.get("duracionSeg") || 45),
+              plataforma: (fd.get("plataforma") as "tiktok" | "reels" | "shorts" | "") || "",
+            }
+          : {}),
         tono: (fd.get("tono") as string) || "",
         cta: fd.get("cta") as string,
         instruccionesExtra: (fd.get("instruccionesExtra") as string) || "",
@@ -203,12 +214,12 @@ function GenerarWizard() {
     }
   }
 
-  const steps = ["Cliente", "Framework", "Brief y documentos", "Generación"];
+  const steps = ["Formato", "Cliente", "Framework", "Brief y documentos", "Generación"];
 
   return (
     <div className="max-w-4xl">
       <PageTitle
-        title="Generar guion de VSL"
+        title="Generar guion"
         subtitle="El contexto del cliente + la biblioteca de la agencia alimentan cada generación"
       />
 
@@ -231,6 +242,52 @@ function GenerarWizard() {
       {step === 1 && (
         <Card className="p-6">
           <h2 className="font-semibold text-brand-navy mb-4">
+            ¿Qué formato vamos a escribir?
+          </h2>
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              onClick={() => {
+                if (format !== "vsl") setFrameworkId(null);
+                setFormat("vsl");
+                setStep(2);
+              }}
+              className={`rounded-lg border p-5 text-left transition-colors ${
+                format === "vsl"
+                  ? "border-brand-blue bg-blue-50"
+                  : "border-slate-200 hover:border-brand-blue"
+              }`}
+            >
+              <div className="text-sm font-semibold text-brand-navy">🎬 VSL</div>
+              <div className="text-xs text-slate-500 mt-1">
+                Video de ventas largo. Se mide en minutos: historia, mecanismo,
+                oferta y cierre completos.
+              </div>
+            </button>
+            <button
+              onClick={() => {
+                if (format !== "reel") setFrameworkId(null);
+                setFormat("reel");
+                setStep(2);
+              }}
+              className={`rounded-lg border p-5 text-left transition-colors ${
+                format === "reel"
+                  ? "border-brand-blue bg-blue-50"
+                  : "border-slate-200 hover:border-brand-blue"
+              }`}
+            >
+              <div className="text-sm font-semibold text-brand-navy">📱 Reel</div>
+              <div className="text-xs text-slate-500 mt-1">
+                Vertical corto (15–90 segundos) para TikTok, Reels o Shorts.
+                Guion por beats con visual y texto en pantalla.
+              </div>
+            </button>
+          </div>
+        </Card>
+      )}
+
+      {step === 2 && (
+        <Card className="p-6">
+          <h2 className="font-semibold text-brand-navy mb-4">
             ¿Para qué cliente es el guion?
           </h2>
           {clients.length === 0 ? (
@@ -248,7 +305,7 @@ function GenerarWizard() {
                   key={c.id}
                   onClick={() => {
                     setClientId(c.id);
-                    setStep(2);
+                    setStep(3);
                   }}
                   className={`rounded-lg border p-4 text-left text-sm font-medium transition-colors ${
                     clientId === c.id
@@ -261,10 +318,13 @@ function GenerarWizard() {
               ))}
             </div>
           )}
+          <button className={`${btnSecondary} mt-4`} onClick={() => setStep(1)}>
+            ← Volver
+          </button>
         </Card>
       )}
 
-      {step === 2 && (
+      {step === 3 && (
         <Card className="p-6">
           <h2 className="font-semibold text-brand-navy mb-4">
             ¿Qué estructura usamos?
@@ -275,7 +335,7 @@ function GenerarWizard() {
                 key={f.id}
                 onClick={() => {
                   setFrameworkId(f.id);
-                  setStep(3);
+                  setStep(4);
                 }}
                 className={`rounded-lg border p-4 text-left transition-colors ${
                   frameworkId === f.id
@@ -294,20 +354,20 @@ function GenerarWizard() {
             <button
               onClick={() => {
                 setFrameworkId(null);
-                setStep(3);
+                setStep(4);
               }}
               className="rounded-lg border border-dashed border-slate-300 p-4 text-left text-sm text-slate-500 hover:border-brand-blue"
             >
               Dejar que la IA elija la mejor estructura
             </button>
           </div>
-          <button className={`${btnSecondary} mt-4`} onClick={() => setStep(1)}>
+          <button className={`${btnSecondary} mt-4`} onClick={() => setStep(2)}>
             ← Volver
           </button>
         </Card>
       )}
 
-      {step === 3 && (
+      {step === 4 && (
         <form onSubmit={handleGenerate} className="space-y-6">
           <Card className="p-6 space-y-4" key={autofillKey}>
             <div className="flex items-center justify-between">
@@ -382,19 +442,48 @@ function GenerarWizard() {
                 </label>
                 <input name="cta" required className={inputCls} defaultValue={autofill?.cta ?? ""} />
               </div>
-              <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">
-                  Duración objetivo (minutos)
-                </label>
-                <input
-                  name="duracionMin"
-                  type="number"
-                  defaultValue={autofill?.duracionMin ?? 10}
-                  min={1}
-                  max={60}
-                  className={inputCls}
-                />
-              </div>
+              {format === "reel" ? (
+                <>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-600 mb-1">
+                      Duración objetivo (segundos)
+                    </label>
+                    <input
+                      name="duracionSeg"
+                      type="number"
+                      defaultValue={45}
+                      min={15}
+                      max={90}
+                      className={inputCls}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-600 mb-1">
+                      Plataforma (opcional)
+                    </label>
+                    <select name="plataforma" className={inputCls} defaultValue="">
+                      <option value="">Cualquiera</option>
+                      <option value="tiktok">TikTok</option>
+                      <option value="reels">Instagram Reels</option>
+                      <option value="shorts">YouTube Shorts</option>
+                    </select>
+                  </div>
+                </>
+              ) : (
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">
+                    Duración objetivo (minutos)
+                  </label>
+                  <input
+                    name="duracionMin"
+                    type="number"
+                    defaultValue={autofill?.duracionMin ?? 10}
+                    min={1}
+                    max={60}
+                    className={inputCls}
+                  />
+                </div>
+              )}
               <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1">
                   Tono
@@ -468,18 +557,18 @@ function GenerarWizard() {
             <button
               type="button"
               className={btnSecondary}
-              onClick={() => setStep(2)}
+              onClick={() => setStep(3)}
             >
               ← Volver
             </button>
             <button type="submit" className={btnPrimary}>
-              ✦ Generar guion
+              ✦ Generar {format === "reel" ? "reel" : "guion"}
             </button>
           </div>
         </form>
       )}
 
-      {step === 4 && (
+      {step === 5 && (
         <Card className="p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-semibold text-brand-navy">
@@ -496,7 +585,7 @@ function GenerarWizard() {
               {error}
               <button
                 className={`${btnSecondary} mt-3 block`}
-                onClick={() => setStep(3)}
+                onClick={() => setStep(4)}
               >
                 ← Volver al brief
               </button>

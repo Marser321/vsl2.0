@@ -41,6 +41,24 @@ export const ASSET_STATUSES = [
 ] as const;
 export type AssetStatus = (typeof ASSET_STATUSES)[number];
 
+export const SCRIPT_FORMATS = ["vsl", "reel"] as const;
+export type ScriptFormat = (typeof SCRIPT_FORMATS)[number];
+
+export const VERSION_SOURCES = ["ai", "manual", "template"] as const;
+export type VersionSource = (typeof VERSION_SOURCES)[number];
+
+export const RATING_TAGS = [
+  "gancho",
+  "claridad",
+  "prueba",
+  "oferta",
+  "cta",
+  "flujoEmocional",
+  "tono",
+  "largo",
+] as const;
+export type RatingTag = (typeof RATING_TAGS)[number];
+
 export type JsonObject = Record<string, unknown>;
 
 export const clients = pgTable("clients", {
@@ -213,6 +231,8 @@ export const documents = pgTable(
     language: text("language").notNull().default("es"),
     tags: jsonb("tags").$type<string[]>().notNull().default([]),
     isActive: boolean("is_active").notNull().default(true),
+    // Guion del que se promovió este documento (permite rankear ejemplares por puntuación).
+    sourceScriptId: integer("source_script_id").references(() => scripts.id, { onDelete: "set null" }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
@@ -228,9 +248,27 @@ export const frameworks = pgTable("frameworks", {
   slug: text("slug").notNull().unique(),
   description: text("description"),
   structureMd: text("structure_md").notNull(),
+  format: text("format").$type<ScriptFormat>().notNull().default("vsl"),
   isBuiltin: boolean("is_builtin").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+export const templates = pgTable(
+  "templates",
+  {
+    id: serial("id").primaryKey(),
+    slug: text("slug").notNull().unique(),
+    title: text("title").notNull(),
+    format: text("format").$type<ScriptFormat>().notNull().default("vsl"),
+    frameworkId: integer("framework_id").references(() => frameworks.id, { onDelete: "set null" }),
+    description: text("description"),
+    briefDefaults: jsonb("brief_defaults").$type<Partial<ScriptBrief>>().notNull().default({}),
+    contentMd: text("content_md").notNull(),
+    isBuiltin: boolean("is_builtin").notNull().default(false),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("templates_format_idx").on(table.format)]
+);
 
 export const scripts = pgTable(
   "scripts",
@@ -245,6 +283,7 @@ export const scripts = pgTable(
     frameworkId: integer("framework_id").references(() => frameworks.id, { onDelete: "set null" }),
     title: text("title").notNull(),
     brief: jsonb("brief").$type<ScriptBrief>().notNull(),
+    format: text("format").$type<ScriptFormat>().notNull().default("vsl"),
     provider: text("provider").$type<ProviderName>().notNull().default("anthropic"),
     model: text("model").notNull(),
     status: text("status").$type<"draft" | "final" | "archived">().notNull().default("draft"),
@@ -267,8 +306,11 @@ export const scriptVersions = pgTable(
     content: text("content").notNull(),
     generationParams: jsonb("generation_params").$type<GenerationParams>().notNull(),
     refinementInstruction: text("refinement_instruction"),
+    source: text("source").$type<VersionSource>().notNull().default("ai"),
     usage: jsonb("usage").$type<UsageInfo | null>(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    // Solo se setea cuando una edición manual coalesce sobre la misma versión.
+    updatedAt: timestamp("updated_at", { withTimezone: true }),
   },
   (table) => [uniqueIndex("script_versions_number_uq").on(table.scriptId, table.versionNumber)]
 );
@@ -290,6 +332,22 @@ export const critiques = pgTable("critiques", {
   data: jsonb("data").$type<CritiqueData>().notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+export const scriptRatings = pgTable(
+  "script_ratings",
+  {
+    id: serial("id").primaryKey(),
+    scriptVersionId: integer("script_version_id")
+      .notNull()
+      .references(() => scriptVersions.id, { onDelete: "cascade" }),
+    score: integer("score").notNull(),
+    tags: jsonb("tags").$type<RatingTag[]>().notNull().default([]),
+    notes: text("notes"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [uniqueIndex("script_ratings_version_uq").on(table.scriptVersionId)]
+);
 
 export const industryLearnings = pgTable(
   "industry_learnings",
@@ -347,6 +405,10 @@ export type ScriptBrief = {
   dolores: string;
   objeciones: string;
   duracionMin: number;
+  /** Solo reels: duración objetivo en segundos (15–90). */
+  duracionSeg?: number;
+  /** Solo reels: plataforma de destino. */
+  plataforma?: "tiktok" | "reels" | "shorts" | "";
   tono: string;
   cta: string;
   instruccionesExtra: string;
@@ -357,6 +419,7 @@ export type GenerationParams = {
   model: string;
   documentIds: number[];
   frameworkId: number | null;
+  templateId?: number;
   contextSnapshot?: {
     intakeRequestId?: string;
     brandId?: number;
@@ -411,3 +474,5 @@ export type Document = typeof documents.$inferSelect;
 export type Framework = typeof frameworks.$inferSelect;
 export type Script = typeof scripts.$inferSelect;
 export type ScriptVersion = typeof scriptVersions.$inferSelect;
+export type ScriptRating = typeof scriptRatings.$inferSelect;
+export type Template = typeof templates.$inferSelect;

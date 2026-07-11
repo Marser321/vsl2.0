@@ -41,7 +41,7 @@ export function Badge({
   tone = "blue",
 }: {
   children: ReactNode;
-  tone?: "blue" | "green" | "red" | "gray" | "yellow";
+  tone?: "blue" | "green" | "red" | "gray" | "yellow" | "violet";
 }) {
   const tones = {
     blue: "bg-blue-50 text-brand-blue border-blue-200",
@@ -49,6 +49,7 @@ export function Badge({
     red: "bg-rose-50 text-rose-700 border-rose-200",
     gray: "bg-slate-100 text-slate-600 border-slate-200",
     yellow: "bg-amber-50 text-amber-700 border-amber-200",
+    violet: "bg-violet-50 text-violet-700 border-violet-200",
   };
   return (
     <span
@@ -87,4 +88,14 @@ export const KIND_TONES: Record<
   transcript: "gray",
   reference: "gray",
   learning: "red",
+};
+
+export const FORMAT_LABELS: Record<string, string> = {
+  vsl: "VSL",
+  reel: "Reel",
+};
+
+export const FORMAT_TONES: Record<string, "blue" | "violet"> = {
+  vsl: "blue",
+  reel: "violet",
 };

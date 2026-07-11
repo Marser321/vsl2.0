@@ -10,6 +10,7 @@ type Row = {
   clientName: string | null;
   status: string;
   outcome: string;
+  format?: string;
   provider: string;
   model: string;
   createdAt: string;
@@ -50,6 +51,7 @@ export default function GuionesPage() {
                 >
                   <span className="flex-1 font-medium">{s.title}</span>
                   <span className="text-xs text-slate-500">{s.clientName}</span>
+                  {s.format === "reel" && <Badge tone="violet">Reel</Badge>}
                   {s.outcome === "won" && <Badge tone="green">Ganador</Badge>}
                   {s.outcome === "lost" && <Badge tone="red">No convirtió</Badge>}
                   <Badge tone="gray">{s.model}</Badge>

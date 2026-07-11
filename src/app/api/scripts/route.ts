@@ -16,6 +16,7 @@ export async function GET(req: NextRequest) {
     clientName: clients.name,
     status: scripts.status,
     outcome: scripts.outcome,
+    format: scripts.format,
     provider: scripts.provider,
     model: scripts.model,
     createdAt: scripts.createdAt,
@@ -28,20 +29,10 @@ export async function GET(req: NextRequest) {
         .where(eq(scripts.clientId, Number(clientId)))
         .orderBy(desc(scripts.createdAt))
     : await db
-    .select({
-      id: scripts.id,
-      title: scripts.title,
-      clientId: scripts.clientId,
-      clientName: clients.name,
-      status: scripts.status,
-      outcome: scripts.outcome,
-      provider: scripts.provider,
-      model: scripts.model,
-      createdAt: scripts.createdAt,
-    })
-    .from(scripts)
-    .leftJoin(clients, eq(scripts.clientId, clients.id))
-    .orderBy(desc(scripts.createdAt));
+        .select(fields)
+        .from(scripts)
+        .leftJoin(clients, eq(scripts.clientId, clients.id))
+        .orderBy(desc(scripts.createdAt));
 
   return NextResponse.json(rows);
 }

@@ -9,28 +9,41 @@ import { guardAdminRequest } from "@/lib/auth/session";
 
 export const maxDuration = 60;
 
-const generateSchema = z.object({
-  clientId: z.number(),
-  brandId: z.number().nullable().optional(),
-  offerId: z.number().nullable().optional(),
-  campaignId: z.number().nullable().optional(),
-  frameworkId: z.number().nullable(),
-  documentIds: z.array(z.number()),
-  title: z.string().min(1),
-  provider: z.enum(["anthropic", "openai", "openrouter"]).optional(),
-  model: z.string().optional(),
-  brief: z.object({
-    producto: z.string().min(1),
-    audiencia: z.string().min(1),
-    oferta: z.string().min(1),
-    dolores: z.string().min(1),
-    objeciones: z.string().default(""),
-    duracionMin: z.number().min(1).max(60),
-    tono: z.string().default(""),
-    cta: z.string().min(1),
-    instruccionesExtra: z.string().default(""),
-  }),
-});
+const generateSchema = z
+  .object({
+    clientId: z.number(),
+    brandId: z.number().nullable().optional(),
+    offerId: z.number().nullable().optional(),
+    campaignId: z.number().nullable().optional(),
+    frameworkId: z.number().nullable(),
+    documentIds: z.array(z.number()),
+    title: z.string().min(1),
+    format: z.enum(["vsl", "reel"]).default("vsl"),
+    provider: z.enum(["anthropic", "openai", "openrouter"]).optional(),
+    model: z.string().optional(),
+    brief: z.object({
+      producto: z.string().min(1),
+      audiencia: z.string().min(1),
+      oferta: z.string().min(1),
+      dolores: z.string().min(1),
+      objeciones: z.string().default(""),
+      duracionMin: z.number().min(1).max(60),
+      duracionSeg: z.number().int().min(15).max(90).optional(),
+      plataforma: z.enum(["tiktok", "reels", "shorts"]).or(z.literal("")).optional(),
+      tono: z.string().default(""),
+      cta: z.string().min(1),
+      instruccionesExtra: z.string().default(""),
+    }),
+  })
+  .superRefine((data, ctx) => {
+    if (data.format === "reel" && data.brief.duracionSeg === undefined) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Indicá la duración del reel en segundos (15–90)",
+        path: ["brief", "duracionSeg"],
+      });
+    }
+  });
 
 function sse(data: unknown): string {
   return `data: ${JSON.stringify(data)}\n\n`;
@@ -70,6 +83,7 @@ export async function POST(req: NextRequest) {
       frameworkId: input.frameworkId,
       documentIds: input.documentIds,
       brief: input.brief,
+      format: input.format,
     });
   } catch (e) {
     return Response.json({ error: (e as Error).message }, { status: 400 });
@@ -107,6 +121,7 @@ export async function POST(req: NextRequest) {
             frameworkId: input.frameworkId,
             title: input.title,
             brief: input.brief,
+            format: input.format,
             provider: providerName,
             model,
           })

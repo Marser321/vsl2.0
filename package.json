@@ -13,6 +13,7 @@
     "db:migrate": "dotenv -e .env.local -- drizzle-kit migrate",
     "db:push": "dotenv -e .env.local -- drizzle-kit push",
     "db:seed": "dotenv -e .env.local -- tsx src/db/seed.ts",
+    "db:seed-corpus": "dotenv -e .env.local -- tsx src/db/seed-corpus.ts",
     "db:import-sqlite": "dotenv -e .env.local -- tsx scripts/migrate-sqlite-to-postgres.ts",
     "smoke:ai": "tsx scripts/smoke-ai.ts",
     "test": "vitest run",

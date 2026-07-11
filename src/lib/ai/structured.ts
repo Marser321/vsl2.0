@@ -63,7 +63,7 @@ async function generateJSONAnthropic<T>(args: Args): Promise<T> {
 async function generateJSONOpenAI<T>(args: Args): Promise<T> {
   const { default: OpenAI } = await import("openai");
   const client = new OpenAI();
-  const model = await getSetting("default_model_openai", "gpt-5.5");
+  const model = await getSetting("default_model_openai", "gpt-5.2");
 
   const system = args.systemBlocks.map((b) => b.text).join("\n\n---\n\n");
 

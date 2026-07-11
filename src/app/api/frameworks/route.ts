@@ -1,13 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/db";
 import { frameworks } from "@/db/schema";
-import { asc } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 import { z } from "zod";
 import { guardAdminRequest } from "@/lib/auth/session";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const guard = await guardAdminRequest(); if (guard) return guard;
-  const rows = await getDb().select().from(frameworks).orderBy(asc(frameworks.id));
+  const format = req.nextUrl.searchParams.get("format");
+  const db = getDb();
+  const rows =
+    format === "vsl" || format === "reel"
+      ? await db.select().from(frameworks).where(eq(frameworks.format, format)).orderBy(asc(frameworks.id))
+      : await db.select().from(frameworks).orderBy(asc(frameworks.id));
   return NextResponse.json(rows);
 }
 
@@ -16,6 +21,7 @@ const frameworkSchema = z.object({
   slug: z.string().min(1),
   description: z.string().default(""),
   structureMd: z.string().min(1),
+  format: z.enum(["vsl", "reel"]).default("vsl"),
 });
 
 export async function POST(req: NextRequest) {

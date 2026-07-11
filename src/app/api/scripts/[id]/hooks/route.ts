@@ -88,6 +88,20 @@ export async function POST(_req: NextRequest, { params }: Params) {
     brief: script.brief,
   });
 
+  const hookRules =
+    script.format === "reel"
+      ? `Generá 10 variantes de GANCHO de reel vertical (la primera frase del video) para testear en A/B. Cada variante con un ángulo DISTINTO. Reglas:
+- Cada gancho debe poder locutarse en 1-3 segundos (8-15 palabras): es la frase que abre el reel.
+- Tiene que funcionar también como TEXTO EN PANTALLA (corto, punzante, sin puntos suspensivos).
+- Mismo producto, misma audiencia y mismo brief que el guion.
+- Escribí el texto EXACTO a locutar, sin acotaciones.
+- Intensidad máxima: el espectador decide en menos de 2 segundos si sigue o pasa.`
+      : `Generá 10 variantes de GANCHO (los primeros 15-30 segundos) para testear en A/B. Cada variante con un ángulo DISTINTO. Reglas:
+- Cada gancho debe poder locutarse en 15-30 segundos (40-75 palabras).
+- Mismo producto, misma audiencia y mismo brief que el guion.
+- Escribí el texto EXACTO a locutar, sin acotaciones.
+- Intensidad alta: cada gancho tiene que ganarse los próximos 10 segundos de atención.`;
+
   try {
     const result = await generateJSON<{ hooks: HookVariant[] }>({
       systemBlocks: context.systemBlocks,
@@ -95,11 +109,7 @@ export async function POST(_req: NextRequest, { params }: Params) {
 
 ${lastVersion.content}
 
-Generá 10 variantes de GANCHO (los primeros 15-30 segundos) para testear en A/B. Cada variante con un ángulo DISTINTO. Reglas:
-- Cada gancho debe poder locutarse en 15-30 segundos (40-75 palabras).
-- Mismo producto, misma audiencia y mismo brief que el guion.
-- Escribí el texto EXACTO a locutar, sin acotaciones.
-- Intensidad alta: cada gancho tiene que ganarse los próximos 10 segundos de atención.`,
+${hookRules}`,
       schema: HOOKS_SCHEMA,
     });
 

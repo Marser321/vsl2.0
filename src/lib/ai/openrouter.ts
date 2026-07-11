@@ -85,7 +85,8 @@ async function freeModels(needsStructuredOutput: boolean): Promise<string[]> {
       const structured = !needsStructuredOutput ||
         m.supported_parameters?.some((p) => p === "structured_outputs" || p === "response_format");
       const producesText = !m.architecture?.output_modalities || m.architecture.output_modalities.includes("text");
-      return isFree && structured && producesText && (m.context_length ?? 0) >= 32_000;
+      // 60k: el bloque global (corpus + frameworks) + dossier por cliente ya no entra cómodo en 32k.
+      return isFree && structured && producesText && (m.context_length ?? 0) >= 60_000;
     })
     .sort((a, b) => (b.context_length ?? 0) - (a.context_length ?? 0));
 

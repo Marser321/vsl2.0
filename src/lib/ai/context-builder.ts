@@ -13,6 +13,7 @@ import {
   type Document,
   type Framework,
   type ScriptBrief,
+  type ScriptFormat,
 } from "@/db/schema";
 import { and, asc, eq, isNull, inArray } from "drizzle-orm";
 import { getSetting } from "@/lib/settings";
@@ -58,6 +59,7 @@ export async function buildContext(args: {
   frameworkId: number | null;
   documentIds: number[];
   brief: ScriptBrief;
+  format?: ScriptFormat;
   history?: ChatMessage[];
 }): Promise<BuiltContext> {
   const db = getDb();
@@ -167,7 +169,7 @@ export async function buildContext(args: {
     ...(args.history ?? []),
     ...(args.history?.length
       ? [] // en refinamiento, la instrucción ya viene en history
-      : [{ role: "user" as const, content: renderBriefMessage({ brief: args.brief, framework }) }]),
+      : [{ role: "user" as const, content: renderBriefMessage({ brief: args.brief, framework, format: args.format }) }]),
   ];
 
   const included = [...globalStableDocs, ...dossierDocs];

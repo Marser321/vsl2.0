@@ -1,4 +1,4 @@
-import type { Document, Framework, ScriptBrief, Client } from "@/db/schema";
+import type { Document, Framework, ScriptBrief, ScriptFormat, Client } from "@/db/schema";
 
 const KIND_LABELS: Record<Document["kind"], string> = {
   winning_script: "GUION GANADOR (ejemplo de calidad a imitar)",
@@ -34,14 +34,54 @@ ${client.notes ? `Notas de la agencia: ${client.notes}` : ""}`.trim();
   return `${header}\n\n${body}`;
 }
 
+const PLATFORM_LABELS: Record<string, string> = {
+  tiktok: "TikTok",
+  reels: "Instagram Reels",
+  shorts: "YouTube Shorts",
+};
+
 export function renderBriefMessage(args: {
   brief: ScriptBrief;
   framework: Framework | null;
+  format?: ScriptFormat;
 }): string {
   const { brief, framework } = args;
+  const format = args.format ?? "vsl";
   const fwSection = framework
     ? `## Framework a usar: ${framework.name}\n${framework.structureMd}`
     : "## Framework: a tu criterio, elegí la mejor estructura para este caso.";
+
+  if (format === "reel") {
+    const seg = brief.duracionSeg ?? 45;
+    // ~150 wpm en español = 2.5 palabras por segundo.
+    const words = Math.round(seg * 2.5);
+    const plataforma = brief.plataforma ? PLATFORM_LABELS[brief.plataforma] : "";
+    return `Generá un guion de REEL VERTICAL (video corto) completo con este brief:
+
+## Brief
+- **Producto/servicio:** ${brief.producto}
+- **Audiencia / avatar:** ${brief.audiencia}
+- **Oferta:** ${brief.oferta}
+- **Dolores principales:** ${brief.dolores}
+- **Objeciones a manejar:** ${brief.objeciones || "—"}
+- **Duración objetivo:** ${seg} segundos (~${words} palabras locutadas)
+${plataforma ? `- **Plataforma de destino:** ${plataforma}` : ""}
+- **Tono:** ${brief.tono || "directo y nativo de la plataforma"}
+- **CTA:** ${brief.cta}
+${brief.instruccionesExtra ? `- **Instrucciones adicionales:** ${brief.instruccionesExtra}` : ""}
+
+${fwSection}
+
+## Formato de salida para REEL (reemplaza el formato de salida del prompt maestro)
+- Título del reel como H1.
+- Cada beat como H2 con su rango en SEGUNDOS, ej.: \`## Gancho (0:00–0:03)\`.
+- Debajo de cada H2, en este orden: \`> [VISUAL: plano, acción o b-roll]\`, \`> [TEXTO EN PANTALLA: ...]\` y la locución EXACTA a grabar.
+- El gancho hablado, el visual y el texto en pantalla arrancan juntos en los primeros 2 segundos — nada de saludos ni contexto.
+- Ritmo: ~2.5 palabras por segundo. Respetá la duración objetivo ±10%.
+- Aplicá el "Playbook de reels verticales" y la taxonomía de ganchos de la biblioteca global.
+
+Escribí el guion completo ahora.`;
+  }
 
   return `Generá un guion de VSL completo con este brief:
 

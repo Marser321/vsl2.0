@@ -40,6 +40,7 @@ export default async function Home() {
       id: scripts.id,
       title: scripts.title,
       outcome: scripts.outcome,
+      format: scripts.format,
       createdAt: scripts.createdAt,
       clientName: clients.name,
     })
@@ -100,6 +101,7 @@ export default async function Home() {
                 >
                   <span className="flex-1 font-medium">{s.title}</span>
                   <span className="text-xs text-slate-500">{s.clientName}</span>
+                  {s.format === "reel" && <Badge tone="violet">Reel</Badge>}
                   {s.outcome === "won" && <Badge tone="green">Ganador</Badge>}
                   {s.outcome === "lost" && <Badge tone="red">No convirtió</Badge>}
                   <span className="text-xs text-slate-400">
