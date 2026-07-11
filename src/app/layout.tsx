@@ -19,7 +19,7 @@ export default function RootLayout({
   return (
     <html lang="es" className={`${geistSans.variable} h-full antialiased`}>
       <body className="min-h-full">
-        <AppShell>{children}</AppShell>
+        <AppShell authEnabled={process.env.REQUIRE_AUTH === "true"}>{children}</AppShell>
       </body>
     </html>
   );

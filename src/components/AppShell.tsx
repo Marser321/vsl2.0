@@ -16,7 +16,13 @@ const NAV = [
   { href: "/configuracion", label: "Configuración", icon: "⚙" },
 ];
 
-export default function AppShell({ children }: { children: React.ReactNode }) {
+export default function AppShell({
+  children,
+  authEnabled = false,
+}: {
+  children: React.ReactNode;
+  authEnabled?: boolean;
+}) {
   const pathname = usePathname();
   const isPublic = pathname === "/login" || pathname.startsWith("/relevamiento/");
   if (isPublic) return <main className="min-h-screen">{children}</main>;
@@ -41,9 +47,11 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             </Link>
           ))}
         </nav>
-        <form action="/api/auth/logout" method="post" className="px-4 pb-3">
-          <button className="w-full rounded-lg border border-white/15 px-3 py-2 text-left text-xs text-blue-200 hover:bg-white/10">Cerrar sesión</button>
-        </form>
+        {authEnabled && (
+          <form action="/api/auth/logout" method="post" className="px-4 pb-3">
+            <button className="w-full rounded-lg border border-white/15 px-3 py-2 text-left text-xs text-blue-200 hover:bg-white/10">Cerrar sesión</button>
+          </form>
+        )}
         <div className="px-5 py-4 text-[10px] text-blue-300">Guiones que venden · es-LATAM</div>
       </aside>
       <main className="flex-1 min-w-0 p-8">{children}</main>

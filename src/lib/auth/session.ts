@@ -5,6 +5,14 @@ const ADMIN_COOKIE = "vsl_admin_session";
 const INTAKE_COOKIE = "vsl_intake_session";
 const encoder = new TextEncoder();
 
+/**
+ * Acceso libre por defecto (sin login). Para reactivar la clave compartida
+ * (p. ej. si la app se deploya a una URL pública) poné REQUIRE_AUTH=true.
+ */
+export function authRequired() {
+  return process.env.REQUIRE_AUTH === "true";
+}
+
 function secret() {
   const value = process.env.SESSION_SECRET;
   if (!value || value.length < 32) throw new Error("SESSION_SECRET debe tener al menos 32 caracteres.");
@@ -45,6 +53,7 @@ export async function clearAdminSession() {
 }
 
 export async function isAdminSession(): Promise<boolean> {
+  if (!authRequired()) return true;
   const payload = await verify((await cookies()).get(ADMIN_COOKIE)?.value);
   return payload?.scope === "admin";
 }
