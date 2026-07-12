@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import ScriptMarkdown from "@/components/ScriptMarkdown";
-import { Card, PageTitle, btnPrimary, btnSecondary, inputCls } from "@/components/ui";
+import { AsyncStatus, Button, Card, CopyButton, PageTitle, inputCls, type ProcessStatus } from "@/components/ui";
 import { Check, Microscope } from "lucide-react";
+import { toast } from "sonner";
 
 type Client = { id: number; name: string };
 
@@ -17,7 +18,7 @@ export default function AnalizadorPage() {
   const [output, setOutput] = useState("");
   const [savedDocId, setSavedDocId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [aiStatus, setAiStatus] = useState("");
+  const [aiStatus, setAiStatus] = useState<ProcessStatus | null>(null);
   const outputRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLInputElement>(null);
 
@@ -42,6 +43,7 @@ export default function AnalizadorPage() {
       if (titleRef.current && !titleRef.current.value.trim()) {
         titleRef.current.value = data.title;
       }
+      toast.success("Transcript importado. Podés revisarlo antes de analizar.");
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -55,7 +57,7 @@ export default function AnalizadorPage() {
     setAnalyzing(true);
     setOutput("");
     setError(null);
-    setAiStatus("Preparando arnés 5+1");
+    setAiStatus({ stage: "Preparando arnés 5+1" });
     setSavedDocId(null);
 
     try {
@@ -85,12 +87,13 @@ export default function AnalizadorPage() {
           if (!evt.startsWith("data: ")) continue;
           const data = JSON.parse(evt.slice(6));
           if (data.type === "status") {
-            setAiStatus(`${data.stage} (${data.completed}/${data.total})`);
+            setAiStatus({ stage: data.stage, completed: data.completed, total: data.total });
           } else if (data.type === "delta") {
             setOutput((prev) => prev + data.text);
             outputRef.current?.scrollTo({ top: outputRef.current.scrollHeight });
           } else if (data.type === "done") {
             setSavedDocId(data.documentId);
+            toast.success("Análisis guardado en la biblioteca");
           } else if (data.type === "error") {
             throw new Error(data.message);
           }
@@ -152,14 +155,17 @@ export default function AnalizadorPage() {
                 placeholder="https://youtube.com/watch?v=…"
                 aria-label="URL para importar"
               />
-              <button
+              <Button
                 type="button"
-                className={`${btnSecondary} shrink-0`}
+                variant="secondary"
+                className="shrink-0"
                 onClick={handleImport}
-                disabled={importing || !sourceUrl.trim()}
+                disabled={!sourceUrl.trim()}
+                loading={importing}
+                loadingLabel="Importando…"
               >
-                {importing ? "Importando…" : "Importar transcript"}
-              </button>
+                Importar transcript
+              </Button>
             </div>
           </div>
           <div>
@@ -176,9 +182,7 @@ export default function AnalizadorPage() {
               placeholder="Pegá aquí el transcript completo del VSL a analizar…"
             />
           </div>
-          <button className={btnPrimary} disabled={analyzing}>
-            {analyzing ? "Analizando…" : <><Microscope size={16} strokeWidth={1.75} /> Analizar VSL</>}
-          </button>
+          <Button type="submit" loading={analyzing} loadingLabel="Analizando…" icon={<Microscope size={16} strokeWidth={1.75} />}>Analizar VSL</Button>
         </form>
       </Card>
 
@@ -194,11 +198,11 @@ export default function AnalizadorPage() {
             <h2 className="font-semibold text-brand-navy">
               Análisis estructural
             </h2>
-            {analyzing && (
-              <span className="text-xs text-brand-blue animate-pulse">
-                {aiStatus || "Los modelos están trabajando"}
-              </span>
-            )}
+            {analyzing ? (
+              <AsyncStatus status={aiStatus} fallback="Los modelos están trabajando" />
+            ) : output ? (
+              <CopyButton text={output} label="Copiar análisis" copiedLabel="Análisis copiado" />
+            ) : null}
             {savedDocId && (
               <Link
                 href="/biblioteca"

@@ -12,14 +12,18 @@ import CritiquePanel from "@/components/CritiquePanel";
 import LearningsPanel from "@/components/LearningsPanel";
 import {
   Badge,
+  AsyncStatus,
+  Button,
   Card,
   ConfirmDialog,
+  CopyButton,
   Input,
   PageTitle,
   Skeleton,
   btnPrimary,
   btnSecondary,
   inputCls,
+  type ProcessStatus,
 } from "@/components/ui";
 import { slugify } from "@/lib/templates";
 import { ArrowLeft, ArrowRight, Check, Download, LayoutTemplate, Pencil, Play, Star } from "lucide-react";
@@ -79,7 +83,7 @@ function GuionDetail({ id }: { id: string }) {
   const [wpm, setWpm] = useState(150);
   const [refining, setRefining] = useState(false);
   const [refineOutput, setRefineOutput] = useState("");
-  const [aiStatus, setAiStatus] = useState("");
+  const [aiStatus, setAiStatus] = useState<ProcessStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
   const [templateTitle, setTemplateTitle] = useState("");
@@ -141,7 +145,7 @@ function GuionDetail({ id }: { id: string }) {
     setRefining(true);
     setRefineOutput("");
     setError(null);
-    setAiStatus("Preparando arnés 5+1");
+    setAiStatus({ stage: "Preparando arnés 5+1" });
 
     try {
       const res = await fetch(`/api/scripts/${script.id}/refine`, {
@@ -166,7 +170,7 @@ function GuionDetail({ id }: { id: string }) {
           if (!evt.startsWith("data: ")) continue;
           const data = JSON.parse(evt.slice(6));
           if (data.type === "status") {
-            setAiStatus(`${data.stage} (${data.completed}/${data.total})`);
+            setAiStatus({ stage: data.stage, completed: data.completed, total: data.total });
           } else if (data.type === "delta") {
             setRefineOutput((prev) => prev + data.text);
             outputRef.current?.scrollTo({ top: outputRef.current.scrollHeight });
@@ -179,6 +183,7 @@ function GuionDetail({ id }: { id: string }) {
       setRefining(false);
       setRefineOutput("");
       await load();
+      toast.success("Nueva versión creada");
     } catch (err) {
       setRefining(false);
       setError((err as Error).message);
@@ -186,12 +191,18 @@ function GuionDetail({ id }: { id: string }) {
   }
 
   async function markOutcome(outcome: "won" | "lost" | "unknown") {
-    await fetch(`/api/scripts/${id}`, {
+    const response = await fetch(`/api/scripts/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ outcome }),
     });
-    load();
+    if (!response.ok) {
+      const data = await response.json();
+      toast.error(data.error || "No se pudo actualizar el resultado");
+      return;
+    }
+    toast.success(outcome === "won" ? "Guion marcado como ganador" : outcome === "lost" ? "Resultado registrado" : "Resultado restablecido");
+    await load();
   }
 
   async function promote(scope: "client" | "global", versionId: number) {
@@ -206,6 +217,7 @@ function GuionDetail({ id }: { id: string }) {
       toast.error(data.error || "No se pudo promover el guion");
       return false;
     }
+    toast.success(data.alreadyPromoted ? "Ese ejemplar ya estaba en la biblioteca" : "Ejemplar promovido a la biblioteca");
     await load();
     if (selectedVersion !== null) setActiveVersion(selectedVersion);
     return true;
@@ -289,6 +301,7 @@ function GuionDetail({ id }: { id: string }) {
             <button className={btnSecondary} onClick={exportMd}>
               <Download size={16} strokeWidth={1.75} /> Exportar .md
             </button>
+            {current && <CopyButton text={current.content} label="Copiar guion" copiedLabel="Guion copiado" />}
             <button
               className={btnSecondary}
               onClick={() => {
@@ -418,9 +431,7 @@ function GuionDetail({ id }: { id: string }) {
         <Card className="p-6 mb-6">
           {refining ? (
             <div>
-              <div className="text-xs text-brand-blue animate-pulse mb-3">
-                {aiStatus || "Los modelos están trabajando"}
-              </div>
+              <div className="mb-3"><AsyncStatus status={aiStatus} fallback="Los modelos están trabajando" /></div>
               <div ref={outputRef} className="max-h-[55vh] overflow-y-auto">
                 <ScriptMarkdown content={refineOutput || "…"} />
               </div>
@@ -453,14 +464,15 @@ function GuionDetail({ id }: { id: string }) {
           disabled={refining || editing}
         />
         <div className="flex items-center justify-between mt-3">
-          <button
-            className={btnPrimary}
+          <Button
             onClick={handleRefine}
-            disabled={refining || editing}
+            loading={refining}
+            loadingLabel="Refinando…"
+            disabled={editing}
             title={editing ? "Cerrá el editor para refinar" : undefined}
           >
-            {refining ? "Refinando…" : <>Refinar <ArrowRight size={15} strokeWidth={1.75} /> nueva versión</>}
-          </button>
+            Refinar <ArrowRight size={15} strokeWidth={1.75} /> nueva versión
+          </Button>
           {script.outcome !== "lost" && script.outcome !== "won" && (
             <button
               className="text-xs text-slate-400 hover:text-rose-600"

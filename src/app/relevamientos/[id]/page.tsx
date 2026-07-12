@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { use, useCallback, useEffect, useState } from "react";
-import { Badge, Card, PageTitle, Skeleton, btnPrimary, btnSecondary } from "@/components/ui";
+import { Badge, Button, Card, PageTitle, Skeleton, btnPrimary } from "@/components/ui";
 import { ArrowRight } from "lucide-react";
+import { toast } from "sonner";
 
 type Detail = {
   request: { id: string; title: string; status: string; clientId: number | null; brandId: number | null; offerId: number | null; campaignId: number | null; expiresAt: string };
@@ -44,7 +45,12 @@ export default function IntakeDetailPage({ params }: { params: Promise<{ id: str
     });
     const body = await response.json();
     setBusy("");
-    if (!response.ok) return setError(body.error);
+    if (!response.ok) {
+      setError(body.error);
+      toast.error(body.error || "No se pudo actualizar el relevamiento");
+      return;
+    }
+    toast.success(`${labels[name] ?? "Estado"} completado`);
     await load();
   }
 
@@ -64,9 +70,9 @@ export default function IntakeDetailPage({ params }: { params: Promise<{ id: str
         actions={
           <div className="flex flex-wrap gap-2">
             {actions.map((name) => (
-              <button key={name} disabled={Boolean(busy)} onClick={() => action(name)} className={name === "approve" ? btnPrimary : btnSecondary}>
-                {busy === name ? "Procesando…" : labels[name]}
-              </button>
+              <Button key={name} variant={name === "approve" ? "primary" : "secondary"} disabled={Boolean(busy) && busy !== name} loading={busy === name} loadingLabel="Procesando…" onClick={() => action(name)}>
+                {labels[name]}
+              </Button>
             ))}
             {request.status === "approved" && request.clientId && (
               <Link className={btnPrimary} href={`/generar?clientId=${request.clientId}&brandId=${request.brandId ?? ""}&offerId=${request.offerId ?? ""}&campaignId=${request.campaignId ?? ""}`}>Generar VSL <ArrowRight size={16} strokeWidth={1.75} /></Link>

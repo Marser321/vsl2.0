@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Badge, Card, PageTitle, Skeleton, btnPrimary, inputCls } from "@/components/ui";
+import { Badge, Button, Card, PageTitle, Skeleton, inputCls } from "@/components/ui";
 import { Check } from "lucide-react";
+import { toast } from "sonner";
 
 type Settings = Record<string, unknown> & {
   anthropic_key_set?: boolean;
@@ -27,7 +28,7 @@ export default function ConfiguracionPage() {
     setSaving(true);
     setSaved(false);
     const fd = new FormData(e.currentTarget);
-    await fetch("/api/settings", {
+    const response = await fetch("/api/settings", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -40,8 +41,15 @@ export default function ConfiguracionPage() {
         context_token_budget: String(fd.get("context_token_budget") ?? ""),
       }),
     });
+    if (!response.ok) {
+      const data = await response.json();
+      toast.error(data.error || "No se pudo guardar la configuración");
+      setSaving(false);
+      return;
+    }
     setSaving(false);
     setSaved(true);
+    toast.success("Configuración guardada");
   }
 
   if (!settings)
@@ -179,9 +187,7 @@ export default function ConfiguracionPage() {
         </Card>
 
         <div className="flex items-center gap-3">
-          <button className={btnPrimary} disabled={saving}>
-            {saving ? "Guardando…" : "Guardar configuración"}
-          </button>
+          <Button type="submit" loading={saving} loadingLabel="Guardando…">Guardar configuración</Button>
           {saved && (
             <span className="inline-flex items-center gap-1 text-sm text-emerald-600"><Check size={15} strokeWidth={1.75} /> Guardado</span>
           )}

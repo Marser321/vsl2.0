@@ -6,13 +6,17 @@ import { ArrowLeft, Clapperboard, Smartphone, Sparkles, Star, Zap } from "lucide
 import ScriptMarkdown from "@/components/ScriptMarkdown";
 import {
   Badge,
+  AsyncStatus,
+  Button,
   Card,
+  CopyButton,
   KIND_LABELS,
   KIND_TONES,
   PageTitle,
   btnPrimary,
   btnSecondary,
   inputCls,
+  type ProcessStatus,
 } from "@/components/ui";
 
 type Client = { id: number; name: string };
@@ -65,7 +69,7 @@ function GenerarWizard() {
   const [generating, setGenerating] = useState(false);
   const [output, setOutput] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [aiStatus, setAiStatus] = useState("");
+  const [aiStatus, setAiStatus] = useState<ProcessStatus | null>(null);
   const outputRef = useRef<HTMLDivElement>(null);
 
   // Brief autopilot: pre-llenado con IA a partir de los docs del cliente
@@ -210,7 +214,7 @@ function GenerarWizard() {
     setGenerating(true);
     setOutput("");
     setError(null);
-    setAiStatus("Preparando arnés 5+1");
+    setAiStatus({ stage: "Preparando arnés 5+1" });
     setStep(5);
 
     const payload = {
@@ -268,7 +272,7 @@ function GenerarWizard() {
           if (!evt.startsWith("data: ")) continue;
           const data = JSON.parse(evt.slice(6));
           if (data.type === "status") {
-            setAiStatus(`${data.stage} (${data.completed}/${data.total})`);
+            setAiStatus({ stage: data.stage, completed: data.completed, total: data.total });
           } else if (data.type === "delta") {
             setOutput((prev) => prev + data.text);
             outputRef.current?.scrollTo({
@@ -470,15 +474,17 @@ function GenerarWizard() {
           <Card className="p-6 space-y-4" key={autofillKey}>
             <div className="flex items-center justify-between">
               <h2 className="font-semibold text-brand-navy">Brief del guion</h2>
-              <button
+              <Button
                 type="button"
-                className={btnSecondary}
+                variant="secondary"
                 onClick={handleAutofill}
-                disabled={autofilling}
+                loading={autofilling}
+                loadingLabel="Leyendo documentos…"
                 title="La IA lee los documentos del cliente y pre-llena el brief"
+                icon={<Zap size={16} strokeWidth={1.75} />}
               >
-                {autofilling ? "Leyendo documentos…" : <><Zap size={16} strokeWidth={1.75} /> Pre-llenar con IA</>}
-              </button>
+                Pre-llenar con IA
+              </Button>
             </div>
             {autofillError && (
               <div className="rounded-lg bg-rose-50 border border-rose-200 px-4 py-2 text-sm text-rose-800">
@@ -680,9 +686,9 @@ function GenerarWizard() {
             >
               <ArrowLeft size={16} strokeWidth={1.75} /> Volver
             </button>
-            <button type="submit" className={btnPrimary}>
-              <Sparkles size={16} strokeWidth={1.75} /> Generar {format === "reel" ? "reel" : "guion"}
-            </button>
+            <Button type="submit" loading={generating} loadingLabel="Preparando…" icon={<Sparkles size={16} strokeWidth={1.75} />}>
+              Generar {format === "reel" ? "reel" : "guion"}
+            </Button>
           </div>
         </form>
       )}
@@ -693,11 +699,11 @@ function GenerarWizard() {
             <h2 className="font-semibold text-brand-navy">
               {generating ? "Generando guion…" : error ? "Error" : "¡Listo!"}
             </h2>
-            {generating && (
-              <span className="text-xs text-brand-blue animate-pulse">
-                {aiStatus || "Los modelos están trabajando"}
-              </span>
-            )}
+            {generating ? (
+              <AsyncStatus status={aiStatus} fallback="Los modelos están trabajando" />
+            ) : output ? (
+              <CopyButton text={output} label="Copiar guion" copiedLabel="Guion copiado" />
+            ) : null}
           </div>
           {error && (
             <div className="rounded-lg bg-rose-50 border border-rose-200 px-4 py-3 text-sm text-rose-800 mb-4">

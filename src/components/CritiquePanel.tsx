@@ -1,8 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Card, btnSecondary } from "./ui";
+import { Button, Card } from "./ui";
 import { Pencil, RefreshCw, Target } from "lucide-react";
+import { toast } from "sonner";
 
 type CritiqueData = {
   puntajes: Record<string, number>;
@@ -64,9 +65,11 @@ export default function CritiquePanel({
     setLoading(false);
     if (!res.ok) {
       setError(data.error || "Error al criticar");
+      toast.error(data.error || "Error al criticar");
       return;
     }
-    load();
+    toast.success("Crítica completada");
+    await load();
   }
 
   const latest = critiquesList[0];
@@ -88,9 +91,9 @@ export default function CritiquePanel({
             </span>
           )}
         </h3>
-        <button className={btnSecondary} onClick={run} disabled={loading || !versionId}>
-          {loading ? "Evaluando…" : latest ? <><RefreshCw size={15} strokeWidth={1.75} /> Re-evaluar</> : "Criticar esta versión"}
-        </button>
+        <Button variant="secondary" onClick={run} disabled={!versionId} loading={loading} loadingLabel="Evaluando…" icon={latest ? <RefreshCw size={15} strokeWidth={1.75} /> : undefined}>
+          {latest ? "Re-evaluar" : "Criticar esta versión"}
+        </Button>
       </div>
       <p className="text-xs text-slate-500 mb-3">
         Pase de control de calidad con rúbrica fija sobre la versión activa.

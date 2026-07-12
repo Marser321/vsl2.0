@@ -66,8 +66,14 @@ export default function LearningsPage() {
 
   async function toggle(row: Learning) {
     setBusy(row.id);
-    await fetch("/api/industry-learnings", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: row.id, active: !row.isActive }) });
+    const response = await fetch("/api/industry-learnings", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: row.id, active: !row.isActive }) });
     setBusy(null);
+    if (!response.ok) {
+      const data = await response.json();
+      toast.error(data.error || "No se pudo actualizar el aprendizaje");
+      return;
+    }
+    toast.success(row.isActive ? "Aprendizaje desactivado" : "Aprendizaje aprobado");
     await load();
   }
 

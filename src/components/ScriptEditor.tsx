@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ScriptMarkdown from "./ScriptMarkdown";
-import { Card, ConfirmDialog, btnPrimary, btnSecondary } from "./ui";
+import { Card, ConfirmDialog, CopyButton, SaveIndicator, btnPrimary, btnSecondary } from "./ui";
 import { analyzeScript, fmtTime } from "@/lib/readtime";
 import { Pencil, X } from "lucide-react";
 
@@ -299,12 +299,7 @@ export default function ScriptEditor({
             {pinnedSuggestions.map((s, i) => (
               <li key={i} className="flex items-start gap-2 text-xs text-amber-900">
                 <span className="flex-1">{s}</span>
-                <button
-                  className="shrink-0 text-amber-700 hover:underline"
-                  onClick={() => navigator.clipboard.writeText(s)}
-                >
-                  Copiar
-                </button>
+                <CopyButton text={s} variant="ghost" className="shrink-0 text-amber-700" />
                 <button
                   className="shrink-0 text-amber-700 hover:text-amber-900"
                   onClick={() => onDismissSuggestion(i)}
@@ -352,15 +347,7 @@ export default function ScriptEditor({
             {placeholders.length > 1 ? "s" : ""} — ir al siguiente
           </button>
         )}
-        <span className="ml-auto">
-          {saving
-            ? "Guardando…"
-            : justSaved
-              ? "Guardado"
-              : dirty
-                ? "Sin guardar (borrador local activo)"
-                : "Sin cambios"}
-        </span>
+        <span className="ml-auto"><SaveIndicator state={saving ? "saving" : justSaved ? "saved" : dirty ? "dirty" : "idle"} /></span>
       </div>
     </Card>
     <ConfirmDialog

@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { use, useCallback, useEffect, useState } from "react";
 import DocumentManager from "@/components/DocumentManager";
-import { Badge, Card, PageTitle, Skeleton, btnPrimary, btnSecondary, inputCls } from "@/components/ui";
+import { Badge, Button, Card, PageTitle, Skeleton, btnPrimary, btnSecondary, inputCls } from "@/components/ui";
 import { Radar, Sparkles } from "lucide-react";
+import { toast } from "sonner";
 
 type Client = {
   id: number;
@@ -36,6 +37,7 @@ export default function ClientePage({
   const [radar, setRadar] = useState<RadarDoc | null>(null);
   const [radarBusy, setRadarBusy] = useState(false);
   const [radarErr, setRadarErr] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
   const load = useCallback(async () => {
     const [c, s, docs] = await Promise.all([
@@ -66,9 +68,11 @@ export default function ClientePage({
     setRadarBusy(false);
     if (!res.ok) {
       setRadarErr(data.error || "Error al actualizar el radar");
+      toast.error(data.error || "Error al actualizar el radar");
       return;
     }
-    load();
+    toast.success("Radar actualizado");
+    await load();
   }
 
   useEffect(() => {
@@ -77,19 +81,29 @@ export default function ClientePage({
 
   async function handleSave(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    setSaving(true);
     const fd = new FormData(e.currentTarget);
-    await fetch(`/api/clients/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: fd.get("name"),
-        industry: fd.get("industry"),
-        description: fd.get("description"),
-        notes: fd.get("notes"),
-      }),
-    });
-    setEditing(false);
-    load();
+    try {
+      const response = await fetch(`/api/clients/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: fd.get("name"),
+          industry: fd.get("industry"),
+          description: fd.get("description"),
+          notes: fd.get("notes"),
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "No se pudo guardar el cliente");
+      setEditing(false);
+      toast.success("Cliente actualizado");
+      await load();
+    } catch (error) {
+      toast.error((error as Error).message);
+    } finally {
+      setSaving(false);
+    }
   }
 
   if (!client) return <div aria-label="Cargando cliente"><Skeleton className="h-8 w-56" /><Skeleton className="mt-2 h-4 w-32" /><div className="mt-6 grid grid-cols-1 gap-8 xl:grid-cols-2"><Card className="p-5"><Skeleton className="h-5 w-36" /><Skeleton className="mt-5 h-40 w-full" /></Card><Card className="p-5"><Skeleton className="h-5 w-28" /><Skeleton className="mt-5 h-40 w-full" /></Card></div></div>;
@@ -101,18 +115,19 @@ export default function ClientePage({
         subtitle={client.industry || undefined}
         actions={
           <div className="flex flex-wrap gap-2">
-            <button
-              className={btnSecondary}
+            <Button
+              variant="secondary"
               onClick={updateRadar}
-              disabled={radarBusy || !client.industry}
+              loading={radarBusy}
+              loadingLabel="Leyendo noticias…"
+              disabled={!client.industry}
+              icon={<Radar size={16} strokeWidth={1.75} />}
               title={
                 !client.industry
                   ? "Definí la industria del cliente para leer noticias del rubro"
                   : "Lee noticias recientes del rubro y genera ángulos de oportunidad"
               }
-            >
-              {radarBusy ? "Leyendo noticias…" : <><Radar size={16} strokeWidth={1.75} /> Actualizar radar</>}
-            </button>
+            >Actualizar radar</Button>
             <button className={btnSecondary} onClick={() => setEditing(!editing)}>
               {editing ? "Cancelar" : "Editar"}
             </button>
@@ -191,7 +206,7 @@ export default function ClientePage({
               />
             </div>
             <div className="md:col-span-2">
-              <button className={btnPrimary}>Guardar cambios</button>
+              <Button type="submit" loading={saving} loadingLabel="Guardando…">Guardar cambios</Button>
             </div>
           </form>
         </Card>

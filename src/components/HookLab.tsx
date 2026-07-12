@@ -1,8 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Badge, Card, btnSecondary } from "./ui";
+import { Badge, Button, Card, CopyButton } from "./ui";
 import { FlaskConical, RefreshCw } from "lucide-react";
+import { toast } from "sonner";
 
 type HookVariant = { angulo: string; texto: string };
 type HookSet = { id: number; hooks: HookVariant[]; createdAt: string };
@@ -11,7 +12,6 @@ export default function HookLab({ scriptId }: { scriptId: number }) {
   const [sets, setSets] = useState<HookSet[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [copied, setCopied] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const res = await fetch(`/api/scripts/${scriptId}/hooks`);
@@ -30,15 +30,11 @@ export default function HookLab({ scriptId }: { scriptId: number }) {
     setLoading(false);
     if (!res.ok) {
       setError(data.error || "Error al generar ganchos");
+      toast.error(data.error || "Error al generar ganchos");
       return;
     }
-    load();
-  }
-
-  function copy(texto: string) {
-    navigator.clipboard.writeText(texto);
-    setCopied(texto);
-    setTimeout(() => setCopied(null), 1500);
+    toast.success("10 ganchos listos para testear");
+    await load();
   }
 
   const latest = sets[0];
@@ -49,9 +45,9 @@ export default function HookLab({ scriptId }: { scriptId: number }) {
         <h3 className="font-semibold text-brand-navy text-sm">
           <FlaskConical className="mr-2 inline" size={16} strokeWidth={1.75} /> Hook Lab — variantes A/B del gancho
         </h3>
-        <button className={btnSecondary} onClick={generate} disabled={loading}>
-          {loading ? "Generando 10 ganchos…" : latest ? <><RefreshCw size={15} strokeWidth={1.75} /> Regenerar</> : "Generar 10 ganchos"}
-        </button>
+        <Button variant="secondary" onClick={generate} loading={loading} loadingLabel="Generando 10 ganchos…" icon={latest ? <RefreshCw size={15} strokeWidth={1.75} /> : undefined}>
+          {latest ? "Regenerar" : "Generar 10 ganchos"}
+        </Button>
       </div>
       <p className="text-xs text-slate-500 mb-3">
         Diez aperturas con ángulos distintos para testear en ads. Reusa el
@@ -71,12 +67,12 @@ export default function HookLab({ scriptId }: { scriptId: number }) {
             >
               <Badge tone="blue">{h.angulo}</Badge>
               <span className="flex-1 leading-relaxed">{h.texto}</span>
-              <button
-                onClick={() => copy(h.texto)}
-                className="text-xs text-slate-400 hover:text-brand-blue opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
-              >
-                {copied === h.texto ? "Copiado" : "Copiar"}
-              </button>
+              <CopyButton
+                text={h.texto}
+                className="shrink-0"
+                copiedLabel="Copiado"
+                variant="ghost"
+              />
             </li>
           ))}
         </ul>

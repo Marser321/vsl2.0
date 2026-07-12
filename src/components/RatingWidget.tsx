@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card, btnPrimary } from "./ui";
+import { Button, Card } from "./ui";
 import { Star } from "lucide-react";
+import { toast } from "sonner";
 
 export type VersionRating = {
   id: number;
@@ -74,9 +75,11 @@ export default function RatingWidget({
     setSaving(false);
     if (!res.ok) {
       setError(data.error || "Error al guardar la puntuación");
+      toast.error(data.error || "Error al guardar la puntuación");
       return;
     }
     setSaved(true);
+    toast.success("Puntuación guardada");
     await onRated();
   }
 
@@ -92,12 +95,14 @@ export default function RatingWidget({
     setExtracting(false);
     if (!res.ok) {
       setExtractMsg(data.error || "No se pudieron extraer aprendizajes");
+      toast.error(data.error || "No se pudieron extraer aprendizajes");
       return;
     }
     const n = Array.isArray(data.aprendizajes) ? data.aprendizajes.length : 0;
     setExtractMsg(
       `${n} aprendizaje${n === 1 ? "" : "s"} propuesto${n === 1 ? "" : "s"} — aprobalos en Aprendizajes`
     );
+    toast.success("Aprendizajes propuestos");
   }
 
   const effective = hover || score;
@@ -170,9 +175,9 @@ export default function RatingWidget({
           {error && <div className="text-xs text-rose-600">{error}</div>}
           {extractMsg && <div className="text-xs text-emerald-700">{extractMsg}</div>}
           <div className="flex items-center gap-3">
-            <button className={btnPrimary} onClick={save} disabled={saving || !score}>
-              {saving ? "Guardando…" : saved ? "Guardada — actualizar" : "Guardar puntuación"}
-            </button>
+            <Button onClick={save} disabled={!score} loading={saving} loadingLabel="Guardando…">
+              {saved ? "Guardada — actualizar" : "Guardar puntuación"}
+            </Button>
             {saved && (score <= 2 || score >= 4) && (
               <button
                 className="text-xs text-brand-blue hover:underline"

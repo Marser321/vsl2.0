@@ -46,6 +46,24 @@ body {
   overflow-x: hidden;
 }
 
+@keyframes ui-enter {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.ui-enter {
+  animation: ui-enter 200ms ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 /* Render de guiones en Markdown */
 .script-md h1 {
   font-size: 1.5rem;

@@ -3,12 +3,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Badge,
+  Button,
   Card,
   ConfirmDialog,
   EmptyState,
   KIND_LABELS,
   KIND_TONES,
-  btnPrimary,
   btnSecondary,
   inputCls,
   Skeleton,
@@ -35,6 +35,7 @@ export default function DocumentManager({ scope }: { scope: string }) {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [documentToDelete, setDocumentToDelete] = useState<Doc | null>(null);
+  const [togglingId, setTogglingId] = useState<number | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
 
   const load = useCallback(async () => {
@@ -78,12 +79,19 @@ export default function DocumentManager({ scope }: { scope: string }) {
   }
 
   async function toggleActive(doc: Doc) {
-    await fetch(`/api/documents/${doc.id}`, {
+    setTogglingId(doc.id);
+    const response = await fetch(`/api/documents/${doc.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ isActive: !doc.isActive }),
     });
-    load();
+    setTogglingId(null);
+    if (!response.ok) {
+      toast.error("No se pudo cambiar el estado del documento");
+      return;
+    }
+    toast.success(doc.isActive ? "Documento excluido del contexto" : "Documento incluido en el contexto");
+    await load();
   }
 
   async function remove() {
@@ -169,9 +177,7 @@ export default function DocumentManager({ scope }: { scope: string }) {
                 placeholder="Pegá aquí el contenido del documento (transcript, brief, guion...)"
               />
             </div>
-            <button className={btnPrimary} disabled={uploading}>
-              {uploading ? "Procesando…" : "Guardar documento"}
-            </button>
+            <Button type="submit" loading={uploading} loadingLabel="Procesando…">Guardar documento</Button>
           </form>
         </Card>
       )}
@@ -201,6 +207,7 @@ export default function DocumentManager({ scope }: { scope: string }) {
                 </span>
                 <button
                   onClick={() => toggleActive(doc)}
+                  disabled={togglingId === doc.id}
                   className="text-xs text-slate-500 hover:text-brand-blue"
                   title={
                     doc.isActive
@@ -208,7 +215,7 @@ export default function DocumentManager({ scope }: { scope: string }) {
                       : "Incluir en el contexto de generación"
                   }
                 >
-                  {doc.isActive ? "Activo" : "Inactivo"}
+                  {togglingId === doc.id ? "Actualizando…" : doc.isActive ? "Activo" : "Inactivo"}
                 </button>
                 <button
                   onClick={() => setDocumentToDelete(doc)}

@@ -39,7 +39,7 @@ export function ConfirmDialog({
         onClose();
       }}
       onClose={onClose}
-      className="m-auto w-[calc(100%-2rem)] max-w-md rounded-xl border border-slate-200 bg-white p-0 text-slate-800 shadow-2xl backdrop:bg-slate-950/40"
+      className="ui-enter m-auto w-[calc(100%-2rem)] max-w-md rounded-xl border border-slate-200 bg-white p-0 text-slate-800 shadow-2xl backdrop:bg-slate-950/40"
     >
       <div className="p-6">
         <h2 className="text-lg font-bold text-brand-navy">{title}</h2>

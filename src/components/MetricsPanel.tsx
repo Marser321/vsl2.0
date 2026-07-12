@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { BarChart3, CheckCircle2, Trophy } from "lucide-react";
 import { toast } from "sonner";
-import { Card, btnPrimary, inputCls } from "./ui";
+import { Button, Card, inputCls } from "./ui";
 import { pickBestMetric } from "@/lib/scripts/quality";
 
 const PLATFORMS = ["meta", "tiktok", "youtube", "otro"] as const;
@@ -149,8 +149,7 @@ export function MetricsPanel({ scriptId, activeVersion, promotions, onPromote }:
     setPromoting(true);
     try {
       if (!candidate) return;
-      const promoted = await onPromote(candidate.scriptVersionId);
-      if (promoted) toast.success("Guion promovido como ejemplar");
+      await onPromote(candidate.scriptVersionId);
     } catch (error) {
       toast.error((error as Error).message);
     } finally {
@@ -190,9 +189,7 @@ export function MetricsPanel({ scriptId, activeVersion, promotions, onPromote }:
               <CheckCircle2 size={14} /> Ya promovida para el cliente
             </span>
           ) : (
-            <button className={btnPrimary} onClick={promoteCandidate} disabled={promoting}>
-              {promoting ? "Promoviendo…" : "Promover como ejemplar"}
-            </button>
+            <Button onClick={promoteCandidate} loading={promoting} loadingLabel="Promoviendo…">Promover como ejemplar</Button>
           )}
         </div>
       )}
@@ -272,9 +269,7 @@ export function MetricsPanel({ scriptId, activeVersion, promotions, onPromote }:
             </label>
           </div>
           <div className="mt-3 flex items-center gap-2">
-            <button className={btnPrimary} onClick={saveMetric} disabled={saving}>
-              {saving ? "Guardando…" : "Guardar métricas"}
-            </button>
+            <Button onClick={saveMetric} loading={saving} loadingLabel="Guardando…">Guardar métricas</Button>
             {metrics.some((metric) => metric.scriptVersionId === activeVersion.id && metric.platform === platform) && (
               <span className="inline-flex items-center gap-1 text-[11px] text-emerald-700">
                 <CheckCircle2 size={13} /> Editás el snapshot existente

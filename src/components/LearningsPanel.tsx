@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Card, btnSecondary } from "./ui";
+import { Button, Card } from "./ui";
 import { BookOpen, Check } from "lucide-react";
+import { toast } from "sonner";
 
 export default function LearningsPanel({
   scriptId,
@@ -25,9 +26,11 @@ export default function LearningsPanel({
     setLoading(false);
     if (!res.ok) {
       setError(data.error || "Error al extraer aprendizajes");
+      toast.error(data.error || "Error al extraer aprendizajes");
       return;
     }
     setLearnings(data.aprendizajes);
+    toast.success("Aprendizajes enviados a revisión");
   }
 
   if (outcome === "unknown") return null;
@@ -38,9 +41,7 @@ export default function LearningsPanel({
         <h3 className="font-semibold text-brand-navy text-sm">
           <BookOpen className="mr-2 inline" size={16} strokeWidth={1.75} /> Playbook de aprendizajes
         </h3>
-        <button className={btnSecondary} onClick={extract} disabled={loading}>
-          {loading ? "Analizando el caso…" : "Extraer aprendizajes"}
-        </button>
+        <Button variant="secondary" onClick={extract} loading={loading} loadingLabel="Analizando el caso…">Extraer aprendizajes</Button>
       </div>
       <p className="text-xs text-slate-500 mb-3">
         Este guion tiene resultado conocido (

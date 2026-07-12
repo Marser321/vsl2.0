@@ -31,7 +31,7 @@ export default function RootLayout({
     <html lang="es" data-scroll-behavior="smooth" className={`${geistSans.variable} h-full antialiased`}>
       <body className="min-h-full">
         <AppShell authEnabled={process.env.REQUIRE_AUTH === "true"}>{children}</AppShell>
-        <Toaster position="bottom-right" richColors />
+        <Toaster position="bottom-right" richColors closeButton />
       </body>
     </html>
   );

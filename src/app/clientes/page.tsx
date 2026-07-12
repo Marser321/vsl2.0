@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Card, EmptyState, PageTitle, Skeleton, btnPrimary, inputCls } from "@/components/ui";
+import { Button, Card, EmptyState, PageTitle, Skeleton, btnPrimary, inputCls } from "@/components/ui";
 import { Users } from "lucide-react";
+import { toast } from "sonner";
 
 type Client = {
   id: number;
@@ -34,18 +35,26 @@ export default function ClientesPage() {
     e.preventDefault();
     setSaving(true);
     const fd = new FormData(e.currentTarget);
-    await fetch("/api/clients", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: fd.get("name"),
-        industry: fd.get("industry"),
-        description: fd.get("description"),
-      }),
-    });
-    setSaving(false);
-    setShowForm(false);
-    load();
+    try {
+      const response = await fetch("/api/clients", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: fd.get("name"),
+          industry: fd.get("industry"),
+          description: fd.get("description"),
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "No se pudo crear el cliente");
+      setShowForm(false);
+      toast.success("Cliente creado");
+      await load();
+    } catch (error) {
+      toast.error((error as Error).message);
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -86,9 +95,7 @@ export default function ClientesPage() {
               <textarea name="description" rows={2} className={inputCls} />
             </div>
             <div className="sm:col-span-2">
-              <button className={btnPrimary} disabled={saving}>
-                {saving ? "Guardando…" : "Crear cliente"}
-              </button>
+              <Button type="submit" loading={saving} loadingLabel="Guardando…">Crear cliente</Button>
             </div>
           </form>
         </Card>
