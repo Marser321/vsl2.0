@@ -56,7 +56,7 @@ export default function AppShell({
           {NAV.map((item) => {
             const Icon = item.icon;
             return (
-              <Link key={item.href} href={item.href} className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors ${pathname === item.href ? "bg-white/15 text-white" : "text-blue-100 hover:bg-white/10 hover:text-white"}`}>
+              <Link key={item.href} href={item.href} className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-sky/70 ${pathname === item.href ? "bg-white/15 text-white" : "text-blue-100 hover:bg-white/10 hover:text-white"}`}>
                 <Icon className="w-4 text-brand-sky" size={17} strokeWidth={1.75} />
                 {item.label}
               </Link>

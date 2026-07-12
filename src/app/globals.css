@@ -8,6 +8,16 @@
   --brand-ink: #2e3033;
   --brand-mist: #f3fafd;
   --brand-white: #fefefe;
+  --ok-subtle: #ecfdf5;
+  --ok: #047857;
+  --ok-border: #a7f3d0;
+  --warn-subtle: #fffbeb;
+  --warn: #b45309;
+  --warn-border: #fde68a;
+  --danger-subtle: #fff1f2;
+  --danger: #be123c;
+  --danger-strong: #9f1239;
+  --danger-border: #fecdd3;
 }
 
 @theme inline {
@@ -16,6 +26,17 @@
   --color-brand-navy: var(--brand-navy);
   --color-brand-ink: var(--brand-ink);
   --color-brand-mist: var(--brand-mist);
+  --color-brand-white: var(--brand-white);
+  --color-ok-subtle: var(--ok-subtle);
+  --color-ok: var(--ok);
+  --color-ok-border: var(--ok-border);
+  --color-warn-subtle: var(--warn-subtle);
+  --color-warn: var(--warn);
+  --color-warn-border: var(--warn-border);
+  --color-danger-subtle: var(--danger-subtle);
+  --color-danger: var(--danger);
+  --color-danger-strong: var(--danger-strong);
+  --color-danger-border: var(--danger-border);
   --font-sans: var(--font-geist-sans);
 }
 
