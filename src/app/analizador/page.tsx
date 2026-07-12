@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import ScriptMarkdown from "@/components/ScriptMarkdown";
-import { Card, PageTitle, btnPrimary, inputCls } from "@/components/ui";
+import { Card, PageTitle, btnPrimary, btnSecondary, inputCls } from "@/components/ui";
 import { Check, Microscope } from "lucide-react";
 
 type Client = { id: number; name: string };
@@ -11,17 +11,43 @@ type Client = { id: number; name: string };
 export default function AnalizadorPage() {
   const [clients, setClients] = useState<Client[]>([]);
   const [analyzing, setAnalyzing] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [sourceUrl, setSourceUrl] = useState("");
+  const [transcript, setTranscript] = useState("");
   const [output, setOutput] = useState("");
   const [savedDocId, setSavedDocId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [aiStatus, setAiStatus] = useState("");
   const outputRef = useRef<HTMLDivElement>(null);
+  const titleRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetch("/api/clients")
       .then((r) => r.json())
       .then(setClients);
   }, []);
+
+  async function handleImport() {
+    setImporting(true);
+    setError(null);
+    try {
+      const response = await fetch("/api/analyze/import-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: sourceUrl }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "No se pudo importar la URL");
+      setTranscript(data.text);
+      if (titleRef.current && !titleRef.current.value.trim()) {
+        titleRef.current.value = data.title;
+      }
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setImporting(false);
+    }
+  }
 
   async function handleAnalyze(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -92,6 +118,7 @@ export default function AnalizadorPage() {
                 Título / referencia *
               </label>
               <input
+                ref={titleRef}
                 name="title"
                 required
                 className={inputCls}
@@ -113,6 +140,29 @@ export default function AnalizadorPage() {
             </div>
           </div>
           <div>
+            <label className="mb-1 block text-xs font-semibold text-slate-600">
+              Importar desde URL
+            </label>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <input
+                type="url"
+                value={sourceUrl}
+                onChange={(event) => setSourceUrl(event.target.value)}
+                className={inputCls}
+                placeholder="https://youtube.com/watch?v=…"
+                aria-label="URL para importar"
+              />
+              <button
+                type="button"
+                className={`${btnSecondary} shrink-0`}
+                onClick={handleImport}
+                disabled={importing || !sourceUrl.trim()}
+              >
+                {importing ? "Importando…" : "Importar transcript"}
+              </button>
+            </div>
+          </div>
+          <div>
             <label className="block text-xs font-semibold text-slate-600 mb-1">
               Transcript del VSL *
             </label>
@@ -120,6 +170,8 @@ export default function AnalizadorPage() {
               name="transcript"
               required
               rows={10}
+              value={transcript}
+              onChange={(event) => setTranscript(event.target.value)}
               className={inputCls}
               placeholder="Pegá aquí el transcript completo del VSL a analizar…"
             />

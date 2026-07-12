@@ -4,6 +4,8 @@ import { load } from "cheerio";
 
 const MAX_BYTES = 2 * 1024 * 1024;
 const MAX_REDIRECTS = 4;
+const YOUTUBE_ANDROID_VERSION = "20.10.38";
+const YOUTUBE_ANDROID_USER_AGENT = `com.google.android.youtube/${YOUTUBE_ANDROID_VERSION} (Linux; U; Android 11) gzip`;
 
 function isPrivateIp(address: string) {
   if (isIP(address) === 4) {
@@ -118,11 +120,16 @@ function captionText(bytes: Uint8Array, contentType: string) {
   return $("text, p").map((_, element) => $(element).text()).get().join(" ").replace(/\s+/g, " ").trim();
 }
 
-async function extractVideoTranscript(rawHtml: string, host: string) {
-  const marker = host.includes("youtube") || host === "youtu.be" ? '"captionTracks":' : '"text_tracks":';
-  const tracks = readJsonArrayAfter(rawHtml, marker) as Array<Record<string, unknown>> | null;
+function preferredTrack(tracks: Array<Record<string, unknown>>) {
+  return tracks.find((track) => {
+    const language = String(track.languageCode ?? track.lang ?? "").toLowerCase();
+    return language === "es" || language.startsWith("es-");
+  }) ?? tracks[0];
+}
+
+async function transcriptFromTracks(tracks: Array<Record<string, unknown>> | null) {
   if (!tracks?.length) return null;
-  const preferred = tracks.find((track) => track.languageCode === "es" || track.lang === "es") ?? tracks[0];
+  const preferred = preferredTrack(tracks);
   const rawUrl = preferred.baseUrl ?? preferred.url;
   if (typeof rawUrl !== "string") return null;
   const { response, bytes } = await fetchLimited(rawUrl.replace(/\\u0026/g, "&"));
@@ -134,6 +141,73 @@ async function extractVideoTranscript(rawHtml: string, host: string) {
     language: String(preferred.languageCode ?? preferred.lang ?? "desconocido"),
     trackKind: String(preferred.kind ?? "public"),
   };
+}
+
+function youtubeVideoId(finalUrl: string) {
+  const url = new URL(finalUrl);
+  const host = url.hostname.replace(/^www\./, "");
+  const pathParts = url.pathname.split("/").filter(Boolean);
+  const candidate = host === "youtu.be"
+    ? pathParts[0]
+    : url.searchParams.get("v") ?? (pathParts[0] === "shorts" || pathParts[0] === "embed" ? pathParts[1] : null);
+  return candidate && /^[\w-]{6,20}$/.test(candidate) ? candidate : null;
+}
+
+async function youtubeAndroidTracks(rawHtml: string, finalUrl: string) {
+  const apiKey = rawHtml.match(/"INNERTUBE_API_KEY":"([^"]+)"/)?.[1];
+  const videoId = youtubeVideoId(finalUrl);
+  if (!apiKey || !videoId) return null;
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 10_000);
+  try {
+    const response = await fetch(
+      `https://www.youtube.com/youtubei/v1/player?key=${encodeURIComponent(apiKey)}&prettyPrint=false`,
+      {
+        method: "POST",
+        signal: controller.signal,
+        headers: {
+          "Content-Type": "application/json",
+          "User-Agent": YOUTUBE_ANDROID_USER_AGENT,
+          "X-Youtube-Client-Name": "3",
+          "X-Youtube-Client-Version": YOUTUBE_ANDROID_VERSION,
+        },
+        body: JSON.stringify({
+          videoId,
+          context: {
+            client: {
+              clientName: "ANDROID",
+              clientVersion: YOUTUBE_ANDROID_VERSION,
+              androidSdkVersion: 30,
+              hl: "es",
+              gl: "UY",
+            },
+          },
+          contentCheckOk: true,
+          racyCheckOk: true,
+        }),
+      }
+    );
+    if (!response.ok) return null;
+    const raw = await response.text();
+    if (new TextEncoder().encode(raw).byteLength > MAX_BYTES) return null;
+    const data = JSON.parse(raw) as {
+      captions?: { playerCaptionsTracklistRenderer?: { captionTracks?: Array<Record<string, unknown>> } };
+    };
+    return data.captions?.playerCaptionsTracklistRenderer?.captionTracks ?? null;
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function extractVideoTranscript(rawHtml: string, finalUrl: string, host: string) {
+  const marker = host.includes("youtube") || host === "youtu.be" ? '"captionTracks":' : '"text_tracks":';
+  const tracks = readJsonArrayAfter(rawHtml, marker) as Array<Record<string, unknown>> | null;
+  const direct = await transcriptFromTracks(tracks);
+  if (direct || (!host.includes("youtube") && host !== "youtu.be")) return direct;
+  return transcriptFromTracks(await youtubeAndroidTracks(rawHtml, finalUrl));
 }
 
 export async function extractPublicUrl(raw: string) {
@@ -151,7 +225,7 @@ export async function extractPublicUrl(raw: string) {
   const host = new URL(finalUrl).hostname.replace(/^www\./, "");
   const isVideo = host === "youtube.com" || host === "youtu.be" || host.endsWith(".youtube.com") || host === "vimeo.com" || host.endsWith(".vimeo.com");
   if (isVideo) {
-    const transcript = await extractVideoTranscript(rawText, host);
+    const transcript = await extractVideoTranscript(rawText, finalUrl, host);
     const text = [`Título: ${title}`, description && `Descripción: ${description}`, transcript?.text && `Transcript: ${transcript.text}`].filter(Boolean).join("\n\n");
     return {
       title,
