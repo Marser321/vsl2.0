@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { use, useEffect, useMemo, useRef, useState } from "react";
 import { analyzeScript, fmtTime } from "@/lib/readtime";
-import { AlertTriangle, ArrowLeft, Pause, Play } from "lucide-react";
+import { AlertTriangle, ArrowLeft, CheckCircle2, Pause, Play } from "lucide-react";
 import { Skeleton } from "@/components/ui";
 
 type ScriptDetail = {
@@ -18,6 +19,7 @@ export default function TeleprompterPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
+  const router = useRouter();
   const [script, setScript] = useState<ScriptDetail | null>(null);
   const [wpm, setWpm] = useState(150);
   const [playing, setPlaying] = useState(false);
@@ -41,6 +43,11 @@ export default function TeleprompterPage({
     () => (content ? analyzeScript(content, wpm) : null),
     [content, wpm]
   );
+
+  function correctSection(title: string, startSec: number, durationSec: number, flags: string[]) {
+    const instruction = `Reescribí SOLO la sección «${title}» (va de ${fmtTime(startSec)} a ${fmtTime(startSec + durationSec)}) para corregir estos problemas de retención:\n${flags.map((flag) => `- ${flag}`).join("\n")}\nMantené el resto del guion EXACTAMENTE igual y devolvé el guion completo.`;
+    router.push(`/guiones/${id}?refine=${encodeURIComponent(instruction)}`);
+  }
 
   // Auto-scroll: velocidad proporcional a wpm y tamaño de fuente
   useEffect(() => {
@@ -185,6 +192,20 @@ export default function TeleprompterPage({
                     {f}
                   </div>
                 ))}
+                {s.leakFlags.length > 0 ? (
+                  <button
+                    type="button"
+                    onClick={() => correctSection(s.title, s.startSec, s.durationSec, s.leakFlags)}
+                    className="mt-2 text-xs font-medium text-brand-sky hover:underline"
+                  >
+                    Corregir con IA
+                  </button>
+                ) : (
+                  <div className="mt-2 flex items-center gap-1.5 text-emerald-300">
+                    <CheckCircle2 size={14} strokeWidth={1.75} />
+                    Sin fugas detectadas
+                  </div>
+                )}
               </div>
             ))}
             <p className="text-slate-500 mt-3 leading-relaxed">

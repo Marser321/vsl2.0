@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Suspense, use, useCallback, useEffect, useRef, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import ScriptMarkdown from "@/components/ScriptMarkdown";
 import ScriptEditor from "@/components/ScriptEditor";
 import RatingWidget, { type VersionRating } from "@/components/RatingWidget";
@@ -63,6 +63,7 @@ function versionTooltip(v: Version): string {
 }
 
 function GuionDetail({ id }: { id: string }) {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const [script, setScript] = useState<ScriptDetail | null>(null);
   const [activeVersion, setActiveVersion] = useState<number | null>(null);
@@ -79,6 +80,7 @@ function GuionDetail({ id }: { id: string }) {
   const refineRef = useRef<HTMLTextAreaElement>(null);
   const outputRef = useRef<HTMLDivElement>(null);
   const openedFromQuery = useRef(false);
+  const refineFromQueryApplied = useRef(false);
 
   const load = useCallback(async () => {
     const data = await (await fetch(`/api/scripts/${id}`)).json();
@@ -98,6 +100,23 @@ function GuionDetail({ id }: { id: string }) {
       }
     });
   }, [load, searchParams]);
+
+  useEffect(() => {
+    if (refineFromQueryApplied.current || !script || !refineRef.current) return;
+    const rawInstruction = searchParams.get("refine");
+    if (!rawInstruction) return;
+    refineFromQueryApplied.current = true;
+    let instruction = rawInstruction;
+    try {
+      instruction = decodeURIComponent(rawInstruction);
+    } catch {
+      // useSearchParams ya puede entregar el valor decodificado.
+    }
+    refineRef.current.value = instruction;
+    refineRef.current.scrollIntoView({ block: "center" });
+    refineRef.current.focus();
+    router.replace(`/guiones/${id}`, { scroll: false });
+  }, [id, router, script, searchParams]);
 
   useEffect(() => {
     fetch("/api/settings")
