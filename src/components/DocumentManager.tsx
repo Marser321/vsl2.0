@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Badge,
   Card,
+  ConfirmDialog,
   EmptyState,
   KIND_LABELS,
   KIND_TONES,
@@ -13,6 +14,7 @@ import {
   Skeleton,
 } from "./ui";
 import { AlertTriangle, Library } from "lucide-react";
+import { toast } from "sonner";
 
 type Doc = {
   id: number;
@@ -32,6 +34,7 @@ export default function DocumentManager({ scope }: { scope: string }) {
   const [warning, setWarning] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [documentToDelete, setDocumentToDelete] = useState<Doc | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
 
   const load = useCallback(async () => {
@@ -58,10 +61,17 @@ export default function DocumentManager({ scope }: { scope: string }) {
     const data = await res.json();
     setUploading(false);
     if (!res.ok) {
-      setError(data.error || "Error al subir el documento");
+      const message = data.error || "Error al subir el documento";
+      setError(message);
+      toast.error(message);
       return;
     }
-    if (data.warning) setWarning(data.warning);
+    if (data.warning) {
+      setWarning(data.warning);
+      toast.warning(data.warning);
+    } else {
+      toast.success("Documento guardado");
+    }
     formRef.current?.reset();
     setShowForm(false);
     load();
@@ -76,10 +86,15 @@ export default function DocumentManager({ scope }: { scope: string }) {
     load();
   }
 
-  async function remove(doc: Doc) {
-    if (!confirm(`¿Eliminar "${doc.title}"? Esta acción no se puede deshacer.`))
+  async function remove() {
+    if (!documentToDelete) return;
+    const response = await fetch(`/api/documents/${documentToDelete.id}`, { method: "DELETE" });
+    if (!response.ok) {
+      toast.error("No se pudo eliminar el documento");
       return;
-    await fetch(`/api/documents/${doc.id}`, { method: "DELETE" });
+    }
+    setDocumentToDelete(null);
+    toast.success("Documento eliminado");
     load();
   }
 
@@ -196,7 +211,7 @@ export default function DocumentManager({ scope }: { scope: string }) {
                   {doc.isActive ? "Activo" : "Inactivo"}
                 </button>
                 <button
-                  onClick={() => remove(doc)}
+                  onClick={() => setDocumentToDelete(doc)}
                   className="text-xs text-slate-400 hover:text-rose-600"
                 >
                   Eliminar
@@ -206,6 +221,15 @@ export default function DocumentManager({ scope }: { scope: string }) {
           </ul>
         )}
       </Card>
+      <ConfirmDialog
+        open={documentToDelete !== null}
+        onClose={() => setDocumentToDelete(null)}
+        onConfirm={remove}
+        title="Eliminar documento"
+        message={<>¿Eliminar <strong>“{documentToDelete?.title}”</strong>? Esta acción no se puede deshacer.</>}
+        confirmLabel="Eliminar"
+        destructive
+      />
     </div>
   );
 }

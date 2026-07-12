@@ -12,6 +12,8 @@ import LearningsPanel from "@/components/LearningsPanel";
 import {
   Badge,
   Card,
+  ConfirmDialog,
+  Input,
   PageTitle,
   Skeleton,
   btnPrimary,
@@ -20,6 +22,7 @@ import {
 } from "@/components/ui";
 import { slugify } from "@/lib/templates";
 import { ArrowLeft, ArrowRight, Check, Download, LayoutTemplate, Pencil, Play, Star } from "lucide-react";
+import { toast } from "sonner";
 
 type Usage = {
   inputTokens: number;
@@ -71,6 +74,8 @@ function GuionDetail({ id }: { id: string }) {
   const [aiStatus, setAiStatus] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [promoted, setPromoted] = useState(false);
+  const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
+  const [templateTitle, setTemplateTitle] = useState("");
   const refineRef = useRef<HTMLTextAreaElement>(null);
   const outputRef = useRef<HTMLDivElement>(null);
   const openedFromQuery = useRef(false);
@@ -178,8 +183,11 @@ function GuionDetail({ id }: { id: string }) {
 
   async function saveAsTemplate() {
     if (!current || !script) return;
-    const title = prompt("Nombre de la plantilla:", script.title);
-    if (!title) return;
+    const title = templateTitle.trim();
+    if (!title) {
+      toast.error("Ingresá un nombre para la plantilla");
+      return;
+    }
     const res = await fetch("/api/templates", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -194,7 +202,12 @@ function GuionDetail({ id }: { id: string }) {
       }),
     });
     const data = await res.json();
-    alert(res.ok ? `Plantilla "${title}" creada — la tenés en Plantillas.` : data.error || "Error al crear la plantilla");
+    if (res.ok) {
+      toast.success(`Plantilla "${title}" creada`);
+      setTemplateDialogOpen(false);
+    } else {
+      toast.error(data.error || "Error al crear la plantilla");
+    }
   }
 
   function exportMd() {
@@ -248,7 +261,10 @@ function GuionDetail({ id }: { id: string }) {
             </button>
             <button
               className={btnSecondary}
-              onClick={saveAsTemplate}
+              onClick={() => {
+                setTemplateTitle(script.title);
+                setTemplateDialogOpen(true);
+              }}
               title="Guardar la versión activa como plantilla reutilizable"
             >
               <LayoutTemplate size={16} strokeWidth={1.75} /> Plantilla
@@ -435,6 +451,16 @@ function GuionDetail({ id }: { id: string }) {
           <ArrowLeft className="mr-1 inline" size={15} strokeWidth={1.75} /> Volver a guiones
         </Link>
       </div>
+      <ConfirmDialog
+        open={templateDialogOpen}
+        onClose={() => setTemplateDialogOpen(false)}
+        onConfirm={saveAsTemplate}
+        title="Guardar como plantilla"
+        message="Elegí un nombre claro para encontrarla y reutilizarla después."
+        confirmLabel="Guardar plantilla"
+      >
+        <Input value={templateTitle} onChange={(event) => setTemplateTitle(event.target.value)} autoFocus aria-label="Nombre de la plantilla" />
+      </ConfirmDialog>
     </div>
   );
 }

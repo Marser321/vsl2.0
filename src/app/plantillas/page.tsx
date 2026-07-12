@@ -4,9 +4,10 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import ScriptMarkdown from "@/components/ScriptMarkdown";
-import { Badge, Card, EmptyState, PageTitle, Skeleton, btnPrimary, btnSecondary, inputCls } from "@/components/ui";
+import { Badge, Card, ConfirmDialog, EmptyState, PageTitle, Skeleton, btnPrimary, btnSecondary, inputCls } from "@/components/ui";
 import { analyzeScript, fmtTime } from "@/lib/readtime";
 import { Clapperboard, LayoutTemplate, Pencil, Smartphone, Sparkles, X } from "lucide-react";
+import { toast } from "sonner";
 
 type Template = {
   id: number;
@@ -38,6 +39,7 @@ function TemplateCard({
   const [clientId, setClientId] = useState<number | "">("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   const stats = useMemo(() => analyzeScript(template.contentMd, 150), [template.contentMd]);
 
@@ -63,12 +65,18 @@ function TemplateCard({
   }
 
   async function remove() {
-    if (!confirm(`¿Eliminar la plantilla "${template.title}"?`)) return;
-    await fetch(`/api/templates/${template.id}`, { method: "DELETE" });
+    const response = await fetch(`/api/templates/${template.id}`, { method: "DELETE" });
+    if (!response.ok) {
+      toast.error("No se pudo eliminar la plantilla");
+      return;
+    }
+    setDeleteOpen(false);
+    toast.success("Plantilla eliminada");
     onDeleted();
   }
 
   return (
+    <>
     <Card className="p-5">
       <div className="flex items-start gap-2">
         <div className="flex-1">
@@ -90,7 +98,7 @@ function TemplateCard({
         {!template.isBuiltin && (
           <button
             className="text-xs text-slate-400 hover:text-rose-600 shrink-0"
-            onClick={remove}
+            onClick={() => setDeleteOpen(true)}
             title="Eliminar plantilla"
           >
             <X size={14} strokeWidth={1.75} />
@@ -132,6 +140,8 @@ function TemplateCard({
         </div>
       )}
     </Card>
+    <ConfirmDialog open={deleteOpen} onClose={() => setDeleteOpen(false)} onConfirm={remove} title="Eliminar plantilla" message={<>¿Eliminar la plantilla <strong>“{template.title}”</strong>? Esta acción no se puede deshacer.</>} confirmLabel="Eliminar" destructive />
+    </>
   );
 }
 

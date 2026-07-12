@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ScriptMarkdown from "./ScriptMarkdown";
-import { Card, btnPrimary, btnSecondary } from "./ui";
+import { Card, ConfirmDialog, btnPrimary, btnSecondary } from "./ui";
 import { analyzeScript, fmtTime } from "@/lib/readtime";
 import { Pencil, X } from "lucide-react";
 
@@ -67,6 +67,7 @@ export default function ScriptEditor({
   const [error, setError] = useState<string | null>(null);
   const [restorable, setRestorable] = useState<{ content: string; savedAt: number } | null>(null);
   const [stats, setStats] = useState<{ words: number; sec: number } | null>(null);
+  const [discardOpen, setDiscardOpen] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const dirty = draft !== baseline;
@@ -153,15 +154,22 @@ export default function ScriptEditor({
     }
   }, [dirty, draft, key, onSaved, saving, scriptId, version.id]);
 
-  const close = useCallback(() => {
-    if (dirty && !confirm("¿Descartar los cambios sin guardar?")) return;
+  const finishClose = useCallback(() => {
     try {
       localStorage.removeItem(key);
     } catch {
       // sin acceso a localStorage: no es crítico
     }
     onCancel();
-  }, [dirty, key, onCancel]);
+  }, [key, onCancel]);
+
+  const close = useCallback(() => {
+    if (dirty) {
+      setDiscardOpen(true);
+      return;
+    }
+    finishClose();
+  }, [dirty, finishClose]);
 
   // Atajos: Cmd/Ctrl+S guarda, Esc cierra.
   useEffect(() => {
@@ -215,6 +223,7 @@ export default function ScriptEditor({
   const editingOldVersion = version.versionNumber !== latestVersionNumber;
 
   return (
+    <>
     <Card className="p-5 mb-6">
       <div className="flex items-center justify-between mb-3">
         <div className="flex rounded-lg border border-slate-200 overflow-hidden text-xs font-medium">
@@ -354,5 +363,15 @@ export default function ScriptEditor({
         </span>
       </div>
     </Card>
+    <ConfirmDialog
+      open={discardOpen}
+      onClose={() => setDiscardOpen(false)}
+      onConfirm={finishClose}
+      title="Descartar cambios"
+      message="Tenés cambios sin guardar. Si cerrás el editor, se descartará el borrador local de esta versión."
+      confirmLabel="Descartar"
+      destructive
+    />
+    </>
   );
 }

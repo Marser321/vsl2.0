@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Badge, Card, EmptyState, PageTitle, Skeleton, btnPrimary, btnSecondary } from "@/components/ui";
+import { Badge, Card, ConfirmDialog, EmptyState, PageTitle, Skeleton, btnPrimary, btnSecondary } from "@/components/ui";
 import { BarChart3, Brain, Lightbulb, Star } from "lucide-react";
+import { toast } from "sonner";
 
 type Learning = { id: number; industry: string; subindustry: string | null; content: string; evidenceCount: number; isActive: boolean; createdAt: string };
 
@@ -33,6 +34,7 @@ export default function LearningsPage() {
   const [regenMsg, setRegenMsg] = useState<string | null>(null);
   const [loadingRows, setLoadingRows] = useState(true);
   const [loadingStats, setLoadingStats] = useState(true);
+  const [regenDialogOpen, setRegenDialogOpen] = useState(false);
 
   async function load() {
     try {
@@ -67,22 +69,21 @@ export default function LearningsPage() {
   }
 
   async function regenerate() {
-    if (
-      !confirm(
-        "Regenerar las preferencias del equipo sintetiza las puntuaciones en un documento global que entra al contexto de TODAS las generaciones. Invalida el caché de prompt una vez (la próxima generación es algo más cara/lenta). ¿Continuar?"
-      )
-    )
-      return;
+    setRegenDialogOpen(false);
     setRegenBusy(true);
     setRegenMsg(null);
     const res = await fetch("/api/team-preferences", { method: "POST" });
     const data = await res.json();
     setRegenBusy(false);
     if (!res.ok) {
-      setRegenMsg(data.error || "Error al regenerar");
+      const message = data.error || "Error al regenerar";
+      setRegenMsg(message);
+      toast.error(message);
       return;
     }
-    setRegenMsg(`Preferencias regeneradas a partir de ${data.basedOn} puntuaciones.`);
+    const message = `Preferencias regeneradas a partir de ${data.basedOn} puntuaciones.`;
+    setRegenMsg(message);
+    toast.success(message);
     loadStats();
   }
 
@@ -178,7 +179,7 @@ export default function LearningsPage() {
           </div>
           <button
             className={btnPrimary}
-            onClick={regenerate}
+            onClick={() => setRegenDialogOpen(true)}
             disabled={regenBusy || (prefs !== null && prefs.totalRatings < (prefs.minRatings ?? 5))}
             title={
               prefs !== null && prefs.totalRatings < (prefs.minRatings ?? 5)
@@ -224,6 +225,14 @@ export default function LearningsPage() {
           </ul>
         )}
       </Card>
+      <ConfirmDialog
+        open={regenDialogOpen}
+        onClose={() => setRegenDialogOpen(false)}
+        onConfirm={regenerate}
+        title="Regenerar preferencias"
+        message="Se sintetizarán las puntuaciones en un documento global que entra al contexto de todas las generaciones. Esto invalida el caché de prompt una vez, por lo que la próxima generación puede ser algo más lenta."
+        confirmLabel="Regenerar"
+      />
     </div>
   );
 }
