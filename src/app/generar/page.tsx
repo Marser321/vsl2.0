@@ -24,6 +24,7 @@ type Doc = {
   clientId: number | null;
   tokenCount: number;
   avgRating?: number | null;
+  bestHookRate?: number | null;
   preselect?: boolean;
 };
 
@@ -607,6 +608,9 @@ function GenerarWizard() {
                         >
                           <Star className="inline" size={12} strokeWidth={1.75} /> {d.avgRating.toFixed(1)}
                         </span>
+                      )}
+                      {d.bestHookRate != null && (
+                        <Badge tone="blue">hook {d.bestHookRate.toFixed(1)}%</Badge>
                       )}
                       {d.clientId === null && (
                         <span className="text-[10px] text-slate-400">

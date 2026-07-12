@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/db";
-import { clients, frameworks, scriptRatings, scripts, scriptVersions } from "@/db/schema";
+import { clients, frameworks, scriptMetrics, scriptRatings, scripts, scriptVersions } from "@/db/schema";
 import { and, eq, sql, type SQL } from "drizzle-orm";
 import { guardAdminRequest } from "@/lib/auth/session";
 
@@ -24,8 +24,17 @@ export async function GET(req: NextRequest) {
   const nCol = sql<number>`count(*)`;
   const avgCol = sql<number>`avg(${scriptRatings.score})`;
   const wonCol = sql<number>`avg(case when ${scripts.outcome} = 'won' then 1.0 else 0.0 end)`;
+  const avgHookRateCol = sql<number>`avg(${scriptMetrics.hookRate})`;
+  const avgCtrCol = sql<number>`avg(${scriptMetrics.ctr})`;
 
-  const [byFrameworkRaw, byProviderRaw, byFormatRaw, totalRaw] = await Promise.all([
+  const [
+    byFrameworkRaw,
+    byProviderRaw,
+    byFormatRaw,
+    totalRaw,
+    metricsByFrameworkRaw,
+    metricsByProviderRaw,
+  ] = await Promise.all([
     db
       .select({
         frameworkId: scripts.frameworkId,
@@ -65,6 +74,34 @@ export async function GET(req: NextRequest) {
       .innerJoin(scripts, eq(scriptVersions.scriptId, scripts.id))
       .leftJoin(clients, eq(scripts.clientId, clients.id))
       .where(where),
+    db
+      .select({
+        frameworkId: scripts.frameworkId,
+        name: frameworks.name,
+        n: nCol,
+        avgHookRate: avgHookRateCol,
+        avgCtr: avgCtrCol,
+      })
+      .from(scriptMetrics)
+      .innerJoin(scriptVersions, eq(scriptMetrics.scriptVersionId, scriptVersions.id))
+      .innerJoin(scripts, eq(scriptVersions.scriptId, scripts.id))
+      .leftJoin(clients, eq(scripts.clientId, clients.id))
+      .leftJoin(frameworks, eq(scripts.frameworkId, frameworks.id))
+      .where(where)
+      .groupBy(scripts.frameworkId, frameworks.name),
+    db
+      .select({
+        provider: scripts.provider,
+        n: nCol,
+        avgHookRate: avgHookRateCol,
+        avgCtr: avgCtrCol,
+      })
+      .from(scriptMetrics)
+      .innerJoin(scriptVersions, eq(scriptMetrics.scriptVersionId, scriptVersions.id))
+      .innerJoin(scripts, eq(scriptVersions.scriptId, scripts.id))
+      .leftJoin(clients, eq(scripts.clientId, clients.id))
+      .where(where)
+      .groupBy(scripts.provider),
   ]);
 
   const num = (v: unknown) => Number(v ?? 0);
@@ -88,6 +125,19 @@ export async function GET(req: NextRequest) {
       n: num(r.n),
       avgScore: num(r.avgScore),
       wonRate: num(r.wonRate),
+    })),
+    metricsByFramework: metricsByFrameworkRaw.map((row) => ({
+      frameworkId: row.frameworkId,
+      name: row.name ?? "IA eligió estructura",
+      n: num(row.n),
+      avgHookRate: num(row.avgHookRate),
+      avgCtr: num(row.avgCtr),
+    })),
+    metricsByProvider: metricsByProviderRaw.map((row) => ({
+      provider: row.provider,
+      n: num(row.n),
+      avgHookRate: num(row.avgHookRate),
+      avgCtr: num(row.avgCtr),
     })),
   });
 }

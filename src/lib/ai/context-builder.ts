@@ -16,7 +16,7 @@ import {
   type ScriptFormat,
 } from "@/db/schema";
 import { and, asc, eq, isNull, inArray, sql } from "drizzle-orm";
-import { scriptRatings, scriptVersions } from "@/db/schema";
+import { scriptMetrics, scriptRatings, scriptVersions } from "@/db/schema";
 import { getSetting } from "@/lib/settings";
 import type { ChatMessage, SystemBlock } from "./provider";
 import {
@@ -193,6 +193,8 @@ export async function buildContext(args: {
 export type SuggestedDocument = Document & {
   /** Promedio de puntuación del equipo sobre el guion de origen (si existe). */
   avgRating: number | null;
+  /** Mejor hook rate real entre las versiones del guion de origen. */
+  bestHookRate: number | null;
   /** Si el wizard debe dejarlo tildado por defecto (los mal puntuados no). */
   preselect: boolean;
 };
@@ -227,6 +229,7 @@ export async function suggestedDocuments(clientId: number): Promise<SuggestedDoc
     ...new Set(all.map((d) => d.sourceScriptId).filter((x): x is number => x !== null)),
   ];
   const avgByScript = new Map<number, number>();
+  const bestHookByScript = new Map<number, number>();
   if (sourceIds.length) {
     const rows = await db
       .select({
@@ -238,10 +241,24 @@ export async function suggestedDocuments(clientId: number): Promise<SuggestedDoc
       .where(inArray(scriptVersions.scriptId, sourceIds))
       .groupBy(scriptVersions.scriptId);
     for (const r of rows) avgByScript.set(r.scriptId, Number(r.avg));
+
+    const metricRows = await db
+      .select({
+        scriptId: scriptVersions.scriptId,
+        bestHookRate: sql<number>`max(${scriptMetrics.hookRate})`,
+      })
+      .from(scriptMetrics)
+      .innerJoin(scriptVersions, eq(scriptMetrics.scriptVersionId, scriptVersions.id))
+      .where(inArray(scriptVersions.scriptId, sourceIds))
+      .groupBy(scriptVersions.scriptId);
+    for (const row of metricRows) {
+      if (row.bestHookRate !== null) bestHookByScript.set(row.scriptId, Number(row.bestHookRate));
+    }
   }
 
   return all.map((d) => {
     const avgRating = d.sourceScriptId != null ? (avgByScript.get(d.sourceScriptId) ?? null) : null;
-    return { ...d, avgRating, preselect: avgRating === null || avgRating >= 3 };
+    const bestHookRate = d.sourceScriptId != null ? (bestHookByScript.get(d.sourceScriptId) ?? null) : null;
+    return { ...d, avgRating, bestHookRate, preselect: avgRating === null || avgRating >= 3 };
   });
 }

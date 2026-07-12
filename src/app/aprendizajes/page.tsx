@@ -8,11 +8,14 @@ import { toast } from "sonner";
 type Learning = { id: number; industry: string; subindustry: string | null; content: string; evidenceCount: number; isActive: boolean; createdAt: string };
 
 type StatRow = { n: number; avgScore: number; wonRate: number };
+type MetricStatRow = { n: number; avgHookRate: number; avgCtr: number };
 type Stats = {
   totalRatings: number;
   byFramework: Array<StatRow & { frameworkId: number | null; name: string }>;
   byProvider: Array<StatRow & { provider: string }>;
   byFormat: Array<StatRow & { format: string }>;
+  metricsByFramework: Array<MetricStatRow & { frameworkId: number | null; name: string }>;
+  metricsByProvider: Array<MetricStatRow & { provider: string }>;
 };
 type PrefsInfo = {
   doc: { id: number; title: string; createdAt: string; tokenCount: number } | null;
@@ -163,6 +166,55 @@ export default function LearningsPage() {
               </div>
             </div>
           </div>
+        </Card>
+      )}
+
+      {!loadingStats && stats && (
+        <Card className="p-5 mb-6">
+          <h2 className="font-semibold text-brand-navy text-sm mb-3">
+            <BarChart3 className="mr-2 inline" size={16} strokeWidth={1.75} /> Métricas reales
+          </h2>
+          {stats.metricsByFramework.length === 0 && stats.metricsByProvider.length === 0 ? (
+            <p className="text-sm text-slate-400">Todavía no hay métricas de campañas cargadas.</p>
+          ) : (
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+              <div>
+                <div className="text-xs font-semibold text-slate-500 mb-2">Por framework</div>
+                <Table>
+                  <thead><tr><th>Framework</th><th className="text-right">n</th><th className="text-right">Hook medio</th><th className="text-right">CTR medio</th></tr></thead>
+                  <tbody>
+                    {stats.metricsByFramework.map((row) => (
+                      <tr key={`${row.frameworkId}`}>
+                        <td>{row.name}</td>
+                        <td className="text-right text-xs text-slate-400">{row.n}</td>
+                        <td className="text-right font-semibold text-brand-navy">{row.avgHookRate.toFixed(1)}%</td>
+                        <td className="text-right text-slate-600">{row.avgCtr.toFixed(1)}%</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </Table>
+              </div>
+              <div>
+                <div className="text-xs font-semibold text-slate-500 mb-2">Por proveedor</div>
+                <Table>
+                  <thead><tr><th>Proveedor</th><th className="text-right">n</th><th className="text-right">Hook medio</th><th className="text-right">CTR medio</th></tr></thead>
+                  <tbody>
+                    {stats.metricsByProvider.map((row) => (
+                      <tr key={row.provider}>
+                        <td>{row.provider}</td>
+                        <td className="text-right text-xs text-slate-400">{row.n}</td>
+                        <td className="text-right font-semibold text-brand-navy">{row.avgHookRate.toFixed(1)}%</td>
+                        <td className="text-right text-slate-600">{row.avgCtr.toFixed(1)}%</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </Table>
+              </div>
+            </div>
+          )}
+          <p className="mt-3 text-[11px] text-slate-400">
+            Fuente: métricas cargadas a mano desde Meta/TikTok.
+          </p>
         </Card>
       )}
 
