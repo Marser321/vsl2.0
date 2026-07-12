@@ -18,6 +18,7 @@ import {
   inputCls,
 } from "@/components/ui";
 import { slugify } from "@/lib/templates";
+import { ArrowLeft, ArrowRight, Check, Download, LayoutTemplate, Pencil, Play, Star } from "lucide-react";
 
 type Usage = {
   inputTokens: number;
@@ -192,7 +193,7 @@ function GuionDetail({ id }: { id: string }) {
       }),
     });
     const data = await res.json();
-    alert(res.ok ? `✓ Plantilla "${title}" creada — la tenés en Plantillas.` : data.error || "Error al crear la plantilla");
+    alert(res.ok ? `Plantilla "${title}" creada — la tenés en Plantillas.` : data.error || "Error al crear la plantilla");
   }
 
   function exportMd() {
@@ -232,31 +233,31 @@ function GuionDetail({ id }: { id: string }) {
           <div className="flex gap-2">
             {!editing && (
               <button className={btnSecondary} onClick={() => setEditing(true)}>
-                ✎ Editar guion
+                <Pencil size={16} strokeWidth={1.75} /> Editar guion
               </button>
             )}
             <Link
               href={`/guiones/${id}/teleprompter`}
               className={btnSecondary}
             >
-              ▶ Teleprompter
+              <Play size={16} strokeWidth={1.75} /> Teleprompter
             </Link>
             <button className={btnSecondary} onClick={exportMd}>
-              ⬇ Exportar .md
+              <Download size={16} strokeWidth={1.75} /> Exportar .md
             </button>
             <button
               className={btnSecondary}
               onClick={saveAsTemplate}
               title="Guardar la versión activa como plantilla reutilizable"
             >
-              ▤ Plantilla
+              <LayoutTemplate size={16} strokeWidth={1.75} /> Plantilla
             </button>
             {script.outcome !== "won" ? (
               <button className={btnPrimary} onClick={() => markOutcome("won")}>
-                ★ Marcar ganador
+                <Star size={16} strokeWidth={1.75} /> Marcar ganador
               </button>
             ) : (
-              <Badge tone="green">★ Guion ganador</Badge>
+              <Badge tone="green"><Star className="inline" size={13} strokeWidth={1.75} /> Guion ganador</Badge>
             )}
           </div>
         }
@@ -280,7 +281,7 @@ function GuionDetail({ id }: { id: string }) {
       )}
       {promoted && (
         <Card className="p-4 mb-4 text-sm text-emerald-800 bg-emerald-50 border-emerald-200">
-          ✓ Promovido a la biblioteca como guion ganador.
+          <Check className="mr-1 inline" size={15} strokeWidth={1.75} /> Promovido a la biblioteca como guion ganador.
         </Card>
       )}
 
@@ -303,7 +304,7 @@ function GuionDetail({ id }: { id: string }) {
             }`}
           >
             v{v.versionNumber}
-            {v.source === "manual" && <span className="ml-1">✎</span>}
+            {v.source === "manual" && <Pencil className="ml-1 inline" size={12} strokeWidth={1.75} />}
           </button>
         ))}
         {cachePct !== null && (
@@ -399,7 +400,7 @@ function GuionDetail({ id }: { id: string }) {
             disabled={refining || editing}
             title={editing ? "Cerrá el editor para refinar" : undefined}
           >
-            {refining ? "Refinando…" : "Refinar → nueva versión"}
+            {refining ? "Refinando…" : <>Refinar <ArrowRight size={15} strokeWidth={1.75} /> nueva versión</>}
           </button>
           {script.outcome !== "lost" && script.outcome !== "won" && (
             <button
@@ -430,7 +431,7 @@ function GuionDetail({ id }: { id: string }) {
 
       <div className="mt-6">
         <Link href="/guiones" className="text-sm text-brand-blue hover:underline">
-          ← Volver a guiones
+          <ArrowLeft className="mr-1 inline" size={15} strokeWidth={1.75} /> Volver a guiones
         </Link>
       </div>
     </div>

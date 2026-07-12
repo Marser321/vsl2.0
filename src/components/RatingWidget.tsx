@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Card, btnPrimary } from "./ui";
+import { Star } from "lucide-react";
 
 export type VersionRating = {
   id: number;
@@ -95,7 +96,7 @@ export default function RatingWidget({
     }
     const n = Array.isArray(data.aprendizajes) ? data.aprendizajes.length : 0;
     setExtractMsg(
-      `✓ ${n} aprendizaje${n === 1 ? "" : "s"} propuesto${n === 1 ? "" : "s"} — aprobalos en Aprendizajes`
+      `${n} aprendizaje${n === 1 ? "" : "s"} propuesto${n === 1 ? "" : "s"} — aprobalos en Aprendizajes`
     );
   }
 
@@ -122,7 +123,7 @@ export default function RatingWidget({
               }`}
               title={`${n}/5`}
             >
-              ★
+              <Star size={22} fill={n <= score ? "currentColor" : "none"} strokeWidth={1.75} />
             </button>
           ))}
         </div>
@@ -170,7 +171,7 @@ export default function RatingWidget({
           {extractMsg && <div className="text-xs text-emerald-700">{extractMsg}</div>}
           <div className="flex items-center gap-3">
             <button className={btnPrimary} onClick={save} disabled={saving || !score}>
-              {saving ? "Guardando…" : saved ? "✓ Guardada — actualizar" : "Guardar puntuación"}
+              {saving ? "Guardando…" : saved ? "Guardada — actualizar" : "Guardar puntuación"}
             </button>
             {saved && (score <= 2 || score >= 4) && (
               <button

@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { ArrowLeft, Clapperboard, Smartphone, Sparkles, Star, Zap } from "lucide-react";
 import ScriptMarkdown from "@/components/ScriptMarkdown";
 import {
   Badge,
@@ -298,7 +299,7 @@ function GenerarWizard() {
                   : "border-slate-200 hover:border-brand-blue"
               }`}
             >
-              <div className="text-sm font-semibold text-brand-navy">🎬 VSL</div>
+              <div className="flex items-center gap-2 text-sm font-semibold text-brand-navy"><Clapperboard size={17} strokeWidth={1.75} />VSL</div>
               <div className="text-xs text-slate-500 mt-1">
                 Video de ventas largo. Se mide en minutos: historia, mecanismo,
                 oferta y cierre completos.
@@ -316,7 +317,7 @@ function GenerarWizard() {
                   : "border-slate-200 hover:border-brand-blue"
               }`}
             >
-              <div className="text-sm font-semibold text-brand-navy">📱 Reel</div>
+              <div className="flex items-center gap-2 text-sm font-semibold text-brand-navy"><Smartphone size={17} strokeWidth={1.75} />Reel</div>
               <div className="text-xs text-slate-500 mt-1">
                 Vertical corto (15–90 segundos) para TikTok, Reels o Shorts.
                 Guion por beats con visual y texto en pantalla.
@@ -360,7 +361,7 @@ function GenerarWizard() {
             </div>
           )}
           <button className={`${btnSecondary} mt-4`} onClick={() => setStep(1)}>
-            ← Volver
+            <ArrowLeft size={16} strokeWidth={1.75} /> Volver
           </button>
         </Card>
       )}
@@ -402,7 +403,7 @@ function GenerarWizard() {
                         className="text-[11px] text-amber-600 font-medium shrink-0"
                         title="Puntuación promedio del equipo con este framework"
                       >
-                        ★ {stat.avgScore.toFixed(1)} · {stat.n}
+                        <Star className="inline" size={12} strokeWidth={1.75} /> {stat.avgScore.toFixed(1)} · {stat.n}
                       </span>
                     )}
                   </div>
@@ -423,7 +424,7 @@ function GenerarWizard() {
             </button>
           </div>
           <button className={`${btnSecondary} mt-4`} onClick={() => setStep(2)}>
-            ← Volver
+            <ArrowLeft size={16} strokeWidth={1.75} /> Volver
           </button>
         </Card>
       )}
@@ -440,7 +441,7 @@ function GenerarWizard() {
                 disabled={autofilling}
                 title="La IA lee los documentos del cliente y pre-llena el brief"
               >
-                {autofilling ? "Leyendo documentos…" : "⚡ Pre-llenar con IA"}
+                {autofilling ? "Leyendo documentos…" : <><Zap size={16} strokeWidth={1.75} /> Pre-llenar con IA</>}
               </button>
             </div>
             {autofillError && (
@@ -450,7 +451,7 @@ function GenerarWizard() {
             )}
             {autofill && (
               <div className="rounded-lg bg-blue-50 border border-blue-200 px-4 py-2 text-xs text-brand-navy">
-                ⚡ Brief pre-llenado desde los documentos del cliente — revisá y
+                <Zap className="mr-1 inline" size={14} strokeWidth={1.75} /> Brief pre-llenado desde los documentos del cliente — revisá y
                 corregí antes de generar.
               </div>
             )}
@@ -604,7 +605,7 @@ function GenerarWizard() {
                           className={`text-[11px] font-medium ${d.avgRating >= 3 ? "text-amber-600" : "text-rose-500"}`}
                           title="Puntuación promedio del equipo al guion de origen"
                         >
-                          ★ {d.avgRating.toFixed(1)}
+                          <Star className="inline" size={12} strokeWidth={1.75} /> {d.avgRating.toFixed(1)}
                         </span>
                       )}
                       {d.clientId === null && (
@@ -628,10 +629,10 @@ function GenerarWizard() {
               className={btnSecondary}
               onClick={() => setStep(3)}
             >
-              ← Volver
+              <ArrowLeft size={16} strokeWidth={1.75} /> Volver
             </button>
             <button type="submit" className={btnPrimary}>
-              ✦ Generar {format === "reel" ? "reel" : "guion"}
+              <Sparkles size={16} strokeWidth={1.75} /> Generar {format === "reel" ? "reel" : "guion"}
             </button>
           </div>
         </form>
@@ -656,7 +657,7 @@ function GenerarWizard() {
                 className={`${btnSecondary} mt-3 block`}
                 onClick={() => setStep(4)}
               >
-                ← Volver al brief
+                <ArrowLeft size={16} strokeWidth={1.75} /> Volver al brief
               </button>
             </div>
           )}

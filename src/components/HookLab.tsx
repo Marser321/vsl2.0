@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Badge, Card, btnSecondary } from "./ui";
+import { FlaskConical } from "lucide-react";
 
 type HookVariant = { angulo: string; texto: string };
 type HookSet = { id: number; hooks: HookVariant[]; createdAt: string };
@@ -46,7 +47,7 @@ export default function HookLab({ scriptId }: { scriptId: number }) {
     <Card className="p-5">
       <div className="flex items-center justify-between mb-2">
         <h3 className="font-semibold text-brand-navy text-sm">
-          🧪 Hook Lab — variantes A/B del gancho
+          <FlaskConical className="mr-2 inline" size={16} strokeWidth={1.75} /> Hook Lab — variantes A/B del gancho
         </h3>
         <button className={btnSecondary} onClick={generate} disabled={loading}>
           {loading ? "Generando 10 ganchos…" : latest ? "↻ Regenerar" : "Generar 10 ganchos"}
@@ -74,7 +75,7 @@ export default function HookLab({ scriptId }: { scriptId: number }) {
                 onClick={() => copy(h.texto)}
                 className="text-xs text-slate-400 hover:text-brand-blue opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
               >
-                {copied === h.texto ? "✓ Copiado" : "Copiar"}
+                {copied === h.texto ? "Copiado" : "Copiar"}
               </button>
             </li>
           ))}

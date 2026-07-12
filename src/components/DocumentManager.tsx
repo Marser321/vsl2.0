@@ -10,6 +10,7 @@ import {
   btnSecondary,
   inputCls,
 } from "./ui";
+import { AlertTriangle } from "lucide-react";
 
 type Doc = {
   id: number;
@@ -88,7 +89,7 @@ export default function DocumentManager({ scope }: { scope: string }) {
 
       {warning && (
         <div className="rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800">
-          ⚠ {warning}
+          <AlertTriangle className="mr-1 inline" size={16} strokeWidth={1.75} /> {warning}
         </div>
       )}
       {error && (

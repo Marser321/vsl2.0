@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { use, useEffect, useMemo, useRef, useState } from "react";
 import { analyzeScript, fmtTime } from "@/lib/readtime";
+import { AlertTriangle, ArrowLeft, Pause, Play } from "lucide-react";
 
 type ScriptDetail = {
   id: number;
@@ -85,7 +86,7 @@ export default function TeleprompterPage({
           href={`/guiones/${id}`}
           className="text-slate-300 hover:text-white"
         >
-          ← Salir
+          <ArrowLeft className="mr-1 inline" size={16} strokeWidth={1.75} /> Salir
         </Link>
         <span className="font-semibold truncate">{script.title}</span>
         <span className="text-slate-400 text-xs">
@@ -126,7 +127,7 @@ export default function TeleprompterPage({
             onClick={() => setPlaying(!playing)}
             className="rounded-lg bg-brand-blue px-5 py-2 font-semibold hover:bg-blue-600"
           >
-            {playing ? "⏸ Pausa" : "▶ Reproducir"}
+            {playing ? <><Pause size={17} strokeWidth={1.75} /> Pausa</> : <><Play size={17} strokeWidth={1.75} /> Reproducir</>}
           </button>
         </div>
       </div>
@@ -179,7 +180,7 @@ export default function TeleprompterPage({
                 </div>
                 {s.leakFlags.map((f, j) => (
                   <div key={j} className="mt-1.5 text-amber-300 flex gap-1.5">
-                    <span className="shrink-0">⚠</span>
+                    <AlertTriangle className="shrink-0" size={15} strokeWidth={1.75} />
                     {f}
                   </div>
                 ))}

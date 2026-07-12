@@ -4,6 +4,7 @@ import Link from "next/link";
 import { use, useCallback, useEffect, useState } from "react";
 import DocumentManager from "@/components/DocumentManager";
 import { Badge, Card, PageTitle, btnPrimary, btnSecondary, inputCls } from "@/components/ui";
+import { Radar, Sparkles } from "lucide-react";
 
 type Client = {
   id: number;
@@ -110,13 +111,13 @@ export default function ClientePage({
                   : "Lee noticias recientes del rubro y genera ángulos de oportunidad"
               }
             >
-              {radarBusy ? "Leyendo noticias…" : "◎ Actualizar radar"}
+              {radarBusy ? "Leyendo noticias…" : <><Radar size={16} strokeWidth={1.75} /> Actualizar radar</>}
             </button>
             <button className={btnSecondary} onClick={() => setEditing(!editing)}>
               {editing ? "Cancelar" : "Editar"}
             </button>
             <Link href={`/generar?clientId=${id}`} className={btnPrimary}>
-              ✦ Generar guion
+              <Sparkles size={16} strokeWidth={1.75} /> Generar guion
             </Link>
           </div>
         }
@@ -136,7 +137,7 @@ export default function ClientePage({
             return (
               <>
                 <Badge tone={days < 7 ? "green" : "yellow"}>
-                  ◎ Radar {days === 0 ? "de hoy" : `de hace ${days} día${days === 1 ? "" : "s"}`}
+                  <Radar className="inline" size={13} strokeWidth={1.75} /> Radar {days === 0 ? "de hoy" : `de hace ${days} día${days === 1 ? "" : "s"}`}
                 </Badge>
                 <span className="text-slate-600 flex-1">{radar.title}</span>
                 <span className="text-xs text-slate-400">

@@ -2,6 +2,7 @@
 
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Brandmark from "@/components/Brandmark";
 
 function LoginForm() {
   const router = useRouter();
@@ -29,7 +30,7 @@ function LoginForm() {
   return (
     <div className="min-h-screen bg-brand-mist grid place-items-center p-6">
       <form onSubmit={submit} className="w-full max-w-sm rounded-2xl bg-white border border-slate-200 shadow-xl p-7">
-        <div className="text-3xl font-black text-brand-navy mb-1">ad<span className="text-brand-blue">·</span></div>
+        <Brandmark size={36} />
         <h1 className="text-xl font-bold text-brand-navy">Acceso al estudio</h1>
         <p className="text-sm text-slate-500 mt-1 mb-6">Ingresá la clave compartida del piloto.</p>
         <label htmlFor="password" className="block text-xs font-semibold text-slate-600 mb-1">Clave</label>

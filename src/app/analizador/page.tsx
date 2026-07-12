@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import ScriptMarkdown from "@/components/ScriptMarkdown";
 import { Card, PageTitle, btnPrimary, inputCls } from "@/components/ui";
+import { Check, Microscope } from "lucide-react";
 
 type Client = { id: number; name: string };
 
@@ -124,7 +125,7 @@ export default function AnalizadorPage() {
             />
           </div>
           <button className={btnPrimary} disabled={analyzing}>
-            {analyzing ? "Analizando…" : "🔬 Analizar VSL"}
+            {analyzing ? "Analizando…" : <><Microscope size={16} strokeWidth={1.75} /> Analizar VSL</>}
           </button>
         </form>
       </Card>
@@ -151,7 +152,7 @@ export default function AnalizadorPage() {
                 href="/biblioteca"
                 className="text-xs text-emerald-600 hover:underline"
               >
-                ✓ Guardado en la biblioteca
+                <Check className="inline" size={14} strokeWidth={1.75} /> Guardado en la biblioteca
               </Link>
             )}
           </div>

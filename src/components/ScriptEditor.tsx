@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ScriptMarkdown from "./ScriptMarkdown";
 import { Card, btnPrimary, btnSecondary } from "./ui";
 import { analyzeScript, fmtTime } from "@/lib/readtime";
+import { Pencil, X } from "lucide-react";
 
 type SavedVersion = {
   id: number;
@@ -221,7 +222,7 @@ export default function ScriptEditor({
             className={`px-3 py-1.5 ${mode === "edit" ? "bg-brand-blue text-white" : "bg-white text-slate-600 hover:bg-slate-50"}`}
             onClick={() => setMode("edit")}
           >
-            ✎ Editar
+            <Pencil size={15} strokeWidth={1.75} /> Editar
           </button>
           <button
             className={`px-3 py-1.5 ${mode === "preview" ? "bg-brand-blue text-white" : "bg-white text-slate-600 hover:bg-slate-50"}`}
@@ -300,7 +301,7 @@ export default function ScriptEditor({
                   onClick={() => onDismissSuggestion(i)}
                   title="Descartar sugerencia"
                 >
-                  ✕
+                  <X size={13} strokeWidth={1.75} />
                 </button>
               </li>
             ))}
@@ -346,9 +347,9 @@ export default function ScriptEditor({
           {saving
             ? "Guardando…"
             : justSaved
-              ? "✓ Guardado"
+              ? "Guardado"
               : dirty
-                ? "● Sin guardar (borrador local activo)"
+                ? "Sin guardar (borrador local activo)"
                 : "Sin cambios"}
         </span>
       </div>

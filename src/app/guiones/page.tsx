@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Badge, Card, PageTitle, btnPrimary } from "@/components/ui";
+import { Sparkles } from "lucide-react";
 
 type Row = {
   id: number;
@@ -32,7 +33,7 @@ export default function GuionesPage() {
         subtitle="Todos los guiones generados, con sus versiones y resultados"
         actions={
           <Link href="/generar" className={btnPrimary}>
-            ✦ Generar guion
+            <Sparkles size={16} strokeWidth={1.75} /> Generar guion
           </Link>
         }
       />

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Badge, Card, PageTitle, btnPrimary, inputCls } from "@/components/ui";
+import { Check } from "lucide-react";
 
 type Settings = Record<string, unknown> & {
   anthropic_key_set?: boolean;
@@ -182,7 +183,7 @@ export default function ConfiguracionPage() {
             {saving ? "Guardando…" : "Guardar configuración"}
           </button>
           {saved && (
-            <span className="text-sm text-emerald-600">✓ Guardado</span>
+            <span className="inline-flex items-center gap-1 text-sm text-emerald-600"><Check size={15} strokeWidth={1.75} /> Guardado</span>
           )}
         </div>
       </form>

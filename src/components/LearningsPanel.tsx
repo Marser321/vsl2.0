@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Card, btnSecondary } from "./ui";
+import { BookOpen, Check } from "lucide-react";
 
 export default function LearningsPanel({
   scriptId,
@@ -35,7 +36,7 @@ export default function LearningsPanel({
     <Card className="p-5">
       <div className="flex items-center justify-between mb-2">
         <h3 className="font-semibold text-brand-navy text-sm">
-          📚 Playbook de aprendizajes
+          <BookOpen className="mr-2 inline" size={16} strokeWidth={1.75} /> Playbook de aprendizajes
         </h3>
         <button className={btnSecondary} onClick={extract} disabled={loading}>
           {loading ? "Analizando el caso…" : "Extraer aprendizajes"}
@@ -55,7 +56,7 @@ export default function LearningsPanel({
       {learnings && (
         <div className="rounded-lg bg-emerald-50 border border-emerald-200 p-4">
           <div className="text-xs font-semibold text-emerald-800 mb-2">
-            ✓ Extraído y pendiente de aprobación:
+            <Check className="mr-1 inline" size={14} strokeWidth={1.75} /> Extraído y pendiente de aprobación:
           </div>
           <ul className="space-y-1.5">
             {learnings.map((l, i) => (

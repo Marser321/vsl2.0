@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Card, btnSecondary } from "./ui";
+import { Pencil, Target } from "lucide-react";
 
 type CritiqueData = {
   puntajes: Record<string, number>;
@@ -80,7 +81,7 @@ export default function CritiquePanel({
     <Card className="p-5">
       <div className="flex items-center justify-between mb-2">
         <h3 className="font-semibold text-brand-navy text-sm">
-          🎯 Crítica de copy chief
+          <Target className="mr-2 inline" size={16} strokeWidth={1.75} /> Crítica de copy chief
           {avg && (
             <span className={`ml-2 ${scoreColor(Number(avg))}`}>
               {avg}/10
@@ -133,7 +134,7 @@ export default function CritiquePanel({
                       onClick={() => onApplySuggestion(e)}
                       title="Fijar esta sugerencia en el editor manual"
                     >
-                      ✎ Aplicar en editor
+                      <Pencil size={15} strokeWidth={1.75} /> Aplicar en editor
                     </button>
                   )}
                 </li>

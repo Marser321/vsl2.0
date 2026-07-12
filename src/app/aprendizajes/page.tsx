@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Badge, Card, PageTitle, btnPrimary, btnSecondary } from "@/components/ui";
+import { BarChart3, Brain, Star } from "lucide-react";
 
 type Learning = { id: number; industry: string; subindustry: string | null; content: string; evidenceCount: number; isActive: boolean; createdAt: string };
 
@@ -20,7 +21,7 @@ type PrefsInfo = {
 
 function StarCell({ avg }: { avg: number }) {
   const color = avg >= 4 ? "text-emerald-600" : avg >= 3 ? "text-amber-600" : "text-rose-600";
-  return <span className={`font-semibold ${color}`}>★ {avg.toFixed(1)}</span>;
+  return <span className={`inline-flex items-center gap-1 font-semibold ${color}`}><Star size={14} strokeWidth={1.75} />{avg.toFixed(1)}</span>;
 }
 
 export default function LearningsPage() {
@@ -71,7 +72,7 @@ export default function LearningsPage() {
       setRegenMsg(data.error || "Error al regenerar");
       return;
     }
-    setRegenMsg(`✓ Preferencias regeneradas a partir de ${data.basedOn} puntuaciones.`);
+    setRegenMsg(`Preferencias regeneradas a partir de ${data.basedOn} puntuaciones.`);
     loadStats();
   }
 
@@ -79,14 +80,14 @@ export default function LearningsPage() {
     <div>
       <PageTitle
         title="Aprendizajes y puntuaciones"
-        subtitle="El loop de mejora: puntuaciones del equipo → estadísticas, preferencias y reglas por rubro"
+        subtitle="El loop de mejora: las puntuaciones del equipo alimentan estadísticas, preferencias y reglas por rubro"
       />
 
       {stats && stats.totalRatings > 0 && (
         <Card className="p-5 mb-6">
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-semibold text-brand-navy text-sm">
-              📊 Qué está funcionando ({stats.totalRatings} puntuaciones)
+              <BarChart3 className="mr-2 inline" size={16} strokeWidth={1.75} /> Qué está funcionando ({stats.totalRatings} puntuaciones)
             </h2>
           </div>
           <div className="grid grid-cols-2 gap-6">
@@ -153,7 +154,7 @@ export default function LearningsPage() {
         <div className="flex items-center justify-between gap-4">
           <div>
             <h2 className="font-semibold text-brand-navy text-sm">
-              🧠 Preferencias aprendidas del equipo
+              <Brain className="mr-2 inline" size={16} strokeWidth={1.75} /> Preferencias aprendidas del equipo
             </h2>
             <p className="text-xs text-slate-500 mt-1">
               {prefs?.doc

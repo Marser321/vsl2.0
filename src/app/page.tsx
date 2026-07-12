@@ -5,6 +5,7 @@ import { desc, eq, sql } from "drizzle-orm";
 import { Badge, Card, PageTitle, btnPrimary } from "@/components/ui";
 import { isAdminSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
+import { Sparkles } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -63,7 +64,7 @@ export default async function Home() {
         subtitle="Generador de guiones de VSL con ingeniería de contexto"
         actions={
           <Link href="/generar" className={btnPrimary}>
-            ✦ Generar guion
+            <Sparkles size={16} strokeWidth={1.75} /> Generar guion
           </Link>
         }
       />

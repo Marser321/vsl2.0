@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import ScriptMarkdown from "@/components/ScriptMarkdown";
 import { Badge, Card, PageTitle, btnPrimary, btnSecondary, inputCls } from "@/components/ui";
 import { analyzeScript, fmtTime } from "@/lib/readtime";
+import { Clapperboard, Pencil, Smartphone, Sparkles, X } from "lucide-react";
 
 type Template = {
   id: number;
@@ -92,7 +93,7 @@ function TemplateCard({
             onClick={remove}
             title="Eliminar plantilla"
           >
-            ✕
+            <X size={14} strokeWidth={1.75} />
           </button>
         )}
       </div>
@@ -111,10 +112,10 @@ function TemplateCard({
           ))}
         </select>
         <button className={btnPrimary} onClick={use} disabled={busy}>
-          {busy ? "Creando…" : "✎ Usar plantilla"}
+          {busy ? "Creando…" : <><Pencil size={16} strokeWidth={1.75} /> Usar plantilla</>}
         </button>
         <Link href={`/generar?templateId=${template.id}`} className={btnSecondary}>
-          ✦ Usar en generador
+          <Sparkles size={16} strokeWidth={1.75} /> Usar en generador
         </Link>
         <button
           className="text-xs text-brand-blue hover:underline ml-auto"
@@ -169,7 +170,7 @@ export default function PlantillasPage() {
       )}
       {vsl.length > 0 && (
         <>
-          <h2 className="font-semibold text-brand-navy text-sm mb-3">🎬 VSL</h2>
+          <h2 className="flex items-center gap-2 font-semibold text-brand-navy text-sm mb-3"><Clapperboard size={17} strokeWidth={1.75} />VSL</h2>
           <div className="grid grid-cols-2 gap-4 mb-8">
             {vsl.map((t) => (
               <TemplateCard
@@ -185,7 +186,7 @@ export default function PlantillasPage() {
       )}
       {reels.length > 0 && (
         <>
-          <h2 className="font-semibold text-brand-navy text-sm mb-3">📱 Reels</h2>
+          <h2 className="flex items-center gap-2 font-semibold text-brand-navy text-sm mb-3"><Smartphone size={17} strokeWidth={1.75} />Reels</h2>
           <div className="grid grid-cols-2 gap-4">
             {reels.map((t) => (
               <TemplateCard

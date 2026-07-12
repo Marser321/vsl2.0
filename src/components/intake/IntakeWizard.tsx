@@ -2,6 +2,8 @@
 
 import { createClient } from "@supabase/supabase-js";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ArrowLeft, ArrowRight, Check } from "lucide-react";
+import Brandmark from "../Brandmark";
 
 type Answers = Record<string, Record<string, unknown>>;
 type Asset = { id: string; title: string; kind: string; status: string; error: string | null; sourceUrl: string | null };
@@ -201,7 +203,7 @@ export default function IntakeWizard({ publicId }: { publicId: string }) {
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
         <div className="mb-6 flex items-start justify-between gap-4">
           <div><p className="text-xs text-slate-400">Paso {step + 1} de {STEPS.length}</p><h2 className="text-2xl font-bold text-brand-navy">{current.title}</h2><p className="mt-1 text-sm text-slate-500">{current.subtitle}</p></div>
-          <span className={`text-xs ${saveState === "error" ? "text-rose-600" : "text-slate-400"}`}>{saveState === "saving" ? "Guardando…" : saveState === "saved" ? "✓ Guardado" : saveState === "error" ? "No se pudo guardar" : `${completion}% completo`}</span>
+          <span className={`text-xs ${saveState === "error" ? "text-rose-600" : "text-slate-400"}`}>{saveState === "saving" ? "Guardando…" : saveState === "saved" ? "Guardado" : saveState === "error" ? "No se pudo guardar" : `${completion}% completo`}</span>
         </div>
 
         {current.key === "materials" ? <Materials publicId={publicId} assets={assets} onChange={load} /> : current.key === "review" ? <Review answers={answers} completion={completion} missing={missing} assets={assets} /> : (
@@ -210,8 +212,8 @@ export default function IntakeWizard({ publicId }: { publicId: string }) {
 
         {submitError && <p className="mt-5 rounded-lg bg-rose-50 px-4 py-3 text-sm text-rose-700" aria-live="polite">{submitError}</p>}
         <div className="mt-8 flex items-center justify-between border-t border-slate-100 pt-5">
-          <button onClick={() => go(step - 1)} disabled={step === 0} className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 disabled:invisible">← Anterior</button>
-          {step < STEPS.length - 1 ? <button onClick={() => go(step + 1)} className="rounded-lg bg-brand-blue px-5 py-2.5 text-sm font-semibold text-white">Continuar →</button> : <button onClick={submit} disabled={submitting} className="rounded-lg bg-brand-navy px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50">{submitting ? "Enviando y organizando…" : "Enviar relevamiento"}</button>}
+          <button onClick={() => go(step - 1)} disabled={step === 0} className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 disabled:invisible"><ArrowLeft size={16} strokeWidth={1.75} />Anterior</button>
+          {step < STEPS.length - 1 ? <button onClick={() => go(step + 1)} className="inline-flex items-center gap-2 rounded-lg bg-brand-blue px-5 py-2.5 text-sm font-semibold text-white">Continuar <ArrowRight size={16} strokeWidth={1.75} /></button> : <button onClick={submit} disabled={submitting} className="rounded-lg bg-brand-navy px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50">{submitting ? "Enviando y organizando…" : "Enviar relevamiento"}</button>}
         </div>
       </section>
     </PublicFrame>
@@ -263,5 +265,5 @@ function Review({ answers, completion, missing, assets }: { answers: Answers; co
   return <div className="space-y-5"><div className="rounded-xl bg-brand-mist p-5"><div className="flex items-center justify-between"><span className="font-semibold text-brand-navy">Completitud del contexto</span><strong className="text-2xl text-brand-blue">{completion}%</strong></div><div className="mt-3 h-2 overflow-hidden rounded-full bg-white"><div className="h-full bg-brand-blue" style={{ width: `${completion}%` }} /></div></div>{missing.length > 0 && <div className="rounded-xl border border-amber-200 bg-amber-50 p-4"><h3 className="text-sm font-semibold text-amber-900">Información opcional que mejoraría el guion</h3><p className="mt-1 text-xs text-amber-800">{missing.join(" · ")}</p></div>}<div className="grid gap-3 sm:grid-cols-2">{Object.entries(answers).map(([section, data]) => <div key={section} className="rounded-xl border border-slate-200 p-4"><h3 className="text-sm font-semibold capitalize text-brand-navy">{section}</h3><p className="mt-2 line-clamp-6 whitespace-pre-wrap text-xs leading-5 text-slate-600">{Object.entries(data).filter(([, value]) => value !== "" && value !== false && (!Array.isArray(value) || value.length)).map(([key, value]) => `${key}: ${Array.isArray(value) ? value.join(", ") : String(value)}`).join("\n") || "Sin respuestas"}</p></div>)}</div><p className="text-sm text-slate-500">Materiales agregados: <strong>{assets.length}</strong>. Al enviar, el equipo revisará todo antes de generar el VSL.</p></div>;
 }
 
-function PublicFrame({ children }: { children: React.ReactNode }) { return <div className="min-h-screen bg-brand-mist px-4 py-8 sm:px-8"><div className="mx-auto max-w-4xl"><div className="mb-8 text-xl font-black text-brand-navy">ad<span className="text-brand-blue">·</span> <span className="text-sm font-semibold">VSL Studio</span></div>{children}<footer className="py-8 text-center text-xs text-slate-400">La información se utiliza únicamente para preparar la estrategia y los guiones solicitados.</footer></div></div>; }
-function StateMessage({ title, text }: { title: string; text: string }) { return <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center shadow-sm"><div className="mx-auto mb-4 grid h-12 w-12 place-items-center rounded-full bg-blue-50 text-xl text-brand-blue">✓</div><h1 className="text-2xl font-bold text-brand-navy">{title}</h1><p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-slate-600">{text}</p></div>; }
+function PublicFrame({ children }: { children: React.ReactNode }) { return <div className="min-h-screen bg-brand-mist px-4 py-8 sm:px-8"><div className="mx-auto max-w-4xl"><div className="mb-8 flex items-center gap-2"><Brandmark size={28} /><span className="text-sm font-semibold text-brand-navy">VSL Studio</span></div>{children}<footer className="py-8 text-center text-xs text-slate-400">La información se utiliza únicamente para preparar la estrategia y los guiones solicitados.</footer></div></div>; }
+function StateMessage({ title, text }: { title: string; text: string }) { return <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center shadow-sm"><div className="mx-auto mb-4 grid h-12 w-12 place-items-center rounded-full bg-blue-50 text-brand-blue"><Check size={22} strokeWidth={1.75} /></div><h1 className="text-2xl font-bold text-brand-navy">{title}</h1><p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-slate-600">{text}</p></div>; }

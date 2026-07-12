@@ -2,18 +2,31 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import {
+  Brain,
+  ClipboardList,
+  Home,
+  LayoutTemplate,
+  Library,
+  ScanSearch,
+  ScrollText,
+  Settings,
+  Sparkles,
+  Users,
+} from "lucide-react";
+import Brandmark from "./Brandmark";
 
 const NAV = [
-  { href: "/", label: "Inicio", icon: "◉" },
-  { href: "/relevamientos", label: "Relevamientos", icon: "◇" },
-  { href: "/generar", label: "Generar guion", icon: "✦" },
-  { href: "/plantillas", label: "Plantillas", icon: "▤" },
-  { href: "/guiones", label: "Guiones", icon: "≣" },
-  { href: "/clientes", label: "Clientes", icon: "◫" },
-  { href: "/biblioteca", label: "Biblioteca", icon: "❏" },
-  { href: "/aprendizajes", label: "Aprendizajes", icon: "⌁" },
-  { href: "/analizador", label: "Analizador de VSLs", icon: "◎" },
-  { href: "/configuracion", label: "Configuración", icon: "⚙" },
+  { href: "/", label: "Inicio", icon: Home },
+  { href: "/relevamientos", label: "Relevamientos", icon: ClipboardList },
+  { href: "/generar", label: "Generar guion", icon: Sparkles },
+  { href: "/plantillas", label: "Plantillas", icon: LayoutTemplate },
+  { href: "/guiones", label: "Guiones", icon: ScrollText },
+  { href: "/clientes", label: "Clientes", icon: Users },
+  { href: "/biblioteca", label: "Biblioteca", icon: Library },
+  { href: "/aprendizajes", label: "Aprendizajes", icon: Brain },
+  { href: "/analizador", label: "Analizador de VSLs", icon: ScanSearch },
+  { href: "/configuracion", label: "Configuración", icon: Settings },
 ];
 
 export default function AppShell({
@@ -32,7 +45,7 @@ export default function AppShell({
       <aside className="w-60 shrink-0 bg-brand-navy text-white flex flex-col">
         <div className="px-5 py-6">
           <div className="flex items-center gap-2">
-            <span className="text-2xl font-black lowercase tracking-tight">ad<span className="text-brand-sky">·</span></span>
+            <Brandmark size={28} variant="light" />
             <div className="leading-tight">
               <div className="font-bold text-sm">VSL Studio</div>
               <div className="text-[10px] text-blue-200">AD Media Solution</div>
@@ -40,12 +53,15 @@ export default function AppShell({
           </div>
         </div>
         <nav className="flex-1 px-3 space-y-1">
-          {NAV.map((item) => (
-            <Link key={item.href} href={item.href} className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors ${pathname === item.href ? "bg-white/15 text-white" : "text-blue-100 hover:bg-white/10 hover:text-white"}`}>
-              <span className="text-brand-sky w-4 text-center">{item.icon}</span>
-              {item.label}
-            </Link>
-          ))}
+          {NAV.map((item) => {
+            const Icon = item.icon;
+            return (
+              <Link key={item.href} href={item.href} className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors ${pathname === item.href ? "bg-white/15 text-white" : "text-blue-100 hover:bg-white/10 hover:text-white"}`}>
+                <Icon className="w-4 text-brand-sky" size={17} strokeWidth={1.75} />
+                {item.label}
+              </Link>
+            );
+          })}
         </nav>
         {authEnabled && (
           <form action="/api/auth/logout" method="post" className="px-4 pb-3">
