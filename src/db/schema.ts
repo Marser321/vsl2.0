@@ -4,6 +4,7 @@ import {
   integer,
   jsonb,
   pgTable,
+  real,
   serial,
   text,
   timestamp,
@@ -58,6 +59,9 @@ export const RATING_TAGS = [
   "largo",
 ] as const;
 export type RatingTag = (typeof RATING_TAGS)[number];
+
+export const PLATFORMS = ["meta", "tiktok", "youtube", "otro"] as const;
+export type MetricPlatform = (typeof PLATFORMS)[number];
 
 export type JsonObject = Record<string, unknown>;
 
@@ -349,6 +353,27 @@ export const scriptRatings = pgTable(
   (table) => [uniqueIndex("script_ratings_version_uq").on(table.scriptVersionId)]
 );
 
+export const scriptMetrics = pgTable(
+  "script_metrics",
+  {
+    id: serial("id").primaryKey(),
+    scriptVersionId: integer("script_version_id")
+      .notNull()
+      .references(() => scriptVersions.id, { onDelete: "cascade" }),
+    platform: text("platform").$type<MetricPlatform>().notNull(),
+    hookRate: real("hook_rate"),
+    ctr: real("ctr"),
+    cpa: real("cpa"),
+    impressions: integer("impressions"),
+    notes: text("notes"),
+    capturedAt: timestamp("captured_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("script_metrics_version_platform_uq").on(table.scriptVersionId, table.platform),
+  ]
+);
+
 export const industryLearnings = pgTable(
   "industry_learnings",
   {
@@ -475,4 +500,5 @@ export type Framework = typeof frameworks.$inferSelect;
 export type Script = typeof scripts.$inferSelect;
 export type ScriptVersion = typeof scriptVersions.$inferSelect;
 export type ScriptRating = typeof scriptRatings.$inferSelect;
+export type ScriptMetric = typeof scriptMetrics.$inferSelect;
 export type Template = typeof templates.$inferSelect;
