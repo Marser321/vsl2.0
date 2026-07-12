@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import ScriptMarkdown from "@/components/ScriptMarkdown";
 import ScriptEditor from "@/components/ScriptEditor";
 import RatingWidget, { type VersionRating } from "@/components/RatingWidget";
+import { MetricsPanel } from "@/components/MetricsPanel";
 import HookLab from "@/components/HookLab";
 import CritiquePanel from "@/components/CritiquePanel";
 import LearningsPanel from "@/components/LearningsPanel";
@@ -194,10 +195,14 @@ function GuionDetail({ id }: { id: string }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ scope }),
     });
-    if (res.ok) {
-      setPromoted(true);
-      load();
+    const data = await res.json();
+    if (!res.ok) {
+      toast.error(data.error || "No se pudo promover el guion");
+      return false;
     }
+    setPromoted(true);
+    await load();
+    return true;
   }
 
   async function saveAsTemplate() {
@@ -357,16 +362,23 @@ function GuionDetail({ id }: { id: string }) {
       )}
 
       {current && !editing && (
-        <RatingWidget
-          scriptId={script.id}
-          versionId={current.id}
-          rating={current.rating}
-          onRated={async () => {
-            const prev = activeVersion;
-            await load();
-            if (prev !== null) setActiveVersion(prev);
-          }}
-        />
+        <>
+          <RatingWidget
+            scriptId={script.id}
+            versionId={current.id}
+            rating={current.rating}
+            onRated={async () => {
+              const prev = activeVersion;
+              await load();
+              if (prev !== null) setActiveVersion(prev);
+            }}
+          />
+          <MetricsPanel
+            scriptId={script.id}
+            activeVersion={{ id: current.id, versionNumber: current.versionNumber }}
+            onPromote={() => promote("client")}
+          />
+        </>
       )}
 
       {editing && current ? (
