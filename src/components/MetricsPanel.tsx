@@ -32,7 +32,8 @@ export type VersionMetric = {
 type MetricsPanelProps = {
   scriptId: number;
   activeVersion: { id: number; versionNumber: number };
-  onPromote: () => Promise<boolean>;
+  promotions: Array<{ versionId: number | null; scope: "client" | "global" }>;
+  onPromote: (versionId: number) => Promise<boolean>;
 };
 
 type MetricForm = {
@@ -81,7 +82,7 @@ function metricSummary(metric: VersionMetric) {
   return parts.join(" · ");
 }
 
-export function MetricsPanel({ scriptId, activeVersion, onPromote }: MetricsPanelProps) {
+export function MetricsPanel({ scriptId, activeVersion, promotions, onPromote }: MetricsPanelProps) {
   const [metrics, setMetrics] = useState<VersionMetric[]>([]);
   const [platform, setPlatform] = useState<Platform>("meta");
   const [form, setForm] = useState<MetricForm>(EMPTY_FORM);
@@ -156,7 +157,8 @@ export function MetricsPanel({ scriptId, activeVersion, onPromote }: MetricsPane
   async function promoteCandidate() {
     setPromoting(true);
     try {
-      const promoted = await onPromote();
+      if (!candidate) return;
+      const promoted = await onPromote(candidate.scriptVersionId);
       if (promoted) toast.success("Guion promovido como ejemplar");
     } catch (error) {
       toast.error((error as Error).message);
@@ -166,6 +168,12 @@ export function MetricsPanel({ scriptId, activeVersion, onPromote }: MetricsPane
   }
 
   const candidate = pickWinningCandidate(metrics);
+  const candidatePromoted = candidate
+    ? promotions.some(
+        (promotion) =>
+          promotion.versionId === candidate.scriptVersionId && promotion.scope === "client"
+      )
+    : false;
   const sortedMetrics = [...metrics].sort(
     (a, b) => b.versionNumber - a.versionNumber || a.platform.localeCompare(b.platform)
   );
@@ -186,9 +194,15 @@ export function MetricsPanel({ scriptId, activeVersion, onPromote }: MetricsPane
           <p className="min-w-0 flex-1 text-sm text-emerald-900">
             La v{candidate.versionNumber} tiene las mejores métricas reales — promovela como ejemplar
           </p>
-          <button className={btnPrimary} onClick={promoteCandidate} disabled={promoting}>
-            {promoting ? "Promoviendo…" : "Promover como ejemplar"}
-          </button>
+          {candidatePromoted ? (
+            <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700">
+              <CheckCircle2 size={14} /> Ya promovida para el cliente
+            </span>
+          ) : (
+            <button className={btnPrimary} onClick={promoteCandidate} disabled={promoting}>
+              {promoting ? "Promoviendo…" : "Promover como ejemplar"}
+            </button>
+          )}
         </div>
       )}
 

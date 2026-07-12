@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/db";
-import { scripts, scriptVersions, scriptRatings, clients, frameworks } from "@/db/schema";
-import { asc, eq, inArray } from "drizzle-orm";
+import { scripts, scriptVersions, scriptRatings, clients, documents, frameworks } from "@/db/schema";
+import { and, asc, eq, inArray } from "drizzle-orm";
 import { guardAdminRequest } from "@/lib/auth/session";
+import { parsePromotionTags } from "@/lib/scripts/promotions";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -44,7 +45,25 @@ export async function GET(_req: NextRequest, { params }: Params) {
     rating: byVersion.get(v.id) ?? null,
   }));
 
-  return NextResponse.json({ ...script, client, framework, versions: versionsWithRating });
+  const promotedDocs = await db
+    .select({
+      id: documents.id,
+      tags: documents.tags,
+      visibility: documents.visibility,
+    })
+    .from(documents)
+    .where(
+      and(
+        eq(documents.sourceScriptId, script.id),
+        eq(documents.kind, "winning_script")
+      )
+    );
+  const promotions = promotedDocs.map((document) => ({
+    documentId: document.id,
+    ...parsePromotionTags(document.tags, document.visibility),
+  }));
+
+  return NextResponse.json({ ...script, client, framework, versions: versionsWithRating, promotions });
 }
 
 export async function PATCH(req: NextRequest, { params }: Params) {

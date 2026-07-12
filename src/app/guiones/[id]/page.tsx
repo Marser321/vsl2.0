@@ -55,6 +55,12 @@ type ScriptDetail = {
   client: { id: number; name: string } | null;
   framework: { id: number; name: string } | null;
   versions: Version[];
+  promotions: Array<{
+    documentId: number;
+    versionId: number | null;
+    scope: "client" | "global";
+    legacy: boolean;
+  }>;
 };
 
 function versionTooltip(v: Version): string {
@@ -75,7 +81,6 @@ function GuionDetail({ id }: { id: string }) {
   const [refineOutput, setRefineOutput] = useState("");
   const [aiStatus, setAiStatus] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [promoted, setPromoted] = useState(false);
   const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
   const [templateTitle, setTemplateTitle] = useState("");
   const refineRef = useRef<HTMLTextAreaElement>(null);
@@ -132,7 +137,7 @@ function GuionDetail({ id }: { id: string }) {
 
   async function handleRefine() {
     const instruction = refineRef.current?.value.trim();
-    if (!instruction || !script) return;
+    if (!instruction || !script || !current) return;
     setRefining(true);
     setRefineOutput("");
     setError(null);
@@ -142,7 +147,7 @@ function GuionDetail({ id }: { id: string }) {
       const res = await fetch(`/api/scripts/${script.id}/refine`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ instruction }),
+        body: JSON.stringify({ instruction, versionId: current.id }),
       });
       if (!res.ok) {
         const data = await res.json();
@@ -189,19 +194,20 @@ function GuionDetail({ id }: { id: string }) {
     load();
   }
 
-  async function promote(scope: "client" | "global") {
+  async function promote(scope: "client" | "global", versionId: number) {
+    const selectedVersion = activeVersion;
     const res = await fetch(`/api/scripts/${id}/promote`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ scope }),
+      body: JSON.stringify({ scope, versionId }),
     });
     const data = await res.json();
     if (!res.ok) {
       toast.error(data.error || "No se pudo promover el guion");
       return false;
     }
-    setPromoted(true);
     await load();
+    if (selectedVersion !== null) setActiveVersion(selectedVersion);
     return true;
   }
 
@@ -304,25 +310,29 @@ function GuionDetail({ id }: { id: string }) {
         }
       />
 
-      {script.outcome === "won" && !promoted && (
+      {script.outcome === "won" && script.promotions.length === 0 && current && (
         <Card className="p-4 mb-4 flex items-center justify-between bg-emerald-50 border-emerald-200">
           <span className="text-sm text-emerald-800">
-            Este guion convirtió. Promovelo a la biblioteca para que sirva de
-            ejemplo en futuras generaciones.
+            Este guion convirtió. Promové la v{current.versionNumber} visible para que sirva de ejemplo en futuras generaciones.
           </span>
           <div className="flex gap-2">
-            <button className={btnSecondary} onClick={() => promote("client")}>
+            <button className={btnSecondary} onClick={() => promote("client", current.id)}>
               Solo para {script.client?.name}
             </button>
-            <button className={btnPrimary} onClick={() => promote("global")}>
+            <button className={btnPrimary} onClick={() => promote("global", current.id)}>
               Biblioteca global
             </button>
           </div>
         </Card>
       )}
-      {promoted && (
+      {script.promotions.length > 0 && (
         <Card className="p-4 mb-4 text-sm text-emerald-800 bg-emerald-50 border-emerald-200">
-          <Check className="mr-1 inline" size={15} strokeWidth={1.75} /> Promovido a la biblioteca como guion ganador.
+          <Check className="mr-1 inline" size={15} strokeWidth={1.75} />
+          {script.promotions.map((promotion) =>
+            promotion.legacy
+              ? ` Ejemplar anterior · ${promotion.scope === "global" ? "global" : "cliente"}`
+              : ` v${script.versions.find((version) => version.id === promotion.versionId)?.versionNumber ?? "?"} · ${promotion.scope === "global" ? "global" : "cliente"}`
+          ).join(" ·")}
         </Card>
       )}
 
@@ -376,7 +386,8 @@ function GuionDetail({ id }: { id: string }) {
           <MetricsPanel
             scriptId={script.id}
             activeVersion={{ id: current.id, versionNumber: current.versionNumber }}
-            onPromote={() => promote("client")}
+            promotions={script.promotions}
+            onPromote={(versionId) => promote("client", versionId)}
           />
         </>
       )}
