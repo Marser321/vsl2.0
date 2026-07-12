@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Card, PageTitle, btnPrimary, inputCls } from "@/components/ui";
+import { Card, EmptyState, PageTitle, Skeleton, btnPrimary, inputCls } from "@/components/ui";
+import { Users } from "lucide-react";
 
 type Client = {
   id: number;
@@ -16,9 +17,14 @@ export default function ClientesPage() {
   const [list, setList] = useState<Client[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   async function load() {
-    setList(await (await fetch("/api/clients")).json());
+    try {
+      setList(await (await fetch("/api/clients")).json());
+    } finally {
+      setLoading(false);
+    }
   }
   useEffect(() => {
     load();
@@ -88,7 +94,13 @@ export default function ClientesPage() {
         </Card>
       )}
 
-      <div className="grid grid-cols-3 gap-4">
+      {loading ? (
+        <div className="grid grid-cols-3 gap-4">
+          {Array.from({ length: 6 }).map((_, index) => <Card className="p-5" key={index}><Skeleton className="h-5 w-36" /><Skeleton className="mt-3 h-3 w-24" /><Skeleton className="mt-4 h-3 w-full" /></Card>)}
+        </div>
+      ) : list.length === 0 && !showForm ? (
+        <Card><EmptyState icon={Users} title="Todavía no hay clientes" description="Creá el primero para empezar a generar guiones." action={<button className={btnPrimary} onClick={() => setShowForm(true)}>Crear cliente</button>} /></Card>
+      ) : <div className="grid grid-cols-3 gap-4">
         {list.map((c) => (
           <Link key={c.id} href={`/clientes/${c.id}`}>
             <Card className="p-5 hover:border-brand-blue transition-colors h-full">
@@ -104,13 +116,7 @@ export default function ClientesPage() {
             </Card>
           </Link>
         ))}
-        {list.length === 0 && !showForm && (
-          <Card className="p-8 col-span-3 text-center text-sm text-slate-400">
-            Todavía no hay clientes. Creá el primero para empezar a generar
-            guiones.
-          </Card>
-        )}
-      </div>
+      </div>}
     </div>
   );
 }

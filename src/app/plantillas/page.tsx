@@ -4,9 +4,9 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import ScriptMarkdown from "@/components/ScriptMarkdown";
-import { Badge, Card, PageTitle, btnPrimary, btnSecondary, inputCls } from "@/components/ui";
+import { Badge, Card, EmptyState, PageTitle, Skeleton, btnPrimary, btnSecondary, inputCls } from "@/components/ui";
 import { analyzeScript, fmtTime } from "@/lib/readtime";
-import { Clapperboard, Pencil, Smartphone, Sparkles, X } from "lucide-react";
+import { Clapperboard, LayoutTemplate, Pencil, Smartphone, Sparkles, X } from "lucide-react";
 
 type Template = {
   id: number;
@@ -142,9 +142,12 @@ export default function PlantillasPage() {
   const [loaded, setLoaded] = useState(false);
 
   async function load() {
-    const data = await (await fetch("/api/templates")).json();
-    setRows(data);
-    setLoaded(true);
+    try {
+      const data = await (await fetch("/api/templates")).json();
+      setRows(data);
+    } finally {
+      setLoaded(true);
+    }
   }
   useEffect(() => {
     load();
@@ -162,12 +165,11 @@ export default function PlantillasPage() {
         title="Plantillas"
         subtitle="Estructuras probadas listas para completar en el editor — con marcadores {{ }} que se rellenan solos con los datos del cliente"
       />
-      {loaded && rows.length === 0 && (
-        <Card className="p-10 text-center text-sm text-slate-400">
-          No hay plantillas. Corré <code className="text-brand-blue">npm run db:seed-corpus</code>{" "}
-          para cargar las plantillas base, o guardá un guion como plantilla desde su página.
-        </Card>
-      )}
+      {!loaded ? (
+        <div className="grid grid-cols-2 gap-4">{Array.from({ length: 4 }).map((_, index) => <Card className="p-5" key={index}><Skeleton className="h-5 w-2/3" /><Skeleton className="mt-3 h-3 w-full" /><Skeleton className="mt-5 h-9 w-full" /></Card>)}</div>
+      ) : rows.length === 0 ? (
+        <Card><EmptyState icon={LayoutTemplate} title="No hay plantillas" description={<>Corré <code className="text-brand-blue">npm run db:seed-corpus</code> para cargar las plantillas base, o guardá un guion como plantilla desde su página.</>} /></Card>
+      ) : null}
       {vsl.length > 0 && (
         <>
           <h2 className="flex items-center gap-2 font-semibold text-brand-navy text-sm mb-3"><Clapperboard size={17} strokeWidth={1.75} />VSL</h2>

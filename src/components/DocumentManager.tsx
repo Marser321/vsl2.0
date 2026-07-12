@@ -4,13 +4,15 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Badge,
   Card,
+  EmptyState,
   KIND_LABELS,
   KIND_TONES,
   btnPrimary,
   btnSecondary,
   inputCls,
+  Skeleton,
 } from "./ui";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Library } from "lucide-react";
 
 type Doc = {
   id: number;
@@ -29,11 +31,16 @@ export default function DocumentManager({ scope }: { scope: string }) {
   const [uploading, setUploading] = useState(false);
   const [warning, setWarning] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   const formRef = useRef<HTMLFormElement>(null);
 
   const load = useCallback(async () => {
-    const res = await fetch(`/api/documents?clientId=${scope}`);
-    setDocs(await res.json());
+    try {
+      const res = await fetch(`/api/documents?clientId=${scope}`);
+      setDocs(await res.json());
+    } finally {
+      setLoading(false);
+    }
   }, [scope]);
 
   useEffect(() => {
@@ -155,11 +162,10 @@ export default function DocumentManager({ scope }: { scope: string }) {
       )}
 
       <Card>
-        {docs.length === 0 ? (
-          <div className="p-8 text-center text-sm text-slate-400">
-            Todavía no hay documentos. Subí briefs, guiones ganadores y
-            material de referencia para mejorar la calidad de los copys.
-          </div>
+        {loading ? (
+          <div className="divide-y divide-slate-100">{Array.from({ length: 4 }).map((_, index) => <div className="flex gap-4 px-5 py-4" key={index}><Skeleton className="h-5 w-24 rounded-full" /><Skeleton className="h-4 flex-1" /><Skeleton className="h-4 w-20" /></div>)}</div>
+        ) : docs.length === 0 ? (
+          <EmptyState icon={Library} title="Todavía no hay documentos" description="Subí briefs, guiones ganadores y material de referencia para mejorar la calidad de los copys." action={<button className={btnSecondary} onClick={() => setShowForm(true)}>Agregar documento</button>} />
         ) : (
           <ul className="divide-y divide-slate-100">
             {docs.map((doc) => (

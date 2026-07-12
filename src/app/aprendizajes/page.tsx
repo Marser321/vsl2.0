@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Badge, Card, PageTitle, btnPrimary, btnSecondary } from "@/components/ui";
-import { BarChart3, Brain, Star } from "lucide-react";
+import { Badge, Card, EmptyState, PageTitle, Skeleton, btnPrimary, btnSecondary } from "@/components/ui";
+import { BarChart3, Brain, Lightbulb, Star } from "lucide-react";
 
 type Learning = { id: number; industry: string; subindustry: string | null; content: string; evidenceCount: number; isActive: boolean; createdAt: string };
 
@@ -31,18 +31,28 @@ export default function LearningsPage() {
   const [prefs, setPrefs] = useState<PrefsInfo | null>(null);
   const [regenBusy, setRegenBusy] = useState(false);
   const [regenMsg, setRegenMsg] = useState<string | null>(null);
+  const [loadingRows, setLoadingRows] = useState(true);
+  const [loadingStats, setLoadingStats] = useState(true);
 
   async function load() {
-    const response = await fetch("/api/industry-learnings");
-    setRows(await response.json());
+    try {
+      const response = await fetch("/api/industry-learnings");
+      setRows(await response.json());
+    } finally {
+      setLoadingRows(false);
+    }
   }
   async function loadStats() {
-    const [s, p] = await Promise.all([
-      fetch("/api/stats").then((r) => r.json()),
-      fetch("/api/team-preferences").then((r) => r.json()),
-    ]);
-    setStats(s);
-    setPrefs(p);
+    try {
+      const [s, p] = await Promise.all([
+        fetch("/api/stats").then((r) => r.json()),
+        fetch("/api/team-preferences").then((r) => r.json()),
+      ]);
+      setStats(s);
+      setPrefs(p);
+    } finally {
+      setLoadingStats(false);
+    }
   }
   useEffect(() => {
     load();
@@ -83,7 +93,9 @@ export default function LearningsPage() {
         subtitle="El loop de mejora: las puntuaciones del equipo alimentan estadísticas, preferencias y reglas por rubro"
       />
 
-      {stats && stats.totalRatings > 0 && (
+      {loadingStats ? (
+        <Card className="p-5 mb-6"><Skeleton className="h-5 w-56" /><div className="mt-5 grid grid-cols-2 gap-6"><Skeleton className="h-36" /><Skeleton className="h-36" /></div></Card>
+      ) : stats && stats.totalRatings > 0 && (
         <Card className="p-5 mb-6">
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-semibold text-brand-navy text-sm">
@@ -151,7 +163,7 @@ export default function LearningsPage() {
       )}
 
       <Card className="p-5 mb-6">
-        <div className="flex items-center justify-between gap-4">
+        {loadingStats ? <><Skeleton className="h-5 w-64" /><Skeleton className="mt-3 h-12 w-full" /></> : <div className="flex items-center justify-between gap-4">
           <div>
             <h2 className="font-semibold text-brand-navy text-sm">
               <Brain className="mr-2 inline" size={16} strokeWidth={1.75} /> Preferencias aprendidas del equipo
@@ -176,13 +188,15 @@ export default function LearningsPage() {
           >
             {regenBusy ? "Sintetizando…" : prefs?.doc ? "↻ Regenerar preferencias" : "Generar preferencias"}
           </button>
-        </div>
+        </div>}
       </Card>
 
       <h2 className="font-semibold text-brand-navy text-sm mb-3">Reglas por rubro (aprobación manual)</h2>
       <Card>
-        {rows.length === 0 ? (
-          <div className="p-10 text-center text-sm text-slate-400">Todavía no hay aprendizajes extraídos.</div>
+        {loadingRows ? (
+          <div className="divide-y divide-slate-100">{Array.from({ length: 4 }).map((_, index) => <div className="p-5" key={index}><Skeleton className="h-5 w-32" /><Skeleton className="mt-3 h-4 w-full" /><Skeleton className="mt-2 h-4 w-2/3" /></div>)}</div>
+        ) : rows.length === 0 ? (
+          <EmptyState icon={Lightbulb} title="Todavía no hay aprendizajes" description="Los aprendizajes extraídos de guiones evaluados aparecerán acá para su aprobación." />
         ) : (
           <ul className="divide-y divide-slate-100">
             {rows.map((row) => (

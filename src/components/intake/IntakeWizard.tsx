@@ -4,6 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, Check } from "lucide-react";
 import Brandmark from "../Brandmark";
+import { Skeleton } from "../ui";
 
 type Answers = Record<string, Record<string, unknown>>;
 type Asset = { id: string; title: string; kind: string; status: string; error: string | null; sourceUrl: string | null };
@@ -180,7 +181,7 @@ export default function IntakeWizard({ publicId }: { publicId: string }) {
     setStatus("submitted");
   }
 
-  if (loading) return <PublicFrame><div className="animate-pulse text-slate-500">Cargando relevamiento…</div></PublicFrame>;
+  if (loading) return <PublicFrame><div aria-label="Cargando relevamiento"><Skeleton className="h-8 w-72" /><Skeleton className="mt-3 h-4 w-96 max-w-full" /><Skeleton className="mt-8 h-96 w-full rounded-2xl" /></div></PublicFrame>;
   if (fatal) return <PublicFrame><StateMessage title="No se puede abrir este enlace" text={fatal} /></PublicFrame>;
   if (!editable) return <PublicFrame><StateMessage title={status === "approved" ? "Relevamiento aprobado" : "¡Gracias! Ya recibimos todo"} text={status === "in_review" ? "El equipo comenzó la revisión. Si necesita una aclaración, volverá a habilitar este enlace." : status === "approved" ? "El dossier ya forma parte del contexto de tu marca." : "El equipo revisará el material antes de redactar el VSL."} /></PublicFrame>;
 

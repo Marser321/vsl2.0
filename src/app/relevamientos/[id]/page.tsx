@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { use, useCallback, useEffect, useState } from "react";
-import { Badge, Card, PageTitle, btnPrimary, btnSecondary } from "@/components/ui";
+import { Badge, Card, PageTitle, Skeleton, btnPrimary, btnSecondary } from "@/components/ui";
 import { ArrowRight } from "lucide-react";
 
 type Detail = {
@@ -48,7 +48,7 @@ export default function IntakeDetailPage({ params }: { params: Promise<{ id: str
     await load();
   }
 
-  if (!data) return <div className="text-sm text-slate-400">{error || "Cargando…"}</div>;
+  if (!data) return error ? <Card className="p-5 text-sm text-danger">{error}</Card> : <div aria-label="Cargando relevamiento"><Skeleton className="h-8 w-64" /><Skeleton className="mt-2 h-4 w-40" /><Card className="mt-6 p-5"><Skeleton className="h-48 w-full" /></Card></div>;
   const { request, submission } = data;
   const actions = request.status === "submitted"
     ? ["start_review", "revoke"]

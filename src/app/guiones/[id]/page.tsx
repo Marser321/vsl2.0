@@ -13,6 +13,7 @@ import {
   Badge,
   Card,
   PageTitle,
+  Skeleton,
   btnPrimary,
   btnSecondary,
   inputCls,
@@ -207,7 +208,7 @@ function GuionDetail({ id }: { id: string }) {
     URL.revokeObjectURL(url);
   }
 
-  if (!script) return <div className="text-sm text-slate-400">Cargando…</div>;
+  if (!script) return <div aria-label="Cargando guion"><Skeleton className="h-8 w-72" /><Skeleton className="mt-2 h-4 w-40" /><Card className="mt-6 p-6"><Skeleton className="h-5 w-48" /><Skeleton className="mt-5 h-96 w-full" /></Card></div>;
 
   const cachePct =
     current?.usage &&
@@ -445,7 +446,7 @@ export default function GuionPage({
 }) {
   const { id } = use(params);
   return (
-    <Suspense fallback={<div className="text-sm text-slate-400">Cargando…</div>}>
+    <Suspense fallback={<div aria-label="Cargando guion"><Skeleton className="h-8 w-72" /><Skeleton className="mt-6 h-96 w-full" /></div>}>
       <GuionDetail id={id} />
     </Suspense>
   );

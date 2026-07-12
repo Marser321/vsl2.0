@@ -2,10 +2,10 @@ import Link from "next/link";
 import { getDb } from "@/db";
 import { clients, documents, scripts } from "@/db/schema";
 import { desc, eq, sql } from "drizzle-orm";
-import { Badge, Card, PageTitle, btnPrimary } from "@/components/ui";
+import { Badge, Card, EmptyState, PageTitle, btnPrimary } from "@/components/ui";
 import { isAdminSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
-import { Sparkles } from "lucide-react";
+import { ScrollText, Sparkles } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -85,13 +85,7 @@ export default async function Home() {
       <h2 className="font-semibold text-brand-navy mb-3">Guiones recientes</h2>
       <Card>
         {recent.length === 0 ? (
-          <div className="p-10 text-center text-sm text-slate-400">
-            Todavía no hay guiones.{" "}
-            <Link href="/clientes" className="text-brand-blue underline">
-              Creá un cliente
-            </Link>
-            , subí sus documentos y generá el primero.
-          </div>
+          <EmptyState icon={ScrollText} title="Todavía no hay guiones" description="Creá un cliente, subí sus documentos y generá el primero." action={<Link href="/clientes" className={btnPrimary}>Crear cliente</Link>} />
         ) : (
           <ul className="divide-y divide-slate-100">
             {recent.map((s) => (

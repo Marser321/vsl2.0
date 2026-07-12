@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { use, useCallback, useEffect, useState } from "react";
 import DocumentManager from "@/components/DocumentManager";
-import { Badge, Card, PageTitle, btnPrimary, btnSecondary, inputCls } from "@/components/ui";
+import { Badge, Card, PageTitle, Skeleton, btnPrimary, btnSecondary, inputCls } from "@/components/ui";
 import { Radar, Sparkles } from "lucide-react";
 
 type Client = {
@@ -92,7 +92,7 @@ export default function ClientePage({
     load();
   }
 
-  if (!client) return <div className="text-sm text-slate-400">Cargando…</div>;
+  if (!client) return <div aria-label="Cargando cliente"><Skeleton className="h-8 w-56" /><Skeleton className="mt-2 h-4 w-32" /><div className="mt-6 grid grid-cols-2 gap-8"><Card className="p-5"><Skeleton className="h-5 w-36" /><Skeleton className="mt-5 h-40 w-full" /></Card><Card className="p-5"><Skeleton className="h-5 w-28" /><Skeleton className="mt-5 h-40 w-full" /></Card></div></div>;
 
   return (
     <div>

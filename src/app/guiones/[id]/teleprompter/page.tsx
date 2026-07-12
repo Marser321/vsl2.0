@@ -4,6 +4,7 @@ import Link from "next/link";
 import { use, useEffect, useMemo, useRef, useState } from "react";
 import { analyzeScript, fmtTime } from "@/lib/readtime";
 import { AlertTriangle, ArrowLeft, Pause, Play } from "lucide-react";
+import { Skeleton } from "@/components/ui";
 
 type ScriptDetail = {
   id: number;
@@ -75,7 +76,7 @@ export default function TeleprompterPage({
 
   if (!script || !analysis)
     return (
-      <div className="text-sm text-slate-400 p-8">Cargando teleprompter…</div>
+      <div className="min-h-screen bg-slate-950 p-8" aria-label="Cargando teleprompter"><Skeleton className="h-8 w-72 bg-slate-800" /><Skeleton className="mx-auto mt-16 h-[60vh] max-w-4xl bg-slate-800" /></div>
     );
 
   return (

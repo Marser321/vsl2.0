@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Badge, Card, PageTitle, btnPrimary } from "@/components/ui";
-import { Sparkles } from "lucide-react";
+import { Badge, Card, EmptyState, PageTitle, Skeleton, btnPrimary } from "@/components/ui";
+import { ScrollText, Sparkles } from "lucide-react";
 
 type Row = {
   id: number;
@@ -19,11 +19,13 @@ type Row = {
 
 export default function GuionesPage() {
   const [rows, setRows] = useState<Row[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetch("/api/scripts")
       .then((r) => r.json())
-      .then(setRows);
+      .then(setRows)
+      .finally(() => setLoading(false));
   }, []);
 
   return (
@@ -38,10 +40,10 @@ export default function GuionesPage() {
         }
       />
       <Card>
-        {rows.length === 0 ? (
-          <div className="p-10 text-center text-sm text-slate-400">
-            Todavía no hay guiones.
-          </div>
+        {loading ? (
+          <div className="divide-y divide-slate-100">{Array.from({ length: 6 }).map((_, index) => <div className="flex gap-4 px-5 py-4" key={index}><Skeleton className="h-4 flex-1" /><Skeleton className="h-4 w-24" /><Skeleton className="h-5 w-20 rounded-full" /></div>)}</div>
+        ) : rows.length === 0 ? (
+          <EmptyState icon={ScrollText} title="Todavía no hay guiones" description="Generá el primero a partir del dossier de un cliente." action={<Link href="/generar" className={btnPrimary}><Sparkles size={16} strokeWidth={1.75} /> Generar guion</Link>} />
         ) : (
           <ul className="divide-y divide-slate-100">
             {rows.map((s) => (

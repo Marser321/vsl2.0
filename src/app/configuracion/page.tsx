@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Badge, Card, PageTitle, btnPrimary, inputCls } from "@/components/ui";
+import { Badge, Card, PageTitle, Skeleton, btnPrimary, inputCls } from "@/components/ui";
 import { Check } from "lucide-react";
 
 type Settings = Record<string, unknown> & {
@@ -45,7 +45,7 @@ export default function ConfiguracionPage() {
   }
 
   if (!settings)
-    return <div className="text-sm text-slate-400">Cargando…</div>;
+    return <div className="max-w-3xl" aria-label="Cargando configuración"><Skeleton className="h-8 w-48" /><Skeleton className="mt-2 h-4 w-80" /><Card className="mt-6 p-5"><Skeleton className="h-5 w-32" /><Skeleton className="mt-4 h-9 w-full" /></Card><Card className="mt-6 p-5"><Skeleton className="h-5 w-40" /><Skeleton className="mt-4 h-64 w-full" /></Card></div>;
 
   return (
     <div className="max-w-3xl">
