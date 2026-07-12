@@ -37,6 +37,14 @@ node -e "require('argon2').hash('TU_CLAVE').then(console.log)"
 
 Generá `SESSION_SECRET` y `AUTH_RATE_LIMIT_SALT` con valores aleatorios independientes de al menos 32 caracteres.
 
+### Variables de entorno para automatizaciones
+
+- `CRON_SECRET`: protege el radar semanal invocado por Vercel Cron. Generá uno con `openssl rand -hex 32`.
+- `INTAKE_NOTIFICATION_EMAIL`: destinatario de los avisos de relevamientos y del resumen semanal del radar.
+- `NEXT_PUBLIC_APP_URL`: URL pública de VSL Studio usada en los enlaces de los emails.
+
+El radar corre los lunes a las 08:00 UTC (05:00 en Montevideo); los cron de Vercel siempre usan UTC.
+
 ## Base de datos
 
 Aplicar migraciones y datos iniciales:
