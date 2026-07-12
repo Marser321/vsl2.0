@@ -33,8 +33,10 @@ export type VersionMetric = {
 type MetricsPanelProps = {
   scriptId: number;
   activeVersion: { id: number; versionNumber: number };
+  clientName: string;
+  outcome: string;
   promotions: Array<{ versionId: number | null; scope: "client" | "global" }>;
-  onPromote: (versionId: number) => Promise<boolean>;
+  onPromote: (versionId: number, scope: "client" | "global") => Promise<boolean>;
 };
 
 type MetricForm = {
@@ -73,7 +75,7 @@ function metricSummary(metric: VersionMetric) {
   return parts.join(" · ");
 }
 
-export function MetricsPanel({ scriptId, activeVersion, promotions, onPromote }: MetricsPanelProps) {
+export function MetricsPanel({ activeVersion, clientName, onPromote, outcome, promotions, scriptId }: MetricsPanelProps) {
   const [metrics, setMetrics] = useState<VersionMetric[]>([]);
   const [platform, setPlatform] = useState<Platform>("meta");
   const [form, setForm] = useState<MetricForm>(EMPTY_FORM);
@@ -145,11 +147,11 @@ export function MetricsPanel({ scriptId, activeVersion, promotions, onPromote }:
     }
   }
 
-  async function promoteCandidate() {
+  async function promoteTarget(scope: "client" | "global") {
     setPromoting(true);
     try {
-      if (!candidate) return;
-      await onPromote(candidate.scriptVersionId);
+      const versionId = candidate?.scriptVersionId ?? activeVersion.id;
+      await onPromote(versionId, scope);
     } catch (error) {
       toast.error((error as Error).message);
     } finally {
@@ -158,12 +160,14 @@ export function MetricsPanel({ scriptId, activeVersion, promotions, onPromote }:
   }
 
   const candidate = pickWinningCandidate(metrics);
-  const candidatePromoted = candidate
-    ? promotions.some(
-        (promotion) =>
-          promotion.versionId === candidate.scriptVersionId && promotion.scope === "client"
-      )
-    : false;
+  const promotionVersionId = candidate?.scriptVersionId ?? activeVersion.id;
+  const clientPromoted = promotions.some(
+    (promotion) => promotion.versionId === promotionVersionId && promotion.scope === "client"
+  );
+  const globalPromoted = promotions.some(
+    (promotion) => promotion.versionId === promotionVersionId && promotion.scope === "global"
+  );
+  const hasLegacyPromotion = promotions.some((promotion) => promotion.versionId === null);
   const sortedMetrics = [...metrics].sort(
     (a, b) => b.versionNumber - a.versionNumber || a.platform.localeCompare(b.platform)
   );
@@ -178,19 +182,31 @@ export function MetricsPanel({ scriptId, activeVersion, promotions, onPromote }:
         </div>
       </div>
 
-      {candidate && (
+      {(candidate || outcome === "won") && (
         <div className="flex flex-wrap items-center gap-3 border-b border-emerald-200 bg-emerald-50 px-5 py-3">
           <Trophy size={17} className="text-emerald-700" strokeWidth={1.75} />
           <p className="min-w-0 flex-1 text-sm text-emerald-900">
-            La v{candidate.versionNumber} tiene las mejores métricas reales — promovela como ejemplar
+            {candidate
+              ? `La v${candidate.versionNumber} tiene las mejores métricas reales — promovela como ejemplar`
+              : `La v${activeVersion.versionNumber} está marcada como ganadora — promovela como ejemplar`}
+            {hasLegacyPromotion && (
+              <span className="mt-1 block text-xs text-emerald-700">
+                También existe un ejemplar anterior sin versión trazable.
+              </span>
+            )}
           </p>
-          {candidatePromoted ? (
-            <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700">
-              <CheckCircle2 size={14} /> Ya promovida para el cliente
-            </span>
-          ) : (
-            <Button onClick={promoteCandidate} loading={promoting} loadingLabel="Promoviendo…">Promover como ejemplar</Button>
-          )}
+          <div className="flex flex-wrap items-center gap-2">
+            {clientPromoted ? (
+              <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700"><CheckCircle2 size={14} /> En {clientName}</span>
+            ) : (
+              <Button variant="secondary" onClick={() => promoteTarget("client")} loading={promoting} loadingLabel="Promoviendo…">Solo {clientName}</Button>
+            )}
+            {globalPromoted ? (
+              <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700"><CheckCircle2 size={14} /> Global</span>
+            ) : (
+              <Button onClick={() => promoteTarget("global")} loading={promoting} loadingLabel="Promoviendo…">Biblioteca global</Button>
+            )}
+          </div>
         </div>
       )}
 

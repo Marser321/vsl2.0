@@ -26,7 +26,7 @@ import {
   type ProcessStatus,
 } from "@/components/ui";
 import { slugify } from "@/lib/templates";
-import { ArrowLeft, ArrowRight, Check, Download, LayoutTemplate, Pencil, Play, Star } from "lucide-react";
+import { ArrowLeft, ArrowRight, Download, LayoutTemplate, Pencil, Play, Star } from "lucide-react";
 import { toast } from "sonner";
 
 type Usage = {
@@ -323,32 +323,6 @@ function GuionDetail({ id }: { id: string }) {
         }
       />
 
-      {script.outcome === "won" && script.promotions.length === 0 && current && (
-        <Card className="p-4 mb-4 flex flex-wrap items-center justify-between gap-3 bg-emerald-50 border-emerald-200">
-          <span className="text-sm text-emerald-800">
-            Este guion convirtió. Promové la v{current.versionNumber} visible para que sirva de ejemplo en futuras generaciones.
-          </span>
-          <div className="flex gap-2">
-            <button className={btnSecondary} onClick={() => promote("client", current.id)}>
-              Solo para {script.client?.name}
-            </button>
-            <button className={btnPrimary} onClick={() => promote("global", current.id)}>
-              Biblioteca global
-            </button>
-          </div>
-        </Card>
-      )}
-      {script.promotions.length > 0 && (
-        <Card className="p-4 mb-4 text-sm text-emerald-800 bg-emerald-50 border-emerald-200">
-          <Check className="mr-1 inline" size={15} strokeWidth={1.75} />
-          {script.promotions.map((promotion) =>
-            promotion.legacy
-              ? ` Ejemplar anterior · ${promotion.scope === "global" ? "global" : "cliente"}`
-              : ` v${script.versions.find((version) => version.id === promotion.versionId)?.versionNumber ?? "?"} · ${promotion.scope === "global" ? "global" : "cliente"}`
-          ).join(" ·")}
-        </Card>
-      )}
-
       <div className="flex gap-2 mb-4 items-center">
         <span className="text-xs text-slate-500">Versiones:</span>
         {script.versions.map((v) => (
@@ -399,8 +373,10 @@ function GuionDetail({ id }: { id: string }) {
           <MetricsPanel
             scriptId={script.id}
             activeVersion={{ id: current.id, versionNumber: current.versionNumber }}
+            clientName={script.client?.name ?? "el cliente"}
+            outcome={script.outcome}
             promotions={script.promotions}
-            onPromote={(versionId) => promote("client", versionId)}
+            onPromote={(versionId, scope) => promote(scope, versionId)}
           />
         </>
       )}
