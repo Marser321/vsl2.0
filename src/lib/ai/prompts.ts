@@ -9,9 +9,10 @@ const KIND_LABELS: Record<Document["kind"], string> = {
   learning: "APRENDIZAJE DE LA AGENCIA (regla acumulada — aplicar siempre)",
 };
 
-export function renderDocument(doc: Document): string {
+export function renderDocument(doc: Document, performanceEvidence?: string): string {
   const tags = doc.tags.length ? ` | tags: ${doc.tags.join(", ")}` : "";
   return `<documento tipo="${KIND_LABELS[doc.kind]}" titulo="${doc.title}"${tags}>
+${performanceEvidence ? `<evidencia_rendimiento>${performanceEvidence}</evidencia_rendimiento>\n` : ""}
 ${doc.extractedText.trim()}
 </documento>`;
 }
@@ -24,13 +25,17 @@ export function renderFrameworks(fws: Framework[]): string {
   return `## Frameworks de estructura disponibles\n\n${body}`;
 }
 
-export function renderClientDossier(client: Client, docs: Document[]): string {
+export function renderClientDossier(
+  client: Client,
+  docs: Document[],
+  performanceEvidence = new Map<number, string>()
+): string {
   const header = `## Dossier del cliente: ${client.name}
 Industria: ${client.industry || "—"}
 ${client.description ? `Descripción: ${client.description}` : ""}
 ${client.notes ? `Notas de la agencia: ${client.notes}` : ""}`.trim();
 
-  const body = docs.map(renderDocument).join("\n\n");
+  const body = docs.map((doc) => renderDocument(doc, performanceEvidence.get(doc.id))).join("\n\n");
   return `${header}\n\n${body}`;
 }
 

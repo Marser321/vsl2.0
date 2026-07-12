@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
 ${client.description ?? ""}
 ${client.notes ? `Notas de la agencia: ${client.notes}` : ""}
 
-${docs.map(renderDocument).join("\n\n")}`,
+${docs.map((doc) => renderDocument(doc)).join("\n\n")}`,
           cache: true,
         },
       ],

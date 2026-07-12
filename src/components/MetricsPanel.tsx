@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { BarChart3, CheckCircle2, Trophy } from "lucide-react";
 import { toast } from "sonner";
 import { Card, btnPrimary, inputCls } from "./ui";
+import { pickBestMetric } from "@/lib/scripts/quality";
 
 const PLATFORMS = ["meta", "tiktok", "youtube", "otro"] as const;
 type Platform = (typeof PLATFORMS)[number];
@@ -53,17 +54,7 @@ const EMPTY_FORM: MetricForm = {
 };
 
 export function pickWinningCandidate(metrics: VersionMetric[]) {
-  return metrics
-    .filter(
-      (metric) =>
-        metric.hookRate !== null &&
-        (metric.impressions === null || metric.impressions >= 1000)
-    )
-    .sort((a, b) => {
-      if (a.hookRate !== b.hookRate) return (b.hookRate ?? -Infinity) - (a.hookRate ?? -Infinity);
-      if (a.ctr !== b.ctr) return (b.ctr ?? -Infinity) - (a.ctr ?? -Infinity);
-      return (a.cpa ?? Infinity) - (b.cpa ?? Infinity);
-    })[0] ?? null;
+  return pickBestMetric(metrics);
 }
 
 function numberOrNull(value: string) {

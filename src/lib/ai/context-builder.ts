@@ -18,6 +18,14 @@ import {
 import { and, asc, eq, isNull, inArray, sql } from "drizzle-orm";
 import { scriptMetrics, scriptRatings, scriptVersions } from "@/db/schema";
 import { getSetting } from "@/lib/settings";
+import {
+  compareSuggestedExemplars,
+  formatPerformanceEvidence,
+  isReliableMetric,
+  pickBestMetric,
+  type BestMetric,
+} from "@/lib/scripts/quality";
+import { parsePromotionTags } from "@/lib/scripts/promotions";
 import type { ChatMessage, SystemBlock } from "./provider";
 import {
   renderBriefMessage,
@@ -42,6 +50,51 @@ export type BuiltContext = {
 
 function contentHash(value: unknown) {
   return createHash("sha256").update(typeof value === "string" ? value : JSON.stringify(value)).digest("hex");
+}
+
+async function loadQualitySignals(db: ReturnType<typeof getDb>, sourceIds: number[]) {
+  const avgByScript = new Map<number, number>();
+  const bestMetricByScript = new Map<number, BestMetric>();
+  const metricsByScript = new Map<number, BestMetric[]>();
+  if (!sourceIds.length) return { avgByScript, bestMetricByScript, metricsByScript };
+
+  const [ratingRows, metricRows] = await Promise.all([
+    db
+      .select({
+        scriptId: scriptVersions.scriptId,
+        avg: sql<number>`avg(${scriptRatings.score})`,
+      })
+      .from(scriptRatings)
+      .innerJoin(scriptVersions, eq(scriptRatings.scriptVersionId, scriptVersions.id))
+      .where(inArray(scriptVersions.scriptId, sourceIds))
+      .groupBy(scriptVersions.scriptId),
+    db
+      .select({
+        scriptId: scriptVersions.scriptId,
+        scriptVersionId: scriptVersions.id,
+        versionNumber: scriptVersions.versionNumber,
+        platform: scriptMetrics.platform,
+        hookRate: scriptMetrics.hookRate,
+        ctr: scriptMetrics.ctr,
+        cpa: scriptMetrics.cpa,
+        impressions: scriptMetrics.impressions,
+      })
+      .from(scriptMetrics)
+      .innerJoin(scriptVersions, eq(scriptMetrics.scriptVersionId, scriptVersions.id))
+      .where(inArray(scriptVersions.scriptId, sourceIds)),
+  ]);
+
+  for (const row of ratingRows) avgByScript.set(row.scriptId, Number(row.avg));
+  for (const scriptId of sourceIds) {
+    const metrics = metricRows
+      .filter((row) => row.scriptId === scriptId)
+      .filter(isReliableMetric)
+      .map(({ scriptId: _scriptId, ...metric }) => metric);
+    metricsByScript.set(scriptId, metrics);
+    const best = pickBestMetric(metrics);
+    if (best) bestMetricByScript.set(scriptId, best);
+  }
+  return { avgByScript, bestMetricByScript, metricsByScript };
 }
 
 /**
@@ -142,12 +195,40 @@ export async function buildContext(args: {
   // Evitar duplicados entre bloque global y selección.
   const stableIds = new Set(globalStableDocs.map((d) => d.id));
   const dossierDocs = selectedDocs.filter((d) => !stableIds.has(d.id));
+  const selectedSourceIds = [
+    ...new Set(
+      dossierDocs
+        .filter((doc) => doc.kind === "winning_script")
+        .map((doc) => doc.sourceScriptId)
+        .filter((scriptId): scriptId is number => scriptId !== null)
+    ),
+  ];
+  const selectedSignals = await loadQualitySignals(db, selectedSourceIds);
+  const performanceEvidence = new Map<number, string>();
+  for (const doc of dossierDocs) {
+    if (doc.kind !== "winning_script" || doc.sourceScriptId === null) continue;
+    const promotedVersionId = parsePromotionTags(doc.tags, doc.visibility).versionId;
+    if (promotedVersionId === null) continue;
+    const metric = pickBestMetric(
+      (selectedSignals.metricsByScript.get(doc.sourceScriptId) ?? []).filter(
+        (item) => item.scriptVersionId === promotedVersionId
+      )
+    );
+    if (!metric) continue;
+    performanceEvidence.set(
+      doc.id,
+      formatPerformanceEvidence({
+        metric,
+        avgRating: selectedSignals.avgByScript.get(doc.sourceScriptId) ?? null,
+      })
+    );
+  }
 
   const block1 = [
     await getSetting("system_prompt"),
     renderFrameworks(allFrameworks),
     globalStableDocs.length
-      ? `## Biblioteca global de la agencia\n\n${globalStableDocs.map(renderDocument).join("\n\n")}`
+      ? `## Biblioteca global de la agencia\n\n${globalStableDocs.map((doc) => renderDocument(doc)).join("\n\n")}`
       : "",
   ]
     .filter(Boolean)
@@ -159,7 +240,7 @@ export async function buildContext(args: {
     campaign ? `## Campaña actual: ${campaign.title}\nObjetivo: ${campaign.objective ?? "—"}\n${JSON.stringify(campaign.brief)}` : "",
     scopedLearnings.length ? `## Aprendizajes anonimizados del rubro\n${scopedLearnings.map((item) => `- ${item.content}`).join("\n")}` : "",
   ].filter(Boolean).join("\n\n");
-  const block2 = `${renderClientDossier(client, dossierDocs)}\n\n${hierarchy}`.trim();
+  const block2 = `${renderClientDossier(client, dossierDocs, performanceEvidence)}\n\n${hierarchy}`.trim();
 
   const systemBlocks: SystemBlock[] = [
     { text: block1, cache: true },
@@ -195,6 +276,10 @@ export type SuggestedDocument = Document & {
   avgRating: number | null;
   /** Mejor hook rate real entre las versiones del guion de origen. */
   bestHookRate: number | null;
+  /** Snapshot de mercado más fuerte con muestra suficiente. */
+  bestMetric: BestMetric | null;
+  /** Señales internas y de mercado apuntan en direcciones distintas. */
+  qualityConflict: boolean;
   /** Si el wizard debe dejarlo tildado por defecto (los mal puntuados no). */
   preselect: boolean;
 };
@@ -228,37 +313,33 @@ export async function suggestedDocuments(clientId: number): Promise<SuggestedDoc
   const sourceIds = [
     ...new Set(all.map((d) => d.sourceScriptId).filter((x): x is number => x !== null)),
   ];
-  const avgByScript = new Map<number, number>();
-  const bestHookByScript = new Map<number, number>();
-  if (sourceIds.length) {
-    const rows = await db
-      .select({
-        scriptId: scriptVersions.scriptId,
-        avg: sql<number>`avg(${scriptRatings.score})`,
-      })
-      .from(scriptRatings)
-      .innerJoin(scriptVersions, eq(scriptRatings.scriptVersionId, scriptVersions.id))
-      .where(inArray(scriptVersions.scriptId, sourceIds))
-      .groupBy(scriptVersions.scriptId);
-    for (const r of rows) avgByScript.set(r.scriptId, Number(r.avg));
-
-    const metricRows = await db
-      .select({
-        scriptId: scriptVersions.scriptId,
-        bestHookRate: sql<number>`max(${scriptMetrics.hookRate})`,
-      })
-      .from(scriptMetrics)
-      .innerJoin(scriptVersions, eq(scriptMetrics.scriptVersionId, scriptVersions.id))
-      .where(inArray(scriptVersions.scriptId, sourceIds))
-      .groupBy(scriptVersions.scriptId);
-    for (const row of metricRows) {
-      if (row.bestHookRate !== null) bestHookByScript.set(row.scriptId, Number(row.bestHookRate));
-    }
-  }
-
-  return all.map((d) => {
-    const avgRating = d.sourceScriptId != null ? (avgByScript.get(d.sourceScriptId) ?? null) : null;
-    const bestHookRate = d.sourceScriptId != null ? (bestHookByScript.get(d.sourceScriptId) ?? null) : null;
-    return { ...d, avgRating, bestHookRate, preselect: avgRating === null || avgRating >= 3 };
+  const signals = await loadQualitySignals(db, sourceIds);
+  const enriched = all.map((document) => {
+    const avgRating = document.sourceScriptId !== null
+      ? (signals.avgByScript.get(document.sourceScriptId) ?? null)
+      : null;
+    const promotedVersionId = parsePromotionTags(document.tags, document.visibility).versionId;
+    const scriptMetrics = document.sourceScriptId !== null
+      ? (signals.metricsByScript.get(document.sourceScriptId) ?? [])
+      : [];
+    const bestMetric = promotedVersionId !== null
+      ? pickBestMetric(scriptMetrics.filter((metric) => metric.scriptVersionId === promotedVersionId))
+      : document.sourceScriptId !== null
+        ? (signals.bestMetricByScript.get(document.sourceScriptId) ?? null)
+        : null;
+    const preselect = avgRating === null || avgRating >= 3;
+    return {
+      ...document,
+      avgRating,
+      bestHookRate: bestMetric?.hookRate ?? null,
+      bestMetric,
+      qualityConflict: avgRating !== null && avgRating < 3 && bestMetric !== null,
+      preselect,
+    };
   });
+  const regularDocs = enriched.filter((document) => document.kind !== "winning_script");
+  const exemplars = enriched
+    .filter((document) => document.kind === "winning_script")
+    .sort(compareSuggestedExemplars);
+  return [...regularDocs, ...exemplars];
 }

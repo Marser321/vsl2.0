@@ -23,8 +23,18 @@ type Doc = {
   kind: string;
   clientId: number | null;
   tokenCount: number;
+  tags: string[];
   avgRating?: number | null;
   bestHookRate?: number | null;
+  bestMetric?: {
+    platform: "meta" | "tiktok" | "youtube" | "otro";
+    hookRate: number;
+    ctr: number | null;
+    cpa: number | null;
+    impressions: number | null;
+    versionNumber: number;
+  } | null;
+  qualityConflict?: boolean;
   preselect?: boolean;
 };
 
@@ -159,6 +169,31 @@ function GenerarWizard() {
         .reduce((s, d) => s + d.tokenCount, 0),
     [docs, selectedDocs]
   );
+  const documentGroups = useMemo(() => {
+    const exemplars = docs.filter((doc) => doc.kind === "winning_script");
+    const freshReferences = docs.filter(
+      (doc) =>
+        doc.kind !== "winning_script" &&
+        (doc.kind === "transcript" || doc.kind === "reference" || doc.tags.includes("radar"))
+    );
+    const clientContext = docs.filter(
+      (doc) => !exemplars.includes(doc) && !freshReferences.includes(doc)
+    );
+    return [
+      { key: "context", label: "Contexto del cliente", items: clientContext },
+      { key: "fresh", label: "Radar, transcripts y referencias", items: freshReferences },
+      { key: "exemplars", label: "Ejemplares con señales de calidad", items: exemplars },
+    ].filter((group) => group.items.length > 0);
+  }, [docs]);
+  const selectedSummary = useMemo(() => {
+    const selected = docs.filter((doc) => selectedDocs.has(doc.id));
+    return {
+      total: selected.length,
+      radar: selected.filter((doc) => doc.tags.includes("radar")).length,
+      transcripts: selected.filter((doc) => doc.kind === "transcript").length,
+      validated: selected.filter((doc) => doc.kind === "winning_script" && doc.bestMetric).length,
+    };
+  }, [docs, selectedDocs]);
 
   function toggleDoc(id: number) {
     setSelectedDocs((prev) => {
@@ -587,43 +622,53 @@ function GenerarWizard() {
                 calidad).
               </p>
             ) : (
-              <ul className="space-y-2">
-                {docs.map((d) => (
-                  <li key={d.id}>
-                    <label className="flex items-center gap-3 text-sm cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={selectedDocs.has(d.id)}
-                        onChange={() => toggleDoc(d.id)}
-                        className="accent-brand-blue"
-                      />
-                      <Badge tone={KIND_TONES[d.kind] ?? "gray"}>
-                        {KIND_LABELS[d.kind] ?? d.kind}
-                      </Badge>
-                      <span className="flex-1">{d.title}</span>
-                      {d.avgRating != null && (
-                        <span
-                          className={`text-[11px] font-medium ${d.avgRating >= 3 ? "text-amber-600" : "text-rose-500"}`}
-                          title="Puntuación promedio del equipo al guion de origen"
-                        >
-                          <Star className="inline" size={12} strokeWidth={1.75} /> {d.avgRating.toFixed(1)}
-                        </span>
-                      )}
-                      {d.bestHookRate != null && (
-                        <Badge tone="blue">hook {d.bestHookRate.toFixed(1)}%</Badge>
-                      )}
-                      {d.clientId === null && (
-                        <span className="text-[10px] text-slate-400">
-                          global
-                        </span>
-                      )}
-                      <span className="text-xs text-slate-400">
-                        {d.tokenCount.toLocaleString("es")} tk
-                      </span>
-                    </label>
-                  </li>
+              <div className="space-y-5">
+                <div className="grid grid-cols-2 gap-2 rounded-lg border border-blue-100 bg-blue-50/70 p-3 text-xs text-brand-navy sm:grid-cols-4">
+                  <span><strong>{selectedSummary.total}</strong> documentos</span>
+                  <span><strong>{selectedSummary.radar}</strong> radar</span>
+                  <span><strong>{selectedSummary.transcripts}</strong> transcripts</span>
+                  <span><strong>{selectedSummary.validated}</strong> ejemplares validados</span>
+                </div>
+                {documentGroups.map((group) => (
+                  <section key={group.key} aria-labelledby={`document-group-${group.key}`}>
+                    <h3 id={`document-group-${group.key}`} className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      {group.label}
+                    </h3>
+                    <ul className="space-y-2">
+                      {group.items.map((doc) => (
+                        <li key={doc.id}>
+                          <label className={`flex cursor-pointer flex-wrap items-center gap-2 rounded-lg border px-3 py-2.5 text-sm transition-colors ${selectedDocs.has(doc.id) ? "border-blue-200 bg-blue-50/40" : "border-slate-200 bg-white"}`}>
+                            <input
+                              type="checkbox"
+                              checked={selectedDocs.has(doc.id)}
+                              onChange={() => toggleDoc(doc.id)}
+                              className="accent-brand-blue"
+                            />
+                            <Badge tone={KIND_TONES[doc.kind] ?? "gray"}>
+                              {KIND_LABELS[doc.kind] ?? doc.kind}
+                            </Badge>
+                            <span className="min-w-48 flex-1">{doc.title}</span>
+                            {doc.qualityConflict && <Badge tone="red">Señales en conflicto</Badge>}
+                            {!doc.qualityConflict && doc.bestMetric && (
+                              <Badge tone="green">Validado por mercado · hook {doc.bestMetric.hookRate.toFixed(1)}%</Badge>
+                            )}
+                            {doc.avgRating != null && (
+                              <span
+                                className={`text-[11px] font-medium ${doc.avgRating >= 3 ? "text-amber-600" : "text-rose-500"}`}
+                                title={doc.avgRating >= 3 ? "Recomendado por el equipo" : "No se preselecciona por su puntuación interna"}
+                              >
+                                <Star className="inline" size={12} strokeWidth={1.75} /> {doc.avgRating.toFixed(1)}
+                              </span>
+                            )}
+                            {doc.clientId === null && <span className="text-[10px] text-slate-400">global</span>}
+                            <span className="text-xs text-slate-400">{doc.tokenCount.toLocaleString("es")} tk</span>
+                          </label>
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
                 ))}
-              </ul>
+              </div>
             )}
           </Card>
 
