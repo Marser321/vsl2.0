@@ -171,7 +171,7 @@ export function MetricsPanel({ scriptId, activeVersion, promotions, onPromote }:
   return (
     <Card className="mb-4 overflow-hidden">
       <div className="border-b border-slate-200 px-5 py-4">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <BarChart3 size={17} className="text-brand-blue" strokeWidth={1.75} />
           <h2 className="text-sm font-semibold text-brand-navy">Métricas reales</h2>
           <span className="text-xs text-slate-400">Meta, TikTok, YouTube u otra fuente</span>

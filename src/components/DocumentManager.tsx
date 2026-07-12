@@ -192,13 +192,13 @@ export default function DocumentManager({ scope }: { scope: string }) {
             {docs.map((doc) => (
               <li
                 key={doc.id}
-                className="flex items-center gap-3 px-5 py-3 text-sm"
+                className="flex flex-wrap items-center gap-3 px-4 py-3 text-sm sm:px-5"
               >
                 <Badge tone={KIND_TONES[doc.kind] ?? "gray"}>
                   {KIND_LABELS[doc.kind] ?? doc.kind}
                 </Badge>
                 <span
-                  className={`flex-1 font-medium ${doc.isActive ? "" : "line-through text-slate-400"}`}
+                  className={`min-w-48 flex-1 font-medium ${doc.isActive ? "" : "line-through text-slate-400"}`}
                 >
                   {doc.title}
                 </span>

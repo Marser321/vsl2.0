@@ -498,10 +498,11 @@ function GenerarWizard() {
               </div>
             )}
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">
+              <label htmlFor="script-title" className="block text-xs font-semibold text-slate-600 mb-1">
                 Título interno del guion *
               </label>
               <input
+                id="script-title"
                 name="title"
                 required
                 className={inputCls}
@@ -511,48 +512,49 @@ function GenerarWizard() {
             </div>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">
+                <label htmlFor="brief-producto" className="block text-xs font-semibold text-slate-600 mb-1">
                   Producto / servicio *
                 </label>
-                <textarea name="producto" required rows={2} className={inputCls} defaultValue={autofill?.producto ?? ""} />
+                <textarea id="brief-producto" name="producto" required rows={2} className={inputCls} defaultValue={autofill?.producto ?? ""} />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">
+                <label htmlFor="brief-audiencia" className="block text-xs font-semibold text-slate-600 mb-1">
                   Audiencia / avatar *
                 </label>
-                <textarea name="audiencia" required rows={2} className={inputCls} defaultValue={autofill?.audiencia ?? ""} />
+                <textarea id="brief-audiencia" name="audiencia" required rows={2} className={inputCls} defaultValue={autofill?.audiencia ?? ""} />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">
+                <label htmlFor="brief-oferta" className="block text-xs font-semibold text-slate-600 mb-1">
                   Oferta (precio, bonos, garantía) *
                 </label>
-                <textarea name="oferta" required rows={2} className={inputCls} defaultValue={autofill?.oferta ?? ""} />
+                <textarea id="brief-oferta" name="oferta" required rows={2} className={inputCls} defaultValue={autofill?.oferta ?? ""} />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">
+                <label htmlFor="brief-dolores" className="block text-xs font-semibold text-slate-600 mb-1">
                   Dolores principales *
                 </label>
-                <textarea name="dolores" required rows={2} className={inputCls} defaultValue={autofill?.dolores ?? ""} />
+                <textarea id="brief-dolores" name="dolores" required rows={2} className={inputCls} defaultValue={autofill?.dolores ?? ""} />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">
+                <label htmlFor="brief-objeciones" className="block text-xs font-semibold text-slate-600 mb-1">
                   Objeciones a manejar
                 </label>
-                <textarea name="objeciones" rows={2} className={inputCls} defaultValue={autofill?.objeciones ?? ""} />
+                <textarea id="brief-objeciones" name="objeciones" rows={2} className={inputCls} defaultValue={autofill?.objeciones ?? ""} />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">
+                <label htmlFor="brief-cta" className="block text-xs font-semibold text-slate-600 mb-1">
                   CTA (llamado a la acción) *
                 </label>
-                <input name="cta" required className={inputCls} defaultValue={autofill?.cta ?? ""} />
+                <input id="brief-cta" name="cta" required className={inputCls} defaultValue={autofill?.cta ?? ""} />
               </div>
               {format === "reel" ? (
                 <>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-600 mb-1">
+                    <label htmlFor="brief-duracion-seg" className="block text-xs font-semibold text-slate-600 mb-1">
                       Duración objetivo (segundos)
                     </label>
                     <input
+                      id="brief-duracion-seg"
                       name="duracionSeg"
                       type="number"
                       defaultValue={autofill?.duracionSeg ?? 45}
@@ -562,10 +564,10 @@ function GenerarWizard() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-600 mb-1">
+                    <label htmlFor="brief-plataforma" className="block text-xs font-semibold text-slate-600 mb-1">
                       Plataforma (opcional)
                     </label>
-                    <select name="plataforma" className={inputCls} defaultValue="">
+                    <select id="brief-plataforma" name="plataforma" className={inputCls} defaultValue="">
                       <option value="">Cualquiera</option>
                       <option value="tiktok">TikTok</option>
                       <option value="reels">Instagram Reels</option>
@@ -575,10 +577,11 @@ function GenerarWizard() {
                 </>
               ) : (
                 <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">
+                  <label htmlFor="brief-duracion-min" className="block text-xs font-semibold text-slate-600 mb-1">
                     Duración objetivo (minutos)
                   </label>
                   <input
+                    id="brief-duracion-min"
                     name="duracionMin"
                     type="number"
                     defaultValue={autofill?.duracionMin ?? 10}
@@ -589,10 +592,11 @@ function GenerarWizard() {
                 </div>
               )}
               <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">
+                <label htmlFor="brief-tono" className="block text-xs font-semibold text-slate-600 mb-1">
                   Tono
                 </label>
                 <input
+                  id="brief-tono"
                   name="tono"
                   className={inputCls}
                   placeholder="Ej: directo y emocional, cercano, autoridad"
@@ -601,10 +605,10 @@ function GenerarWizard() {
               </div>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">
+              <label htmlFor="brief-instrucciones" className="block text-xs font-semibold text-slate-600 mb-1">
                 Instrucciones adicionales
               </label>
-              <textarea name="instruccionesExtra" rows={2} className={inputCls} defaultValue={autofill?.instruccionesExtra ?? ""} />
+              <textarea id="brief-instrucciones" name="instruccionesExtra" rows={2} className={inputCls} defaultValue={autofill?.instruccionesExtra ?? ""} />
             </div>
           </Card>
 

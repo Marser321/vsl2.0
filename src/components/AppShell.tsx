@@ -1,33 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  Brain,
-  ClipboardList,
-  Home,
-  LayoutTemplate,
-  Library,
-  ScanSearch,
-  ScrollText,
-  Settings,
-  Sparkles,
-  Users,
-} from "lucide-react";
+import { useRef } from "react";
+import { Menu, X } from "lucide-react";
 import Brandmark from "./Brandmark";
-
-const NAV = [
-  { href: "/", label: "Inicio", icon: Home },
-  { href: "/relevamientos", label: "Relevamientos", icon: ClipboardList },
-  { href: "/generar", label: "Generar guion", icon: Sparkles },
-  { href: "/plantillas", label: "Plantillas", icon: LayoutTemplate },
-  { href: "/guiones", label: "Guiones", icon: ScrollText },
-  { href: "/clientes", label: "Clientes", icon: Users },
-  { href: "/biblioteca", label: "Biblioteca", icon: Library },
-  { href: "/aprendizajes", label: "Aprendizajes", icon: Brain },
-  { href: "/analizador", label: "Analizador de VSLs", icon: ScanSearch },
-  { href: "/configuracion", label: "Configuración", icon: Settings },
-];
+import { AppNavigation } from "./AppNavigation";
 
 export default function AppShell({
   children,
@@ -37,40 +14,26 @@ export default function AppShell({
   authEnabled?: boolean;
 }) {
   const pathname = usePathname();
+  const mobileNavRef = useRef<HTMLDialogElement>(null);
   const isPublic = pathname === "/login" || pathname.startsWith("/relevamiento/");
   if (isPublic) return <main className="min-h-screen">{children}</main>;
 
   return (
     <div className="flex min-h-screen">
-      <aside className="w-60 shrink-0 bg-brand-navy text-white flex flex-col">
-        <div className="px-5 py-6">
-          <div className="flex items-center gap-2">
-            <Brandmark size={28} variant="light" />
-            <div className="leading-tight">
-              <div className="font-bold text-sm">VSL Studio</div>
-              <div className="text-[10px] text-blue-200">AD Media Solution</div>
-            </div>
-          </div>
-        </div>
-        <nav className="flex-1 px-3 space-y-1">
-          {NAV.map((item) => {
-            const Icon = item.icon;
-            return (
-              <Link key={item.href} href={item.href} className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-sky/70 ${pathname === item.href ? "bg-white/15 text-white" : "text-blue-100 hover:bg-white/10 hover:text-white"}`}>
-                <Icon className="w-4 text-brand-sky" size={17} strokeWidth={1.75} />
-                {item.label}
-              </Link>
-            );
-          })}
-        </nav>
-        {authEnabled && (
-          <form action="/api/auth/logout" method="post" className="px-4 pb-3">
-            <button className="w-full rounded-lg border border-white/15 px-3 py-2 text-left text-xs text-blue-200 hover:bg-white/10">Cerrar sesión</button>
-          </form>
-        )}
-        <div className="px-5 py-4 text-[10px] text-blue-300">Guiones que venden · es-LATAM</div>
+      <header className="fixed inset-x-0 top-0 z-40 flex h-16 items-center justify-between bg-brand-navy px-4 text-white shadow-md lg:hidden">
+        <div className="flex items-center gap-2"><Brandmark size={26} variant="light" /><span className="text-sm font-bold">VSL Studio</span></div>
+        <button className="grid min-h-11 min-w-11 place-items-center rounded-lg hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-brand-sky" onClick={() => mobileNavRef.current?.showModal()} aria-label="Abrir navegación">
+          <Menu size={22} />
+        </button>
+      </header>
+      <dialog ref={mobileNavRef} className="m-0 h-dvh w-72 max-w-[85vw] p-0 shadow-2xl backdrop:bg-slate-950/50 lg:hidden">
+        <button className="absolute right-3 top-3 z-10 grid min-h-11 min-w-11 place-items-center rounded-lg text-blue-100 hover:bg-white/10" onClick={() => mobileNavRef.current?.close()} aria-label="Cerrar navegación"><X size={20} /></button>
+        <AppNavigation pathname={pathname} authEnabled={authEnabled} onNavigate={() => mobileNavRef.current?.close()} />
+      </dialog>
+      <aside className="sticky top-0 hidden h-screen w-60 shrink-0 lg:block">
+        <AppNavigation pathname={pathname} authEnabled={authEnabled} />
       </aside>
-      <main className="min-w-0 flex-1 p-4 lg:p-8">{children}</main>
+      <main className="min-w-0 flex-1 px-4 pb-6 pt-20 sm:px-6 lg:p-8">{children}</main>
     </div>
   );
 }

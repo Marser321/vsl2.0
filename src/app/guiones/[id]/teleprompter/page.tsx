@@ -89,7 +89,7 @@ export default function TeleprompterPage({
   return (
     <div className="fixed inset-0 bg-brand-ink text-white flex flex-col z-50">
       {/* Barra superior */}
-      <div className="flex items-center gap-4 px-6 py-3 bg-black/30 text-sm">
+      <div className="flex flex-wrap items-center gap-3 bg-black/30 px-3 py-3 text-sm sm:px-6">
         <Link
           href={`/guiones/${id}`}
           className="text-slate-300 hover:text-white"
@@ -97,12 +97,12 @@ export default function TeleprompterPage({
           <ArrowLeft className="mr-1 inline" size={16} strokeWidth={1.75} /> Salir
         </Link>
         <span className="font-semibold truncate">{script.title}</span>
-        <span className="text-slate-400 text-xs">
+        <span className="hidden text-xs text-slate-400 md:inline">
           {analysis.totalWords.toLocaleString("es")} palabras ·{" "}
           {fmtTime(analysis.totalSec)} a {wpm} ppm
         </span>
-        <div className="ml-auto flex items-center gap-3">
-          <label className="text-xs text-slate-300">
+        <div className="ml-auto flex flex-wrap items-center justify-end gap-3">
+          <label className="hidden text-xs text-slate-300 sm:block">
             Velocidad
             <input
               type="range"
@@ -114,7 +114,7 @@ export default function TeleprompterPage({
             />
             <span className="ml-1">{wpm}</span>
           </label>
-          <label className="text-xs text-slate-300">
+          <label className="hidden text-xs text-slate-300 sm:block">
             Aa
             <input
               type="range"
@@ -133,18 +133,18 @@ export default function TeleprompterPage({
           </button>
           <button
             onClick={() => setPlaying(!playing)}
-            className="rounded-lg bg-brand-blue px-5 py-2 font-semibold hover:bg-blue-600"
+            className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-brand-blue px-4 py-2 font-semibold hover:bg-blue-600"
           >
             {playing ? <><Pause size={17} strokeWidth={1.75} /> Pausa</> : <><Play size={17} strokeWidth={1.75} /> Reproducir</>}
           </button>
         </div>
       </div>
 
-      <div className="flex flex-1 min-h-0">
+      <div className="relative flex min-h-0 flex-1">
         {/* Texto con auto-scroll */}
         <div
           ref={scrollRef}
-          className="flex-1 overflow-y-auto px-[15%] py-[40vh]"
+          className="flex-1 overflow-y-auto px-4 py-[38vh] sm:px-[10%] lg:px-[15%] lg:py-[40vh]"
           style={{ fontSize, lineHeight: 1.8 }}
         >
           {analysis.sections.map((s, i) => (
@@ -164,7 +164,7 @@ export default function TeleprompterPage({
 
         {/* Mapa de retención */}
         {showMap && (
-          <div className="w-80 shrink-0 overflow-y-auto bg-black/30 p-4 text-xs">
+          <div className="absolute inset-x-0 bottom-0 z-10 max-h-[55vh] overflow-y-auto border-t border-white/10 bg-slate-950/95 p-4 text-xs shadow-2xl lg:static lg:max-h-none lg:w-80 lg:shrink-0 lg:border-t-0 lg:bg-black/30 lg:shadow-none">
             <div className="font-bold text-slate-300 uppercase tracking-wider mb-3">
               Mapa de retención
             </div>

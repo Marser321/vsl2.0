@@ -324,7 +324,7 @@ function GuionDetail({ id }: { id: string }) {
       />
 
       {script.outcome === "won" && script.promotions.length === 0 && current && (
-        <Card className="p-4 mb-4 flex items-center justify-between bg-emerald-50 border-emerald-200">
+        <Card className="p-4 mb-4 flex flex-wrap items-center justify-between gap-3 bg-emerald-50 border-emerald-200">
           <span className="text-sm text-emerald-800">
             Este guion convirtió. Promové la v{current.versionNumber} visible para que sirva de ejemplo en futuras generaciones.
           </span>

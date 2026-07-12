@@ -117,10 +117,11 @@ export default function AnalizadorPage() {
         <form onSubmit={handleAnalyze} className="space-y-4">
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">
+              <label htmlFor="analysis-title" className="block text-xs font-semibold text-slate-600 mb-1">
                 Título / referencia *
               </label>
               <input
+                id="analysis-title"
                 ref={titleRef}
                 name="title"
                 required
@@ -129,10 +130,10 @@ export default function AnalizadorPage() {
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">
+              <label htmlFor="analysis-client" className="block text-xs font-semibold text-slate-600 mb-1">
                 Asociar a cliente (opcional)
               </label>
-              <select name="clientId" className={inputCls}>
+              <select id="analysis-client" name="clientId" className={inputCls}>
                 <option value="">Biblioteca global</option>
                 {clients.map((c) => (
                   <option key={c.id} value={c.id}>
@@ -143,11 +144,12 @@ export default function AnalizadorPage() {
             </div>
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold text-slate-600">
+            <label htmlFor="analysis-url" className="mb-1 block text-xs font-semibold text-slate-600">
               Importar desde URL
             </label>
             <div className="flex flex-col gap-2 sm:flex-row">
               <input
+                id="analysis-url"
                 type="url"
                 value={sourceUrl}
                 onChange={(event) => setSourceUrl(event.target.value)}
@@ -169,10 +171,11 @@ export default function AnalizadorPage() {
             </div>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1">
+            <label htmlFor="analysis-transcript" className="block text-xs font-semibold text-slate-600 mb-1">
               Transcript del VSL *
             </label>
             <textarea
+              id="analysis-transcript"
               name="transcript"
               required
               rows={10}

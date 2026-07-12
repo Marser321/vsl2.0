@@ -50,14 +50,14 @@ export default function GuionesPage() {
               <li key={s.id}>
                 <Link
                   href={`/guiones/${s.id}`}
-                  className="flex items-center gap-3 px-5 py-3.5 text-sm hover:bg-brand-mist"
+                  className="flex flex-wrap items-center gap-2 px-4 py-3.5 text-sm hover:bg-brand-mist sm:gap-3 sm:px-5"
                 >
-                  <span className="flex-1 font-medium">{s.title}</span>
+                  <span className="min-w-48 flex-1 font-medium">{s.title}</span>
                   <span className="text-xs text-slate-500">{s.clientName}</span>
                   {s.format === "reel" && <Badge tone="violet">Reel</Badge>}
                   {s.outcome === "won" && <Badge tone="green">Ganador</Badge>}
                   {s.outcome === "lost" && <Badge tone="red">No convirtió</Badge>}
-                  <Badge tone="gray">{s.model}</Badge>
+                  <span className="hidden sm:inline-flex"><Badge tone="gray">{s.model}</Badge></span>
                   <span className="text-xs text-slate-400">
                     {s.createdAt.slice(0, 10)}
                   </span>
