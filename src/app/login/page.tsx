@@ -3,6 +3,7 @@
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Brandmark from "@/components/Brandmark";
+import { Button, Field, Input } from "@/components/ui";
 
 function LoginForm() {
   const router = useRouter();
@@ -33,10 +34,10 @@ function LoginForm() {
         <Brandmark size={36} />
         <h1 className="text-xl font-bold text-brand-navy">Acceso al estudio</h1>
         <p className="text-sm text-slate-500 mt-1 mb-6">Ingresá la clave compartida del piloto.</p>
-        <label htmlFor="password" className="block text-xs font-semibold text-slate-600 mb-1">Clave</label>
-        <input id="password" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full rounded-lg border border-slate-300 px-3 py-2.5 outline-none focus:border-brand-blue" required />
-        {error && <p className="mt-3 text-sm text-rose-600" aria-live="polite">{error}</p>}
-        <button disabled={pending} className="mt-5 w-full rounded-lg bg-brand-blue px-4 py-2.5 font-semibold text-white disabled:opacity-50">{pending ? "Verificando…" : "Entrar"}</button>
+        <Field label="Clave" error={error || undefined}>
+          <Input id="password" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+        </Field>
+        <Button type="submit" loading={pending} className="mt-5 w-full">Entrar</Button>
       </form>
     </div>
   );

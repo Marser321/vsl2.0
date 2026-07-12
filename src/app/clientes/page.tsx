@@ -62,7 +62,7 @@ export default function ClientesPage() {
 
       {showForm && (
         <Card className="p-5 mb-6">
-          <form onSubmit={handleCreate} className="grid grid-cols-2 gap-4">
+          <form onSubmit={handleCreate} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <label className="block text-xs font-semibold text-slate-600 mb-1">
                 Nombre *
@@ -79,13 +79,13 @@ export default function ClientesPage() {
                 placeholder="Ej: fitness, e-commerce, infoproductos"
               />
             </div>
-            <div className="col-span-2">
+            <div className="sm:col-span-2">
               <label className="block text-xs font-semibold text-slate-600 mb-1">
                 Descripción breve
               </label>
               <textarea name="description" rows={2} className={inputCls} />
             </div>
-            <div className="col-span-2">
+            <div className="sm:col-span-2">
               <button className={btnPrimary} disabled={saving}>
                 {saving ? "Guardando…" : "Crear cliente"}
               </button>
@@ -95,12 +95,12 @@ export default function ClientesPage() {
       )}
 
       {loading ? (
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
           {Array.from({ length: 6 }).map((_, index) => <Card className="p-5" key={index}><Skeleton className="h-5 w-36" /><Skeleton className="mt-3 h-3 w-24" /><Skeleton className="mt-4 h-3 w-full" /></Card>)}
         </div>
       ) : list.length === 0 && !showForm ? (
         <Card><EmptyState icon={Users} title="Todavía no hay clientes" description="Creá el primero para empezar a generar guiones." action={<button className={btnPrimary} onClick={() => setShowForm(true)}>Crear cliente</button>} /></Card>
-      ) : <div className="grid grid-cols-3 gap-4">
+      ) : <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
         {list.map((c) => (
           <Link key={c.id} href={`/clientes/${c.id}`}>
             <Card className="p-5 hover:border-brand-blue transition-colors h-full">

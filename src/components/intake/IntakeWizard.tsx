@@ -4,7 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, Check } from "lucide-react";
 import Brandmark from "../Brandmark";
-import { Skeleton } from "../ui";
+import { Skeleton, inputCls } from "../ui";
 
 type Answers = Record<string, Record<string, unknown>>;
 type Asset = { id: string; title: string; kind: string; status: string; error: string | null; sourceUrl: string | null };
@@ -222,8 +222,8 @@ export default function IntakeWizard({ publicId }: { publicId: string }) {
 }
 
 function FieldInput({ field, value, onChange }: { field: Field; value: unknown; onChange: (value: unknown) => void }) {
-  const cls = "w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-brand-blue focus:ring-2 focus:ring-blue-100";
-  if (field.type === "checkbox") return <label className="sm:col-span-2 flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 p-4"><input type="checkbox" checked={value === true} onChange={(e) => onChange(e.target.checked)} className="mt-1 accent-[#488eff]" /><span className="text-sm text-slate-700">{field.label}{field.required && " *"}</span></label>;
+  const cls = inputCls;
+  if (field.type === "checkbox") return <label className="sm:col-span-2 flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 p-4"><input type="checkbox" checked={value === true} onChange={(e) => onChange(e.target.checked)} className="mt-1 accent-brand-blue" /><span className="text-sm text-slate-700">{field.label}{field.required && " *"}</span></label>;
   const display = Array.isArray(value) ? value.join("\n") : value == null ? "" : String(value);
   return <label className={(field.type === "textarea" || field.type === "lines") ? "sm:col-span-2" : ""}><span className="mb-1 block text-xs font-semibold text-slate-600">{field.label}{field.required && " *"}</span>{field.type === "textarea" || field.type === "lines" ? <textarea rows={field.rows ?? 3} className={cls} value={display} placeholder={field.placeholder} onChange={(e) => onChange(field.type === "lines" ? e.target.value.split("\n").map((line) => line.trim()).filter(Boolean) : e.target.value)} /> : field.type === "select" ? <select className={cls} value={display} onChange={(e) => onChange(e.target.value)}><option value="">Elegí una opción</option>{field.options?.map(([key, label]) => <option value={key} key={key}>{label}</option>)}</select> : <input className={cls} type={field.type ?? "text"} value={display} placeholder={field.placeholder} min={field.type === "number" ? 1 : undefined} max={field.type === "number" ? 60 : undefined} onChange={(e) => onChange(field.type === "number" ? Number(e.target.value) : e.target.value)} />}{field.help && <span className="mt-1 block text-xs leading-5 text-slate-400">{field.help}</span>}</label>;
 }

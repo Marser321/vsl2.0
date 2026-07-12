@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Card, btnSecondary } from "./ui";
-import { Pencil, Target } from "lucide-react";
+import { Pencil, RefreshCw, Target } from "lucide-react";
 
 type CritiqueData = {
   puntajes: Record<string, number>;
@@ -89,7 +89,7 @@ export default function CritiquePanel({
           )}
         </h3>
         <button className={btnSecondary} onClick={run} disabled={loading || !versionId}>
-          {loading ? "Evaluando…" : latest ? "↻ Re-evaluar" : "Criticar esta versión"}
+          {loading ? "Evaluando…" : latest ? <><RefreshCw size={15} strokeWidth={1.75} /> Re-evaluar</> : "Criticar esta versión"}
         </button>
       </div>
       <p className="text-xs text-slate-500 mb-3">

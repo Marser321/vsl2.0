@@ -70,7 +70,7 @@ export default function AppShell({
         )}
         <div className="px-5 py-4 text-[10px] text-blue-300">Guiones que venden · es-LATAM</div>
       </aside>
-      <main className="flex-1 min-w-0 p-8">{children}</main>
+      <main className="min-w-0 flex-1 p-4 lg:p-8">{children}</main>
     </div>
   );
 }

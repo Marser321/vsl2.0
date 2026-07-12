@@ -100,7 +100,7 @@ export default function ConfiguracionPage() {
       <form onSubmit={handleSave} className="space-y-6">
         <Card className="p-5 space-y-4">
           <h2 className="font-semibold text-brand-navy text-sm">Modelos</h2>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div>
               <label className="block text-xs font-semibold text-slate-600 mb-1">
                 Proveedor por defecto
@@ -136,7 +136,7 @@ export default function ConfiguracionPage() {
               />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <label className="block text-xs font-semibold text-slate-600 mb-1">
                 Palabras por minuto (español, para duración)

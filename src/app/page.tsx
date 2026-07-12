@@ -69,7 +69,7 @@ export default async function Home() {
         }
       />
 
-      <div className="grid grid-cols-4 gap-4 mb-8">
+      <div className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
         {stats.map((s) => (
           <Link key={s.label} href={s.href}>
             <Card className="p-5 hover:border-brand-blue transition-colors">

@@ -176,14 +176,14 @@ export default function PlantillasPage() {
         subtitle="Estructuras probadas listas para completar en el editor — con marcadores {{ }} que se rellenan solos con los datos del cliente"
       />
       {!loaded ? (
-        <div className="grid grid-cols-2 gap-4">{Array.from({ length: 4 }).map((_, index) => <Card className="p-5" key={index}><Skeleton className="h-5 w-2/3" /><Skeleton className="mt-3 h-3 w-full" /><Skeleton className="mt-5 h-9 w-full" /></Card>)}</div>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">{Array.from({ length: 4 }).map((_, index) => <Card className="p-5" key={index}><Skeleton className="h-5 w-2/3" /><Skeleton className="mt-3 h-3 w-full" /><Skeleton className="mt-5 h-9 w-full" /></Card>)}</div>
       ) : rows.length === 0 ? (
         <Card><EmptyState icon={LayoutTemplate} title="No hay plantillas" description={<>Corré <code className="text-brand-blue">npm run db:seed-corpus</code> para cargar las plantillas base, o guardá un guion como plantilla desde su página.</>} /></Card>
       ) : null}
       {vsl.length > 0 && (
         <>
           <h2 className="flex items-center gap-2 font-semibold text-brand-navy text-sm mb-3"><Clapperboard size={17} strokeWidth={1.75} />VSL</h2>
-          <div className="grid grid-cols-2 gap-4 mb-8">
+          <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
             {vsl.map((t) => (
               <TemplateCard
                 key={t.id}
@@ -199,7 +199,7 @@ export default function PlantillasPage() {
       {reels.length > 0 && (
         <>
           <h2 className="flex items-center gap-2 font-semibold text-brand-navy text-sm mb-3"><Smartphone size={17} strokeWidth={1.75} />Reels</h2>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
             {reels.map((t) => (
               <TemplateCard
                 key={t.id}

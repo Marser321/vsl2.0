@@ -286,7 +286,7 @@ function GenerarWizard() {
           <h2 className="font-semibold text-brand-navy mb-4">
             ¿Qué formato vamos a escribir?
           </h2>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <button
               onClick={() => {
                 if (format !== "vsl") setFrameworkId(null);
@@ -341,7 +341,7 @@ function GenerarWizard() {
               .
             </p>
           ) : (
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               {clients.map((c) => (
                 <button
                   key={c.id}
@@ -371,7 +371,7 @@ function GenerarWizard() {
           <h2 className="font-semibold text-brand-navy mb-4">
             ¿Qué estructura usamos?
           </h2>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {frameworksList.map((f) => {
               const stat = frameworkStats.find((s) => s.frameworkId === f.id);
               const eligible = frameworkStats.filter((s) => s.n >= 3);
@@ -467,7 +467,7 @@ function GenerarWizard() {
                 defaultValue={autofill?.title ?? ""}
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1">
                   Producto / servicio *
@@ -594,7 +594,7 @@ function GenerarWizard() {
                         type="checkbox"
                         checked={selectedDocs.has(d.id)}
                         onChange={() => toggleDoc(d.id)}
-                        className="accent-[#488eff]"
+                        className="accent-brand-blue"
                       />
                       <Badge tone={KIND_TONES[d.kind] ?? "gray"}>
                         {KIND_LABELS[d.kind] ?? d.kind}

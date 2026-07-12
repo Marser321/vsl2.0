@@ -123,7 +123,7 @@ export default function DocumentManager({ scope }: { scope: string }) {
       {showForm && (
         <Card className="p-5">
           <form ref={formRef} onSubmit={handleUpload} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
               <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1">
                   Título

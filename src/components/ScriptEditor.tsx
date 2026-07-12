@@ -226,15 +226,15 @@ export default function ScriptEditor({
     <>
     <Card className="p-5 mb-6">
       <div className="flex items-center justify-between mb-3">
-        <div className="flex rounded-lg border border-slate-200 overflow-hidden text-xs font-medium">
+        <div className="flex overflow-hidden rounded-lg border border-slate-200 text-xs font-medium leading-5">
           <button
-            className={`px-3 py-1.5 ${mode === "edit" ? "bg-brand-blue text-white" : "bg-white text-slate-600 hover:bg-slate-50"}`}
+            className={`px-3 py-2 ${mode === "edit" ? "bg-brand-blue text-white" : "bg-white text-slate-600 hover:bg-slate-50"}`}
             onClick={() => setMode("edit")}
           >
             <Pencil size={15} strokeWidth={1.75} /> Editar
           </button>
           <button
-            className={`px-3 py-1.5 ${mode === "preview" ? "bg-brand-blue text-white" : "bg-white text-slate-600 hover:bg-slate-50"}`}
+            className={`px-3 py-2 ${mode === "preview" ? "bg-brand-blue text-white" : "bg-white text-slate-600 hover:bg-slate-50"}`}
             onClick={() => setMode("preview")}
           >
             Vista previa
@@ -338,7 +338,7 @@ export default function ScriptEditor({
         </div>
       )}
 
-      <div className="flex items-center gap-3 mt-3 text-[11px] text-slate-500">
+      <div className="mt-4 flex items-center gap-3 border-t border-slate-100 pt-3 text-[11px] leading-5 text-slate-500">
         <span>
           {stats ? `${stats.words.toLocaleString("es")} palabras · ~${fmtTime(stats.sec)}` : "—"} ·{" "}
           {wpm} ppm

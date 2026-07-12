@@ -92,7 +92,7 @@ export default function ClientePage({
     load();
   }
 
-  if (!client) return <div aria-label="Cargando cliente"><Skeleton className="h-8 w-56" /><Skeleton className="mt-2 h-4 w-32" /><div className="mt-6 grid grid-cols-2 gap-8"><Card className="p-5"><Skeleton className="h-5 w-36" /><Skeleton className="mt-5 h-40 w-full" /></Card><Card className="p-5"><Skeleton className="h-5 w-28" /><Skeleton className="mt-5 h-40 w-full" /></Card></div></div>;
+  if (!client) return <div aria-label="Cargando cliente"><Skeleton className="h-8 w-56" /><Skeleton className="mt-2 h-4 w-32" /><div className="mt-6 grid grid-cols-1 gap-8 xl:grid-cols-2"><Card className="p-5"><Skeleton className="h-5 w-36" /><Skeleton className="mt-5 h-40 w-full" /></Card><Card className="p-5"><Skeleton className="h-5 w-28" /><Skeleton className="mt-5 h-40 w-full" /></Card></div></div>;
 
   return (
     <div>
@@ -100,7 +100,7 @@ export default function ClientePage({
         title={client.name}
         subtitle={client.industry || undefined}
         actions={
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <button
               className={btnSecondary}
               onClick={updateRadar}
@@ -151,7 +151,7 @@ export default function ClientePage({
 
       {editing ? (
         <Card className="p-5 mb-6">
-          <form onSubmit={handleSave} className="grid grid-cols-2 gap-4">
+          <form onSubmit={handleSave} className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
               <label className="block text-xs font-semibold text-slate-600 mb-1">
                 Nombre
@@ -168,7 +168,7 @@ export default function ClientePage({
                 className={inputCls}
               />
             </div>
-            <div className="col-span-2">
+            <div className="md:col-span-2">
               <label className="block text-xs font-semibold text-slate-600 mb-1">
                 Descripción
               </label>
@@ -179,7 +179,7 @@ export default function ClientePage({
                 className={inputCls}
               />
             </div>
-            <div className="col-span-2">
+            <div className="md:col-span-2">
               <label className="block text-xs font-semibold text-slate-600 mb-1">
                 Notas de la agencia (van al contexto de generación)
               </label>
@@ -190,7 +190,7 @@ export default function ClientePage({
                 className={inputCls}
               />
             </div>
-            <div className="col-span-2">
+            <div className="md:col-span-2">
               <button className={btnPrimary}>Guardar cambios</button>
             </div>
           </form>
@@ -203,7 +203,7 @@ export default function ClientePage({
         )
       )}
 
-      <div className="grid grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 gap-8 xl:grid-cols-2">
         <DocumentManager scope={id} />
 
         <div className="space-y-4">

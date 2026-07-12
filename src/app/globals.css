@@ -43,6 +43,7 @@
 body {
   background: var(--brand-mist);
   color: var(--brand-ink);
+  overflow-x: hidden;
 }
 
 /* Render de guiones en Markdown */

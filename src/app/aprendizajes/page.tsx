@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Badge, Card, ConfirmDialog, EmptyState, PageTitle, Skeleton, btnPrimary, btnSecondary } from "@/components/ui";
-import { BarChart3, Brain, Lightbulb, Star } from "lucide-react";
+import { Badge, Card, ConfirmDialog, EmptyState, PageTitle, Skeleton, Table, btnPrimary, btnSecondary } from "@/components/ui";
+import { BarChart3, Brain, Lightbulb, RefreshCw, Star } from "lucide-react";
 import { toast } from "sonner";
 
 type Learning = { id: number; industry: string; subindustry: string | null; content: string; evidenceCount: number; isActive: boolean; createdAt: string };
@@ -95,7 +95,7 @@ export default function LearningsPage() {
       />
 
       {loadingStats ? (
-        <Card className="p-5 mb-6"><Skeleton className="h-5 w-56" /><div className="mt-5 grid grid-cols-2 gap-6"><Skeleton className="h-36" /><Skeleton className="h-36" /></div></Card>
+        <Card className="p-5 mb-6"><Skeleton className="h-5 w-56" /><div className="mt-5 grid grid-cols-1 gap-6 lg:grid-cols-2"><Skeleton className="h-36" /><Skeleton className="h-36" /></div></Card>
       ) : stats && stats.totalRatings > 0 && (
         <Card className="p-5 mb-6">
           <div className="flex items-center justify-between mb-3">
@@ -103,60 +103,63 @@ export default function LearningsPage() {
               <BarChart3 className="mr-2 inline" size={16} strokeWidth={1.75} /> Qué está funcionando ({stats.totalRatings} puntuaciones)
             </h2>
           </div>
-          <div className="grid grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <div>
               <div className="text-xs font-semibold text-slate-500 mb-2">Por framework</div>
-              <table className="w-full text-sm">
+              <Table>
+                <thead><tr><th>Framework</th><th className="text-right">Puntuación</th><th className="text-right">Usos</th><th className="text-right">Ganó</th></tr></thead>
                 <tbody>
                   {[...stats.byFramework]
                     .sort((a, b) => b.avgScore - a.avgScore)
                     .map((r) => (
-                      <tr key={`${r.frameworkId}`} className="border-t border-slate-100">
-                        <td className="py-1.5 pr-2">{r.name}</td>
-                        <td className="py-1.5 text-right">
+                      <tr key={`${r.frameworkId}`}>
+                        <td>{r.name}</td>
+                        <td className="text-right">
                           <StarCell avg={r.avgScore} />
                         </td>
-                        <td className="py-1.5 text-right text-xs text-slate-400 w-16">{r.n} usos</td>
-                        <td className="py-1.5 text-right text-xs text-slate-400 w-20">
+                        <td className="text-right text-xs text-slate-400">{r.n}</td>
+                        <td className="text-right text-xs text-slate-400">
                           {Math.round(r.wonRate * 100)}% ganó
                         </td>
                       </tr>
                     ))}
                 </tbody>
-              </table>
+              </Table>
             </div>
             <div className="space-y-4">
               <div>
                 <div className="text-xs font-semibold text-slate-500 mb-2">Por formato</div>
-                <table className="w-full text-sm">
+                <Table>
+                  <thead><tr><th>Formato</th><th className="text-right">Puntuación</th><th className="text-right">Casos</th></tr></thead>
                   <tbody>
                     {stats.byFormat.map((r) => (
-                      <tr key={r.format} className="border-t border-slate-100">
-                        <td className="py-1.5 pr-2">{r.format === "reel" ? "Reel" : "VSL"}</td>
-                        <td className="py-1.5 text-right">
+                      <tr key={r.format}>
+                        <td>{r.format === "reel" ? "Reel" : "VSL"}</td>
+                        <td className="text-right">
                           <StarCell avg={r.avgScore} />
                         </td>
-                        <td className="py-1.5 text-right text-xs text-slate-400 w-16">{r.n}</td>
+                        <td className="text-right text-xs text-slate-400">{r.n}</td>
                       </tr>
                     ))}
                   </tbody>
-                </table>
+                </Table>
               </div>
               <div>
                 <div className="text-xs font-semibold text-slate-500 mb-2">Por proveedor</div>
-                <table className="w-full text-sm">
+                <Table>
+                  <thead><tr><th>Proveedor</th><th className="text-right">Puntuación</th><th className="text-right">Casos</th></tr></thead>
                   <tbody>
                     {stats.byProvider.map((r) => (
-                      <tr key={r.provider} className="border-t border-slate-100">
-                        <td className="py-1.5 pr-2">{r.provider}</td>
-                        <td className="py-1.5 text-right">
+                      <tr key={r.provider}>
+                        <td>{r.provider}</td>
+                        <td className="text-right">
                           <StarCell avg={r.avgScore} />
                         </td>
-                        <td className="py-1.5 text-right text-xs text-slate-400 w-16">{r.n}</td>
+                        <td className="text-right text-xs text-slate-400">{r.n}</td>
                       </tr>
                     ))}
                   </tbody>
-                </table>
+                </Table>
               </div>
             </div>
           </div>
@@ -187,7 +190,7 @@ export default function LearningsPage() {
                 : undefined
             }
           >
-            {regenBusy ? "Sintetizando…" : prefs?.doc ? "↻ Regenerar preferencias" : "Generar preferencias"}
+            {regenBusy ? "Sintetizando…" : prefs?.doc ? <><RefreshCw size={15} strokeWidth={1.75} /> Regenerar preferencias</> : "Generar preferencias"}
           </button>
         </div>}
       </Card>

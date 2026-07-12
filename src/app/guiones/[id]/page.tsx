@@ -244,7 +244,7 @@ function GuionDetail({ id }: { id: string }) {
         title={script.title}
         subtitle={`${script.client?.name ?? "—"}${script.framework ? ` · ${script.framework.name}` : ""} · ${script.model}${script.format === "reel" ? " · Reel vertical" : ""}`}
         actions={
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {!editing && (
               <button className={btnSecondary} onClick={() => setEditing(true)}>
                 <Pencil size={16} strokeWidth={1.75} /> Editar guion

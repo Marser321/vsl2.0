@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Badge, Card, btnSecondary } from "./ui";
-import { FlaskConical } from "lucide-react";
+import { FlaskConical, RefreshCw } from "lucide-react";
 
 type HookVariant = { angulo: string; texto: string };
 type HookSet = { id: number; hooks: HookVariant[]; createdAt: string };
@@ -50,7 +50,7 @@ export default function HookLab({ scriptId }: { scriptId: number }) {
           <FlaskConical className="mr-2 inline" size={16} strokeWidth={1.75} /> Hook Lab — variantes A/B del gancho
         </h3>
         <button className={btnSecondary} onClick={generate} disabled={loading}>
-          {loading ? "Generando 10 ganchos…" : latest ? "↻ Regenerar" : "Generar 10 ganchos"}
+          {loading ? "Generando 10 ganchos…" : latest ? <><RefreshCw size={15} strokeWidth={1.75} /> Regenerar</> : "Generar 10 ganchos"}
         </button>
       </div>
       <p className="text-xs text-slate-500 mb-3">
