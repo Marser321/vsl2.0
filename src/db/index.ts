@@ -10,7 +10,14 @@ function createDb() {
     prepare: false,
     max: process.env.NODE_ENV === "production" ? 5 : 4,
     idle_timeout: 20,
-    connect_timeout: 15,
+    connect_timeout: 10,
+    max_lifetime: 10 * 60,
+    connection: {
+      application_name: "vsl-studio",
+      statement_timeout: 12_000,
+      lock_timeout: 5_000,
+      idle_in_transaction_session_timeout: 10_000,
+    },
   });
   return drizzle(client, { schema });
 }

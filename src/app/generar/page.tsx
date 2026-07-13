@@ -9,7 +9,9 @@ import {
   AsyncStatus,
   Button,
   Card,
+  ConfirmDialog,
   CopyButton,
+  InlineAlert,
   KIND_LABELS,
   KIND_TONES,
   PageTitle,
@@ -18,6 +20,12 @@ import {
   inputCls,
   type ProcessStatus,
 } from "@/components/ui";
+import { fetchJson } from "@/lib/http/fetch-json";
+import {
+  generationFieldErrors,
+  generationInputSchema,
+  type GenerationInput,
+} from "@/lib/generation/schema";
 
 type Client = { id: number; name: string };
 type Framework = { id: number; name: string; description: string | null };
@@ -43,8 +51,29 @@ type Doc = {
 };
 
 type FrameworkStat = { frameworkId: number | null; n: number; avgScore: number };
+type Preflight = {
+  provider: "anthropic" | "openrouter";
+  providerLabel: string;
+  model: string;
+  available: boolean;
+  keyAvailable: boolean;
+  callsPerRun: number;
+  quota: { used: number; remaining: number; limit: number } | null;
+  setup: { frameworkCount: number; hasFrameworks: boolean; hasSystemPrompt: boolean };
+};
+type Recovery = { id: number; title: string; status: string; generationError?: string | null; versions?: Array<{ content: string }> };
+type StoredDraft = {
+  step: number;
+  format: "vsl" | "reel";
+  clientId: number | null;
+  frameworkId: number | null;
+  selectedDocs: number[];
+  fields: Record<string, string>;
+  activeScriptId?: number;
+};
 
 const TOKEN_BUDGET = 150_000;
+const DRAFT_KEY = "vsl-studio:generation-draft:v1";
 
 function GenerarWizard() {
   const router = useRouter();
@@ -69,14 +98,54 @@ function GenerarWizard() {
   const [generating, setGenerating] = useState(false);
   const [output, setOutput] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [aiStatus, setAiStatus] = useState<ProcessStatus | null>(null);
+  const [preflight, setPreflight] = useState<Preflight | null>(null);
+  const [preflightError, setPreflightError] = useState<string | null>(null);
+  const [pendingPayload, setPendingPayload] = useState<GenerationInput | null>(null);
+  const [openrouterAccepted, setOpenrouterAccepted] = useState(false);
+  const [recovery, setRecovery] = useState<Recovery | null>(null);
   const outputRef = useRef<HTMLDivElement>(null);
+  const submittingRef = useRef(false);
+  const restoredDocsRef = useRef<number[] | null>(null);
 
   // Brief autopilot: pre-llenado con IA a partir de los docs del cliente
   const [autofill, setAutofill] = useState<Record<string, string> | null>(null);
   const [autofillKey, setAutofillKey] = useState(0);
   const [autofilling, setAutofilling] = useState(false);
   const [autofillError, setAutofillError] = useState<string | null>(null);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (!raw) return;
+      const draft = JSON.parse(raw) as StoredDraft;
+      setFormat(draft.format ?? "vsl");
+      setClientId(draft.clientId ?? null);
+      setFrameworkId(draft.frameworkId ?? null);
+      restoredDocsRef.current = draft.selectedDocs ?? [];
+      if (draft.fields && Object.keys(draft.fields).length) {
+        setAutofill(draft.fields);
+        setAutofillKey((key) => key + 1);
+        setStep(Math.min(4, Math.max(1, draft.step || 4)));
+      }
+      if (draft.activeScriptId) {
+        fetchJson<Recovery>(`/api/scripts/${draft.activeScriptId}`)
+          .then(setRecovery)
+          .catch(() => setRecovery({ id: draft.activeScriptId!, title: "Generación interrumpida", status: "interrupted" }));
+      }
+    } catch {
+      localStorage.removeItem(DRAFT_KEY);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (step !== 4) return;
+    setPreflightError(null);
+    fetchJson<Preflight>("/api/generation-preflight")
+      .then(setPreflight)
+      .catch((cause) => setPreflightError((cause as Error).message));
+  }, [step]);
 
   async function handleAutofill() {
     if (!clientId) return;
@@ -162,7 +231,9 @@ function GenerarWizard() {
       .then((d: Doc[]) => {
         setDocs(d);
         // Los ejemplares mal puntuados por el equipo quedan destildados por defecto.
-        setSelectedDocs(new Set(d.filter((x) => x.preselect !== false).map((x) => x.id)));
+        const restored = restoredDocsRef.current;
+        setSelectedDocs(new Set(restored ?? d.filter((x) => x.preselect !== false).map((x) => x.id)));
+        restoredDocsRef.current = null;
       });
   }, [clientId]);
 
@@ -208,24 +279,117 @@ function GenerarWizard() {
     });
   }
 
-  async function handleGenerate(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const fd = new FormData(e.currentTarget);
+  function saveDraft(form?: HTMLFormElement, activeScriptId?: number) {
+    const fields = form
+      ? Object.fromEntries(Array.from(new FormData(form).entries()).filter(([, value]) => typeof value === "string")) as Record<string, string>
+      : autofill ?? {};
+    const draft: StoredDraft = {
+      step,
+      format,
+      clientId,
+      frameworkId,
+      selectedDocs: Array.from(selectedDocs),
+      fields,
+      activeScriptId: activeScriptId ?? recovery?.id,
+    };
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+  }
+
+  function saveActiveScript(scriptId: number) {
+    try {
+      const current = JSON.parse(localStorage.getItem(DRAFT_KEY) || "{}") as Partial<StoredDraft>;
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({ ...current, activeScriptId: scriptId }));
+    } catch {
+      // El siguiente cambio del formulario reconstruirá el draft.
+    }
+  }
+
+  async function startGeneration(payload: GenerationInput, form: HTMLFormElement | null) {
+    if (submittingRef.current) return;
+    submittingRef.current = true;
     setGenerating(true);
     setOutput("");
     setError(null);
-    setAiStatus({ stage: "Preparando arnés 5+1" });
+    setAiStatus({ stage: `Preparando ${preflight?.providerLabel ?? "el proveedor"}` });
     setStep(5);
+    if (form) saveDraft(form);
 
-    const payload = {
+    let scriptId: number | null = null;
+    try {
+      const res = await fetch("/api/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Error al generar");
+      }
+      if (!res.body) throw new Error("El servidor no inició el stream de generación");
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const events = buffer.split("\n\n");
+        buffer = events.pop() ?? "";
+        for (const evt of events) {
+          if (!evt.startsWith("data: ")) continue;
+          const data = JSON.parse(evt.slice(6));
+          if (data.type === "started") {
+            scriptId = data.scriptId;
+            setRecovery({ id: data.scriptId, title: payload.title, status: "generating" });
+            saveActiveScript(data.scriptId);
+          } else if (data.type === "status") {
+            setAiStatus({ stage: data.stage, completed: data.completed, total: data.total });
+          } else if (data.type === "delta") {
+            setOutput((prev) => prev + data.text);
+            outputRef.current?.scrollTo({ top: outputRef.current.scrollHeight });
+          } else if (data.type === "done") {
+            scriptId = data.scriptId;
+          } else if (data.type === "error") {
+            scriptId = data.scriptId ?? scriptId;
+            throw new Error(data.message);
+          }
+        }
+      }
+
+      setGenerating(false);
+      if (!scriptId) throw new Error("El stream terminó sin confirmar el guardado");
+      localStorage.removeItem(DRAFT_KEY);
+      setTimeout(() => router.push(`/guiones/${scriptId}`), 800);
+    } catch (cause) {
+      setGenerating(false);
+      const message = (cause as Error).message;
+      setError(scriptId ? `${message} El contenido recibido quedó guardado como borrador.` : message);
+      if (scriptId) setRecovery({ id: scriptId, title: payload.title, status: "failed", generationError: message });
+    } finally {
+      submittingRef.current = false;
+    }
+  }
+
+  async function handleGenerate(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const fd = new FormData(e.currentTarget);
+    if (!preflight) {
+      setPreflightError("Todavía estamos verificando el proveedor. Reintentá en un momento.");
+      return;
+    }
+    const candidate = {
       clientId,
       brandId,
       offerId,
       campaignId,
       frameworkId,
       documentIds: Array.from(selectedDocs),
-      title: (fd.get("title") as string) || "Guion sin título",
+      title: String(fd.get("title") ?? ""),
       format,
+      provider: preflight.provider,
+      model: preflight.model,
+      openrouterConfirmed: true,
       brief: {
         producto: fd.get("producto") as string,
         audiencia: fd.get("audiencia") as string,
@@ -244,56 +408,25 @@ function GenerarWizard() {
         instruccionesExtra: (fd.get("instruccionesExtra") as string) || "",
       },
     };
-
-    try {
-      const res = await fetch("/api/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Error al generar");
-      }
-
-      const reader = res.body!.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-      let scriptId: number | null = null;
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        const events = buffer.split("\n\n");
-        buffer = events.pop() ?? "";
-        for (const evt of events) {
-          if (!evt.startsWith("data: ")) continue;
-          const data = JSON.parse(evt.slice(6));
-          if (data.type === "status") {
-            setAiStatus({ stage: data.stage, completed: data.completed, total: data.total });
-          } else if (data.type === "delta") {
-            setOutput((prev) => prev + data.text);
-            outputRef.current?.scrollTo({
-              top: outputRef.current.scrollHeight,
-            });
-          } else if (data.type === "done") {
-            scriptId = data.scriptId;
-          } else if (data.type === "error") {
-            throw new Error(data.message);
-          }
-        }
-      }
-
-      setGenerating(false);
-      if (scriptId) {
-        setTimeout(() => router.push(`/guiones/${scriptId}`), 800);
-      }
-    } catch (err) {
-      setGenerating(false);
-      setError((err as Error).message);
+    const parsed = generationInputSchema.safeParse(candidate);
+    if (!parsed.success) {
+      const errors = generationFieldErrors(parsed.error);
+      setFieldErrors(errors);
+      const first = Object.keys(errors)[0];
+      const firstField = first ? e.currentTarget.elements.namedItem(first) as HTMLElement | null : null;
+      firstField?.scrollIntoView({ block: "center" });
+      firstField?.focus();
+      return;
     }
+    setFieldErrors({});
+    saveDraft(e.currentTarget);
+    if (!preflight.available) return;
+    if (preflight.provider === "openrouter") {
+      setOpenrouterAccepted(false);
+      setPendingPayload(parsed.data);
+      return;
+    }
+    await startGeneration(parsed.data, e.currentTarget);
   }
 
   const steps = ["Formato", "Cliente", "Framework", "Brief y documentos", "Generación"];
@@ -304,6 +437,22 @@ function GenerarWizard() {
         title="Generar guion"
         subtitle="El contexto del cliente + la biblioteca de la agencia alimentan cada generación"
       />
+
+      {recovery && (
+        <div className="mb-6">
+          <InlineAlert tone={recovery.status === "draft" ? "success" : "warning"}>
+            <div className="font-semibold">
+              {recovery.status === "generating" ? "Hay una generación en curso" : "Hay un borrador recuperable"}
+            </div>
+            <p className="mt-1">
+              {recovery.generationError || "El contenido guardado no se perdió. Podés abrirlo y, si se interrumpió, reintentarlo desde el editor."}
+            </p>
+            <a className={`${btnSecondary} mt-3 inline-flex`} href={`/guiones/${recovery.id}`}>
+              Abrir borrador
+            </a>
+          </InlineAlert>
+        </div>
+      )}
 
       {/* Indicador de pasos */}
       <div className="flex gap-2 mb-8">
@@ -411,6 +560,13 @@ function GenerarWizard() {
           <h2 className="font-semibold text-brand-navy mb-4">
             ¿Qué estructura usamos?
           </h2>
+          {!frameworksList.length && (
+            <div className="mb-4">
+              <InlineAlert tone="warning">
+                No hay frameworks cargados. Podés continuar con estructura libre; un administrador puede ejecutar el seed para recuperar las estructuras recomendadas.
+              </InlineAlert>
+            </div>
+          )}
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {frameworksList.map((f) => {
               const stat = frameworkStats.find((s) => s.frameworkId === f.id);
@@ -470,7 +626,30 @@ function GenerarWizard() {
       )}
 
       {step === 4 && (
-        <form onSubmit={handleGenerate} className="space-y-6">
+        <form
+          noValidate
+          onSubmit={handleGenerate}
+          onChange={(event) => {
+            const target = event.nativeEvent.target as HTMLInputElement;
+            if (target.name && fieldErrors[target.name]) {
+              setFieldErrors((current) => {
+                const next = { ...current };
+                delete next[target.name];
+                return next;
+              });
+            }
+            saveDraft(event.currentTarget);
+          }}
+          className="space-y-6"
+        >
+          {Object.keys(fieldErrors).length > 0 && (
+            <InlineAlert tone="danger">
+              <div className="font-semibold">Revisá los campos marcados antes de generar.</div>
+              <ul className="mt-1 list-disc pl-5">
+                {Object.values(fieldErrors).map((message) => <li key={message}>{message}</li>)}
+              </ul>
+            </InlineAlert>
+          )}
           <Card className="p-6 space-y-4" key={autofillKey}>
             <div className="flex items-center justify-between">
               <h2 className="font-semibold text-brand-navy">Brief del guion</h2>
@@ -504,36 +683,42 @@ function GenerarWizard() {
               <input
                 id="script-title"
                 name="title"
-                required
                 className={inputCls}
                 placeholder="Ej: VSL lanzamiento curso — enero"
                 defaultValue={autofill?.title ?? ""}
+                aria-invalid={Boolean(fieldErrors.title)}
+                aria-describedby={fieldErrors.title ? "error-title" : undefined}
               />
+              {fieldErrors.title && <p id="error-title" className="mt-1 text-xs text-rose-600">{fieldErrors.title}</p>}
             </div>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
                 <label htmlFor="brief-producto" className="block text-xs font-semibold text-slate-600 mb-1">
                   Producto / servicio *
                 </label>
-                <textarea id="brief-producto" name="producto" required rows={2} className={inputCls} defaultValue={autofill?.producto ?? ""} />
+                <textarea id="brief-producto" name="producto" rows={2} className={inputCls} defaultValue={autofill?.producto ?? ""} aria-invalid={Boolean(fieldErrors.producto)} aria-describedby={fieldErrors.producto ? "error-producto" : undefined} />
+                {fieldErrors.producto && <p id="error-producto" className="mt-1 text-xs text-rose-600">{fieldErrors.producto}</p>}
               </div>
               <div>
                 <label htmlFor="brief-audiencia" className="block text-xs font-semibold text-slate-600 mb-1">
                   Audiencia / avatar *
                 </label>
-                <textarea id="brief-audiencia" name="audiencia" required rows={2} className={inputCls} defaultValue={autofill?.audiencia ?? ""} />
+                <textarea id="brief-audiencia" name="audiencia" rows={2} className={inputCls} defaultValue={autofill?.audiencia ?? ""} aria-invalid={Boolean(fieldErrors.audiencia)} aria-describedby={fieldErrors.audiencia ? "error-audiencia" : undefined} />
+                {fieldErrors.audiencia && <p id="error-audiencia" className="mt-1 text-xs text-rose-600">{fieldErrors.audiencia}</p>}
               </div>
               <div>
                 <label htmlFor="brief-oferta" className="block text-xs font-semibold text-slate-600 mb-1">
                   Oferta (precio, bonos, garantía) *
                 </label>
-                <textarea id="brief-oferta" name="oferta" required rows={2} className={inputCls} defaultValue={autofill?.oferta ?? ""} />
+                <textarea id="brief-oferta" name="oferta" rows={2} className={inputCls} defaultValue={autofill?.oferta ?? ""} aria-invalid={Boolean(fieldErrors.oferta)} aria-describedby={fieldErrors.oferta ? "error-oferta" : undefined} />
+                {fieldErrors.oferta && <p id="error-oferta" className="mt-1 text-xs text-rose-600">{fieldErrors.oferta}</p>}
               </div>
               <div>
                 <label htmlFor="brief-dolores" className="block text-xs font-semibold text-slate-600 mb-1">
                   Dolores principales *
                 </label>
-                <textarea id="brief-dolores" name="dolores" required rows={2} className={inputCls} defaultValue={autofill?.dolores ?? ""} />
+                <textarea id="brief-dolores" name="dolores" rows={2} className={inputCls} defaultValue={autofill?.dolores ?? ""} aria-invalid={Boolean(fieldErrors.dolores)} aria-describedby={fieldErrors.dolores ? "error-dolores" : undefined} />
+                {fieldErrors.dolores && <p id="error-dolores" className="mt-1 text-xs text-rose-600">{fieldErrors.dolores}</p>}
               </div>
               <div>
                 <label htmlFor="brief-objeciones" className="block text-xs font-semibold text-slate-600 mb-1">
@@ -545,7 +730,8 @@ function GenerarWizard() {
                 <label htmlFor="brief-cta" className="block text-xs font-semibold text-slate-600 mb-1">
                   CTA (llamado a la acción) *
                 </label>
-                <input id="brief-cta" name="cta" required className={inputCls} defaultValue={autofill?.cta ?? ""} />
+                <input id="brief-cta" name="cta" className={inputCls} defaultValue={autofill?.cta ?? ""} aria-invalid={Boolean(fieldErrors.cta)} aria-describedby={fieldErrors.cta ? "error-cta" : undefined} />
+                {fieldErrors.cta && <p id="error-cta" className="mt-1 text-xs text-rose-600">{fieldErrors.cta}</p>}
               </div>
               {format === "reel" ? (
                 <>
@@ -610,6 +796,29 @@ function GenerarWizard() {
               </label>
               <textarea id="brief-instrucciones" name="instruccionesExtra" rows={2} className={inputCls} defaultValue={autofill?.instruccionesExtra ?? ""} />
             </div>
+          </Card>
+
+          <Card className="p-5">
+            <h2 className="font-semibold text-brand-navy">Proveedor de esta generación</h2>
+            {preflightError ? (
+              <div className="mt-3">
+                <InlineAlert tone="danger">{preflightError}</InlineAlert>
+                <button type="button" className={`${btnSecondary} mt-3`} onClick={() => {
+                  setPreflight(null);
+                  setPreflightError(null);
+                  fetchJson<Preflight>("/api/generation-preflight").then(setPreflight).catch((cause) => setPreflightError((cause as Error).message));
+                }}>Reintentar verificación</button>
+              </div>
+            ) : preflight ? (
+              <div className="mt-3 space-y-2 text-sm text-slate-600">
+                <div><strong>{preflight.providerLabel}</strong> · <span className="font-mono text-xs">{preflight.model}</span></div>
+                {preflight.provider === "openrouter" && preflight.quota && (
+                  <div>{preflight.callsPerRun} llamadas por generación · {preflight.quota.remaining} de {preflight.quota.limit} disponibles hoy</div>
+                )}
+                {!preflight.available && <InlineAlert tone="danger">Este proveedor no está disponible. Configurá su clave/modelo o elegí otro en Configuración.</InlineAlert>}
+                {!preflight.setup.hasSystemPrompt && <InlineAlert tone="danger">Falta el prompt maestro; configurarlo es obligatorio antes de generar.</InlineAlert>}
+              </div>
+            ) : <p className="mt-3 text-sm text-slate-400">Verificando provider y modelo…</p>}
           </Card>
 
           <Card className="p-6">
@@ -690,7 +899,7 @@ function GenerarWizard() {
             >
               <ArrowLeft size={16} strokeWidth={1.75} /> Volver
             </button>
-            <Button type="submit" loading={generating} loadingLabel="Preparando…" icon={<Sparkles size={16} strokeWidth={1.75} />}>
+            <Button type="submit" disabled={!preflight?.available || !preflight.setup.hasSystemPrompt} loading={generating} loadingLabel="Preparando…" icon={<Sparkles size={16} strokeWidth={1.75} />}>
               Generar {format === "reel" ? "reel" : "guion"}
             </Button>
           </div>
@@ -718,6 +927,7 @@ function GenerarWizard() {
               >
                 <ArrowLeft size={16} strokeWidth={1.75} /> Volver al brief
               </button>
+              {recovery && <a className={`${btnSecondary} mt-3 ml-2 inline-flex`} href={`/guiones/${recovery.id}`}>Abrir contenido guardado</a>}
             </div>
           )}
           <div
@@ -733,6 +943,24 @@ function GenerarWizard() {
           )}
         </Card>
       )}
+      <ConfirmDialog
+        open={Boolean(pendingPayload)}
+        title="Confirmar generación con OpenRouter"
+        message={`El arnés 5+1 reserva ${preflight?.callsPerRun ?? 6} llamadas. Quedan ${preflight?.quota?.remaining ?? 0} llamadas disponibles hoy.`}
+        confirmLabel="Reservar y generar"
+        confirmDisabled={!openrouterAccepted}
+        onClose={() => setPendingPayload(null)}
+        onConfirm={() => {
+          const payload = pendingPayload;
+          setPendingPayload(null);
+          if (payload) void startGeneration({ ...payload, openrouterConfirmed: true }, null);
+        }}
+      >
+        <label className="flex items-start gap-2 text-sm text-slate-700">
+          <input type="checkbox" checked={openrouterAccepted} onChange={(event) => setOpenrouterAccepted(event.target.checked)} className="mt-1 accent-brand-blue" />
+          <span>Entiendo que esta generación reserva 6 llamadas de OpenRouter.</span>
+        </label>
+      </ConfirmDialog>
     </div>
   );
 }

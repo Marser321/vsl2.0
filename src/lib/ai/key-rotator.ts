@@ -49,5 +49,14 @@ export class ApiKeyEngine {
   }
 }
 
-// Instancia global (singleton) para mantener el estado entre llamadas
-export const apiKeyEngine = new ApiKeyEngine();
+const globalForKeys = globalThis as unknown as { __vslApiKeyEngine?: ApiKeyEngine };
+
+export function hasOpenRouterKeys(): boolean {
+  return Boolean(process.env.OPENROUTER_API_KEYS || process.env.OPENROUTER_API_KEY);
+}
+
+// Lazy y cacheado entre HMR: importar settings no debe exigir una clave OpenRouter.
+export function getApiKeyEngine(): ApiKeyEngine {
+  if (!globalForKeys.__vslApiKeyEngine) globalForKeys.__vslApiKeyEngine = new ApiKeyEngine();
+  return globalForKeys.__vslApiKeyEngine;
+}

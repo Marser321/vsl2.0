@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Badge, Button, Card, CopyButton } from "./ui";
 import { FlaskConical, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
+import { fetchJson } from "@/lib/http/fetch-json";
 
 type HookVariant = { angulo: string; texto: string };
 type HookSet = { id: number; hooks: HookVariant[]; createdAt: string };
@@ -14,8 +15,12 @@ export default function HookLab({ scriptId }: { scriptId: number }) {
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    const res = await fetch(`/api/scripts/${scriptId}/hooks`);
-    if (res.ok) setSets(await res.json());
+    setError(null);
+    try {
+      setSets(await fetchJson<HookSet[]>(`/api/scripts/${scriptId}/hooks`));
+    } catch (cause) {
+      setError((cause as Error).message);
+    }
   }, [scriptId]);
 
   useEffect(() => {
@@ -55,7 +60,7 @@ export default function HookLab({ scriptId }: { scriptId: number }) {
       </p>
       {error && (
         <div className="rounded-lg bg-rose-50 border border-rose-200 px-4 py-2 text-sm text-rose-800 mb-3">
-          {error}
+          {error} <button className="ml-2 font-semibold underline" onClick={() => void load()}>Reintentar</button>
         </div>
       )}
       {latest && (

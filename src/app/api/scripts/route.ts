@@ -3,6 +3,7 @@ import { getDb } from "@/db";
 import { scripts, clients } from "@/db/schema";
 import { desc, eq } from "drizzle-orm";
 import { guardAdminRequest } from "@/lib/auth/session";
+import { effectiveScriptStatus } from "@/lib/generation/status";
 
 export async function GET(req: NextRequest) {
   const guard = await guardAdminRequest(); if (guard) return guard;
@@ -20,6 +21,8 @@ export async function GET(req: NextRequest) {
     provider: scripts.provider,
     model: scripts.model,
     createdAt: scripts.createdAt,
+    generationError: scripts.generationError,
+    generationHeartbeatAt: scripts.generationHeartbeatAt,
   };
   const rows = clientId
     ? await db
@@ -34,5 +37,8 @@ export async function GET(req: NextRequest) {
         .leftJoin(clients, eq(scripts.clientId, clients.id))
         .orderBy(desc(scripts.createdAt));
 
-  return NextResponse.json(rows);
+  return NextResponse.json(rows.map((row) => ({
+    ...row,
+    status: effectiveScriptStatus(row.status, row.generationHeartbeatAt),
+  })));
 }

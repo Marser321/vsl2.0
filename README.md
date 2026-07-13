@@ -8,10 +8,10 @@ Sistema de relevamiento, biblioteca y generación de guiones VSL. Organiza el co
 - Enlaces secretos de 32 bytes, almacenados como hash, revocables y con vencimiento de 30 días.
 - Revisión humana: `draft → submitted → in_review → approved` o `changes_requested`.
 - Imágenes y documentos en un bucket privado de Supabase; URLs con extracción best effort y protección SSRF.
-- OCR/visión de imágenes y PDFs escaneados usando una sola llamada a Anthropic/OpenAI/OpenRouter.
+- OCR/visión de imágenes con OpenRouter y alternativa Anthropic para imágenes o PDFs escaneados.
 - Dossiers persistentes de marca y oferta, campañas específicas y snapshot del contexto usado por cada VSL.
 - Aprendizajes anonimizados por rubro, siempre pendientes de aprobación antes de cruzar entre clientes.
-- OpenRouter 5+1, Anthropic y OpenAI, streaming, versiones, Hook Lab, crítica y teleprompter.
+- OpenRouter 5+1 prioritario y Anthropic opcional, streaming, versiones, Hook Lab, crítica y teleprompter.
 
 ## Requisitos
 
@@ -119,4 +119,4 @@ Vercel Hobby sirve únicamente para el piloto interno. Antes del uso comercial r
 
 ## Stack
 
-Next.js 16 · React 19.2 · TypeScript · Tailwind 4 · Supabase Postgres/Storage · Drizzle ORM · Resend · Anthropic SDK · OpenAI SDK/OpenRouter · Zod · Vitest · Playwright.
+Next.js 16 · React 19.2 · TypeScript · Tailwind 4 · Supabase Postgres/Storage · Drizzle ORM · Resend · Anthropic SDK · OpenAI-compatible SDK para OpenRouter · Zod · Vitest · Playwright.

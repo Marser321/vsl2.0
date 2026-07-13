@@ -97,7 +97,6 @@ const DEFAULT_SETTINGS: Record<string, string> = {
   default_provider: "openrouter",
   default_model_openrouter: "openrouter/ensemble-5+1",
   default_model_anthropic: "claude-opus-4-8",
-  default_model_openai: "gpt-5.2",
   system_prompt: PROMPT_MAESTRO,
   wpm_es: "150",
   context_token_budget: "150000",

@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Badge, Button, Card, PageTitle, Skeleton, inputCls } from "@/components/ui";
+import { useCallback, useEffect, useState } from "react";
+import { Badge, Button, Card, InlineAlert, PageTitle, Skeleton, inputCls } from "@/components/ui";
 import { Check } from "lucide-react";
 import { toast } from "sonner";
+import { fetchJson } from "@/lib/http/fetch-json";
 
 type Settings = Record<string, unknown> & {
   anthropic_key_set?: boolean;
-  openai_key_set?: boolean;
   openrouter_key_set?: boolean;
   openrouter_quota?: { used: number; remaining: number; limit: number; day: string };
 };
@@ -16,12 +16,18 @@ export default function ConfiguracionPage() {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetch("/api/settings")
-      .then((r) => r.json())
-      .then(setSettings);
+  const load = useCallback(async () => {
+    setLoadError(null);
+    try {
+      setSettings(await fetchJson<Settings>("/api/settings"));
+    } catch (cause) {
+      setLoadError((cause as Error).message);
+    }
   }, []);
+
+  useEffect(() => { void load(); }, [load]);
 
   async function handleSave(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -34,7 +40,6 @@ export default function ConfiguracionPage() {
       body: JSON.stringify({
         default_provider: fd.get("default_provider"),
         default_model_anthropic: String(fd.get("default_model_anthropic") ?? ""),
-        default_model_openai: String(fd.get("default_model_openai") ?? ""),
         default_model_openrouter: "openrouter/ensemble-5+1",
         system_prompt: String(fd.get("system_prompt") ?? ""),
         wpm_es: String(fd.get("wpm_es") ?? ""),
@@ -51,6 +56,9 @@ export default function ConfiguracionPage() {
     setSaved(true);
     toast.success("Configuración guardada");
   }
+
+  if (!settings && loadError)
+    return <Card className="max-w-3xl p-6"><InlineAlert tone="danger">{loadError}</InlineAlert><Button className="mt-4" onClick={() => void load()}>Reintentar</Button></Card>;
 
   if (!settings)
     return <div className="max-w-3xl" aria-label="Cargando configuración"><Skeleton className="h-8 w-48" /><Skeleton className="mt-2 h-4 w-80" /><Card className="mt-6 p-5"><Skeleton className="h-5 w-32" /><Skeleton className="mt-4 h-9 w-full" /></Card><Card className="mt-6 p-5"><Skeleton className="h-5 w-40" /><Skeleton className="mt-4 h-64 w-full" /></Card></div>;
@@ -83,14 +91,6 @@ export default function ConfiguracionPage() {
               <Badge tone="red">falta</Badge>
             )}
           </div>
-          <div className="flex items-center gap-2">
-            OpenAI:{" "}
-            {settings.openai_key_set ? (
-              <Badge tone="green">configurada</Badge>
-            ) : (
-              <Badge tone="red">falta</Badge>
-            )}
-          </div>
         </div>
         {settings.openrouter_quota && (
           <p className="text-xs text-slate-600 mt-3">
@@ -100,7 +100,7 @@ export default function ConfiguracionPage() {
         )}
         <p className="text-xs text-slate-500 mt-2">
           Las claves se configuran en el archivo <code>.env.local</code> del
-          servidor (<code>OPENROUTER_API_KEYS</code>, <code>ANTHROPIC_API_KEY</code> y <code>OPENAI_API_KEY</code>)
+          servidor (<code>OPENROUTER_API_KEYS</code> y <code>ANTHROPIC_API_KEY</code>)
           y requieren reiniciar la app.
         </p>
       </Card>
@@ -108,19 +108,18 @@ export default function ConfiguracionPage() {
       <form onSubmit={handleSave} className="space-y-6">
         <Card className="p-5 space-y-4">
           <h2 className="font-semibold text-brand-navy text-sm">Modelos</h2>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <label className="block text-xs font-semibold text-slate-600 mb-1">
                 Proveedor por defecto
               </label>
               <select
                 name="default_provider"
-                defaultValue={String(settings.default_provider ?? "openrouter")}
+                defaultValue={settings.default_provider === "anthropic" ? "anthropic" : "openrouter"}
                 className={inputCls}
               >
                 <option value="openrouter">OpenRouter — arnés gratuito 5+1</option>
                 <option value="anthropic">Claude (Anthropic)</option>
-                <option value="openai">OpenAI</option>
               </select>
             </div>
             <div>
@@ -130,16 +129,6 @@ export default function ConfiguracionPage() {
               <input
                 name="default_model_anthropic"
                 defaultValue={String(settings.default_model_anthropic ?? "")}
-                className={inputCls}
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">
-                Modelo OpenAI
-              </label>
-              <input
-                name="default_model_openai"
-                defaultValue={String(settings.default_model_openai ?? "")}
                 className={inputCls}
               />
             </div>

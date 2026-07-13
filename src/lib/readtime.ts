@@ -36,7 +36,9 @@ export function analyzeScript(markdown: string, wpm = 150): ReadtimeAnalysis {
       .join("\n")
       // sacar acotaciones visuales y formato antes de contar palabras
       .replace(/^>\s?\[.*?\]\s*$/gm, "")
-      .replace(/[#*_`]/g, "")
+      // Los headings ya se procesaron arriba. Quitamos énfasis/código, pero
+      // preservamos `_` porque forma parte de marcadores como {{NOMBRE_DEL_METODO}}.
+      .replace(/[*`]/g, "")
       .trim();
     if (text || sections.length === 0) {
       sections.push({

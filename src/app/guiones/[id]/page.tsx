@@ -17,6 +17,7 @@ import {
   Card,
   ConfirmDialog,
   CopyButton,
+  InlineAlert,
   Input,
   PageTitle,
   Skeleton,
@@ -28,6 +29,7 @@ import {
 import { slugify } from "@/lib/templates";
 import { ArrowLeft, ArrowRight, Download, LayoutTemplate, Pencil, Play, Star } from "lucide-react";
 import { toast } from "sonner";
+import { fetchJson } from "@/lib/http/fetch-json";
 
 type Usage = {
   inputTokens: number;
@@ -65,6 +67,7 @@ type ScriptDetail = {
     scope: "client" | "global";
     legacy: boolean;
   }>;
+  generationError?: string | null;
 };
 
 function versionTooltip(v: Version): string {
@@ -85,6 +88,10 @@ function GuionDetail({ id }: { id: string }) {
   const [refineOutput, setRefineOutput] = useState("");
   const [aiStatus, setAiStatus] = useState<ProcessStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [retrying, setRetrying] = useState(false);
+  const [retryDialogOpen, setRetryDialogOpen] = useState(false);
+  const [retryAccepted, setRetryAccepted] = useState(false);
   const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
   const [templateTitle, setTemplateTitle] = useState("");
   const refineRef = useRef<HTMLTextAreaElement>(null);
@@ -93,12 +100,18 @@ function GuionDetail({ id }: { id: string }) {
   const refineFromQueryApplied = useRef(false);
 
   const load = useCallback(async () => {
-    const data = await (await fetch(`/api/scripts/${id}`)).json();
-    setScript(data);
-    if (data.versions?.length) {
-      setActiveVersion(data.versions[data.versions.length - 1].versionNumber);
+    setLoadError(null);
+    try {
+      const data = await fetchJson<ScriptDetail>(`/api/scripts/${id}`);
+      setScript(data);
+      if (data.versions?.length) {
+        setActiveVersion(data.versions[data.versions.length - 1].versionNumber);
+      }
+      return data;
+    } catch (cause) {
+      setLoadError((cause as Error).message);
+      throw cause;
     }
-    return data as ScriptDetail;
   }, [id]);
 
   useEffect(() => {
@@ -108,7 +121,7 @@ function GuionDetail({ id }: { id: string }) {
         openedFromQuery.current = true;
         setEditing(true);
       }
-    });
+    }).catch(() => {});
   }, [load, searchParams]);
 
   useEffect(() => {
@@ -145,7 +158,7 @@ function GuionDetail({ id }: { id: string }) {
     setRefining(true);
     setRefineOutput("");
     setError(null);
-    setAiStatus({ stage: "Preparando arnés 5+1" });
+    setAiStatus({ stage: `Preparando ${script.provider}` });
 
     try {
       const res = await fetch(`/api/scripts/${script.id}/refine`, {
@@ -187,6 +200,56 @@ function GuionDetail({ id }: { id: string }) {
     } catch (err) {
       setRefining(false);
       setError((err as Error).message);
+    }
+  }
+
+  async function handleRetry(openrouterConfirmed = false) {
+    if (!script || retrying) return;
+    if (script.provider === "openrouter" && !openrouterConfirmed) {
+      setRetryAccepted(false);
+      setRetryDialogOpen(true);
+      return;
+    }
+    setRetrying(true);
+    setRefineOutput("");
+    setError(null);
+    setAiStatus({ stage: `Reintentando con ${script.provider}` });
+    try {
+      const response = await fetch(`/api/scripts/${script.id}/retry`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ openrouterConfirmed }),
+      });
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "No se pudo reintentar");
+      }
+      if (!response.body) throw new Error("El servidor no inició el reintento");
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const events = buffer.split("\n\n");
+        buffer = events.pop() ?? "";
+        for (const event of events) {
+          if (!event.startsWith("data: ")) continue;
+          const data = JSON.parse(event.slice(6));
+          if (data.type === "status") setAiStatus({ stage: data.stage, completed: data.completed, total: data.total });
+          if (data.type === "delta") setRefineOutput((currentOutput) => currentOutput + data.text);
+          if (data.type === "error") throw new Error(data.message);
+        }
+      }
+      await load();
+      setRefineOutput("");
+      toast.success("Generación reintentada en una versión nueva");
+    } catch (cause) {
+      setError((cause as Error).message);
+      await load().catch(() => {});
+    } finally {
+      setRetrying(false);
     }
   }
 
@@ -263,6 +326,7 @@ function GuionDetail({ id }: { id: string }) {
     URL.revokeObjectURL(url);
   }
 
+  if (!script && loadError) return <Card className="p-6"><InlineAlert tone="danger">{loadError}</InlineAlert><Button className="mt-4" onClick={() => void load()}>Reintentar</Button></Card>;
   if (!script) return <div aria-label="Cargando guion"><Skeleton className="h-8 w-72" /><Skeleton className="mt-2 h-4 w-40" /><Card className="mt-6 p-6"><Skeleton className="h-5 w-48" /><Skeleton className="mt-5 h-96 w-full" /></Card></div>;
 
   const cachePct =
@@ -323,6 +387,27 @@ function GuionDetail({ id }: { id: string }) {
         }
       />
 
+      {["generating", "failed", "interrupted"].includes(script.status) && (
+        <div className="mb-5">
+          <InlineAlert tone={script.status === "generating" ? "info" : "warning"}>
+            <div className="font-semibold">
+              {script.status === "generating" ? "La generación todavía está trabajando" : "La generación quedó incompleta"}
+            </div>
+            <p className="mt-1">
+              {script.provider === "openai"
+                ? "OpenAI está deshabilitado. El parcial sigue disponible, pero para continuar tenés que crear una generación nueva con OpenRouter."
+                : script.generationError || "El último checkpoint está guardado. Podés leerlo o crear una versión nueva con el mismo contexto."}
+            </p>
+            {script.status !== "generating" && script.provider !== "openai" && (
+              <Button className="mt-3" loading={retrying} loadingLabel="Reintentando…" onClick={() => void handleRetry()}>
+                Reintentar en una versión nueva
+              </Button>
+            )}
+            {script.status === "generating" && <Button className="mt-3" variant="secondary" onClick={() => void load()}>Actualizar estado</Button>}
+          </InlineAlert>
+        </div>
+      )}
+
       <div className="flex gap-2 mb-4 items-center">
         <span className="text-xs text-slate-500">Versiones:</span>
         {script.versions.map((v) => (
@@ -358,7 +443,7 @@ function GuionDetail({ id }: { id: string }) {
         </div>
       )}
 
-      {current && !editing && (
+      {current && !editing && ["draft", "final"].includes(script.status) && (
         <>
           <RatingWidget
             scriptId={script.id}
@@ -405,7 +490,7 @@ function GuionDetail({ id }: { id: string }) {
         />
       ) : (
         <Card className="p-6 mb-6">
-          {refining ? (
+          {refining || retrying ? (
             <div>
               <div className="mb-3"><AsyncStatus status={aiStatus} fallback="Los modelos están trabajando" /></div>
               <div ref={outputRef} className="max-h-[55vh] overflow-y-auto">
@@ -424,7 +509,7 @@ function GuionDetail({ id }: { id: string }) {
         </div>
       )}
 
-      <Card className="p-5">
+      {["draft", "final"].includes(script.status) && <Card className="p-5">
         <h3 className="font-semibold text-brand-navy text-sm mb-2">
           Refinar guion
         </h3>
@@ -458,9 +543,9 @@ function GuionDetail({ id }: { id: string }) {
             </button>
           )}
         </div>
-      </Card>
+      </Card>}
 
-      <div className="mt-6 space-y-6">
+      {["draft", "final"].includes(script.status) && <div className="mt-6 space-y-6">
         <HookLab scriptId={script.id} />
         <CritiquePanel
           scriptId={script.id}
@@ -474,7 +559,7 @@ function GuionDetail({ id }: { id: string }) {
           }}
         />
         <LearningsPanel scriptId={script.id} outcome={script.outcome} />
-      </div>
+      </div>}
 
       <div className="mt-6">
         <Link href="/guiones" className="text-sm text-brand-blue hover:underline">
@@ -490,6 +575,23 @@ function GuionDetail({ id }: { id: string }) {
         confirmLabel="Guardar plantilla"
       >
         <Input value={templateTitle} onChange={(event) => setTemplateTitle(event.target.value)} autoFocus aria-label="Nombre de la plantilla" />
+      </ConfirmDialog>
+      <ConfirmDialog
+        open={retryDialogOpen}
+        onClose={() => setRetryDialogOpen(false)}
+        onConfirm={() => {
+          setRetryDialogOpen(false);
+          void handleRetry(true);
+        }}
+        title="Reintentar con OpenRouter"
+        message="El reintento conserva la versión parcial y reserva 6 llamadas para una versión nueva."
+        confirmLabel="Reservar y reintentar"
+        confirmDisabled={!retryAccepted}
+      >
+        <label className="flex items-start gap-2 text-sm">
+          <input className="mt-1 accent-brand-blue" type="checkbox" checked={retryAccepted} onChange={(event) => setRetryAccepted(event.target.checked)} />
+          <span>Entiendo que este reintento reserva 6 llamadas de OpenRouter.</span>
+        </label>
       </ConfirmDialog>
     </div>
   );

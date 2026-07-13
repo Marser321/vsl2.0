@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Button, Card } from "./ui";
 import { Pencil, RefreshCw, Target } from "lucide-react";
 import { toast } from "sonner";
+import { fetchJson } from "@/lib/http/fetch-json";
 
 type CritiqueData = {
   puntajes: Record<string, number>;
@@ -43,10 +44,12 @@ export default function CritiquePanel({
 
   const load = useCallback(async () => {
     if (!versionId) return;
-    const res = await fetch(
-      `/api/scripts/${scriptId}/critique?versionId=${versionId}`
-    );
-    if (res.ok) setCritiquesList(await res.json());
+    setError(null);
+    try {
+      setCritiquesList(await fetchJson<Critique[]>(`/api/scripts/${scriptId}/critique?versionId=${versionId}`));
+    } catch (cause) {
+      setError((cause as Error).message);
+    }
   }, [scriptId, versionId]);
 
   useEffect(() => {
@@ -100,7 +103,7 @@ export default function CritiquePanel({
       </p>
       {error && (
         <div className="rounded-lg bg-rose-50 border border-rose-200 px-4 py-2 text-sm text-rose-800 mb-3">
-          {error}
+          {error} <button className="ml-2 font-semibold underline" onClick={() => void load()}>Reintentar</button>
         </div>
       )}
       {latest && (

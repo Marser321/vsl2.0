@@ -27,14 +27,9 @@ export async function GET(req: NextRequest) {
   const avgHookRateCol = sql<number>`avg(${scriptMetrics.hookRate})`;
   const avgCtrCol = sql<number>`avg(${scriptMetrics.ctr})`;
 
-  const [
-    byFrameworkRaw,
-    byProviderRaw,
-    byFormatRaw,
-    totalRaw,
-    metricsByFrameworkRaw,
-    metricsByProviderRaw,
-  ] = await Promise.all([
+  // El pool dev tiene cuatro conexiones: cada request usa como máximo dos para
+  // dejar capacidad a settings/editor mientras se calculan estas agregaciones.
+  const [byFrameworkRaw, byProviderRaw] = await Promise.all([
     db
       .select({
         frameworkId: scripts.frameworkId,
@@ -58,6 +53,8 @@ export async function GET(req: NextRequest) {
       .leftJoin(clients, eq(scripts.clientId, clients.id))
       .where(where)
       .groupBy(scripts.provider),
+  ]);
+  const [byFormatRaw, totalRaw] = await Promise.all([
     // byFormat ignora el filtro de formato (compara ambos) pero respeta industry.
     db
       .select({ format: scripts.format, n: nCol, avgScore: avgCol, wonRate: wonCol })
@@ -74,6 +71,8 @@ export async function GET(req: NextRequest) {
       .innerJoin(scripts, eq(scriptVersions.scriptId, scripts.id))
       .leftJoin(clients, eq(scripts.clientId, clients.id))
       .where(where),
+  ]);
+  const [metricsByFrameworkRaw, metricsByProviderRaw] = await Promise.all([
     db
       .select({
         frameworkId: scripts.frameworkId,

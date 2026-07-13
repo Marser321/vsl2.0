@@ -2,7 +2,7 @@ import type { UsageInfo } from "@/db/schema";
 
 export type SystemBlock = {
   text: string;
-  /** Marca este bloque como breakpoint de caché (solo Anthropic; OpenAI lo ignora). */
+  /** Marca este bloque como breakpoint de caché cuando el proveedor lo soporta. */
   cache?: boolean;
 };
 
@@ -26,6 +26,7 @@ export interface CopyProvider {
 }
 
 export type ProviderName = "anthropic" | "openai" | "openrouter";
+export type OperationalProviderName = Exclude<ProviderName, "openai">;
 
 export async function getProvider(name: ProviderName): Promise<CopyProvider> {
   if (name === "openrouter") {
@@ -36,6 +37,5 @@ export async function getProvider(name: ProviderName): Promise<CopyProvider> {
     const { AnthropicProvider } = await import("./anthropic");
     return new AnthropicProvider();
   }
-  const { OpenAIProvider } = await import("./openai");
-  return new OpenAIProvider();
+  throw new Error("OpenAI está deshabilitado. Usá OpenRouter o Anthropic.");
 }

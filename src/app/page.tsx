@@ -5,31 +5,34 @@ import { desc, eq, sql } from "drizzle-orm";
 import { Badge, Card, EmptyState, PageTitle, btnPrimary } from "@/components/ui";
 import { isAdminSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
-import { ScrollText, Sparkles } from "lucide-react";
+import { ClipboardList, ScrollText, Sparkles, UserPlus } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
   if (!(await isAdminSession())) redirect("/login");
   const db = getDb();
-  const [clientRow, docRow, scriptRow, wonRow] = await Promise.all([
+  // No ocupamos las cuatro conexiones del pool con una sola renderización.
+  const [clientRow, docRow] = await Promise.all([
     db
-    .select({ n: sql<number>`count(*)` })
-    .from(clients)
-    .then((rows) => rows[0]),
+      .select({ n: sql<number>`count(*)` })
+      .from(clients)
+      .then((rows) => rows[0]),
     db
-    .select({ n: sql<number>`count(*)` })
-    .from(documents)
-    .then((rows) => rows[0]),
+      .select({ n: sql<number>`count(*)` })
+      .from(documents)
+      .then((rows) => rows[0]),
+  ]);
+  const [scriptRow, wonRow] = await Promise.all([
     db
-    .select({ n: sql<number>`count(*)` })
-    .from(scripts)
-    .then((rows) => rows[0]),
+      .select({ n: sql<number>`count(*)` })
+      .from(scripts)
+      .then((rows) => rows[0]),
     db
-    .select({ n: sql<number>`count(*)` })
-    .from(scripts)
-    .where(eq(scripts.outcome, "won"))
-    .then((rows) => rows[0]),
+      .select({ n: sql<number>`count(*)` })
+      .from(scripts)
+      .where(eq(scripts.outcome, "won"))
+      .then((rows) => rows[0]),
   ]);
   const clientCount = Number(clientRow?.n ?? 0);
   const docCount = Number(docRow?.n ?? 0);
@@ -68,6 +71,24 @@ export default async function Home() {
           </Link>
         }
       />
+
+      <Card className="mb-8 p-5">
+        <h2 className="font-semibold text-brand-navy">Cómo llegar a tu primer guion</h2>
+        <div className="mt-4 grid gap-3 md:grid-cols-3">
+          <Link href="/clientes" className="rounded-lg border border-slate-200 p-4 hover:border-brand-blue">
+            <div className="flex items-center gap-2 text-sm font-semibold text-brand-navy"><UserPlus size={17} /> 1. Creá el cliente</div>
+            <p className="mt-1 text-xs leading-5 text-slate-500">Define quién encarga el guion y centraliza sus documentos.</p>
+          </Link>
+          <Link href="/relevamientos" className="rounded-lg border border-slate-200 p-4 hover:border-brand-blue">
+            <div className="flex items-center gap-2 text-sm font-semibold text-brand-navy"><ClipboardList size={17} /> 2. Aprobá el relevamiento</div>
+            <p className="mt-1 text-xs leading-5 text-slate-500">El dossier crea marca, oferta y campaña con evidencia revisada.</p>
+          </Link>
+          <Link href="/generar" className="rounded-lg border border-slate-200 p-4 hover:border-brand-blue">
+            <div className="flex items-center gap-2 text-sm font-semibold text-brand-navy"><Sparkles size={17} /> 3. Generá con contexto</div>
+            <p className="mt-1 text-xs leading-5 text-slate-500">Elegí el framework, revisá el brief y confirmá el provider.</p>
+          </Link>
+        </div>
+      </Card>
 
       <div className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
         {stats.map((s) => (

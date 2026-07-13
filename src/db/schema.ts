@@ -45,6 +45,16 @@ export type AssetStatus = (typeof ASSET_STATUSES)[number];
 export const SCRIPT_FORMATS = ["vsl", "reel"] as const;
 export type ScriptFormat = (typeof SCRIPT_FORMATS)[number];
 
+export const SCRIPT_STATUSES = [
+  "generating",
+  "failed",
+  "interrupted",
+  "draft",
+  "final",
+  "archived",
+] as const;
+export type ScriptStatus = (typeof SCRIPT_STATUSES)[number];
+
 export const VERSION_SOURCES = ["ai", "manual", "template"] as const;
 export type VersionSource = (typeof VERSION_SOURCES)[number];
 
@@ -290,7 +300,10 @@ export const scripts = pgTable(
     format: text("format").$type<ScriptFormat>().notNull().default("vsl"),
     provider: text("provider").$type<ProviderName>().notNull().default("anthropic"),
     model: text("model").notNull(),
-    status: text("status").$type<"draft" | "final" | "archived">().notNull().default("draft"),
+    status: text("status").$type<ScriptStatus>().notNull().default("draft"),
+    generationError: text("generation_error"),
+    generationStartedAt: timestamp("generation_started_at", { withTimezone: true }),
+    generationHeartbeatAt: timestamp("generation_heartbeat_at", { withTimezone: true }),
     outcome: text("outcome").$type<"unknown" | "won" | "lost">().notNull().default("unknown"),
     outcomeNotes: text("outcome_notes"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

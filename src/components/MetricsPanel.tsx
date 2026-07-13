@@ -82,8 +82,10 @@ export function MetricsPanel({ activeVersion, clientName, onPromote, outcome, pr
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [promoting, setPromoting] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const loadMetrics = useCallback(async (signal?: AbortSignal) => {
+    setLoadError(null);
     const response = await fetch(`/api/scripts/${scriptId}/metrics`, { signal });
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || "No se pudieron cargar las métricas");
@@ -96,6 +98,7 @@ export function MetricsPanel({ activeVersion, clientName, onPromote, outcome, pr
     loadMetrics(controller.signal).catch((error) => {
       if ((error as Error).name !== "AbortError") {
         setLoading(false);
+        setLoadError((error as Error).message);
         toast.error((error as Error).message);
       }
     });
@@ -217,6 +220,10 @@ export function MetricsPanel({ activeVersion, clientName, onPromote, outcome, pr
           </h3>
           {loading ? (
             <p className="text-xs text-slate-400">Cargando métricas…</p>
+          ) : loadError ? (
+            <div className="rounded-lg bg-rose-50 px-3 py-4 text-xs text-rose-700">
+              {loadError} <button className="ml-1 font-semibold underline" onClick={() => { setLoading(true); void loadMetrics().catch((cause) => { setLoading(false); setLoadError((cause as Error).message); }); }}>Reintentar</button>
+            </div>
           ) : sortedMetrics.length === 0 ? (
             <p className="rounded-lg bg-slate-50 px-3 py-4 text-xs text-slate-500">
               Todavía no hay datos de campaña para este guion.

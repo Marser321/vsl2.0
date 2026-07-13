@@ -5,6 +5,7 @@ import { Button } from "./Button";
 
 export function ConfirmDialog({
   children,
+  confirmDisabled = false,
   confirmLabel = "Confirmar",
   destructive = false,
   message,
@@ -14,6 +15,7 @@ export function ConfirmDialog({
   title,
 }: {
   children?: ReactNode;
+  confirmDisabled?: boolean;
   confirmLabel?: string;
   destructive?: boolean;
   message?: ReactNode;
@@ -47,7 +49,7 @@ export function ConfirmDialog({
         {children && <div className="mt-4">{children}</div>}
         <div className="mt-6 flex justify-end gap-2">
           <Button variant="secondary" onClick={onClose}>Cancelar</Button>
-          <Button variant={destructive ? "danger" : "primary"} onClick={onConfirm}>{confirmLabel}</Button>
+          <Button disabled={confirmDisabled} variant={destructive ? "danger" : "primary"} onClick={onConfirm}>{confirmLabel}</Button>
         </div>
       </div>
     </dialog>

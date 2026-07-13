@@ -41,15 +41,15 @@ async function testAnthropic() {
   console.log(`  "${text.slice(0, 100)}"`);
 }
 
-async function testOpenAI() {
-  if (!process.env.OPENAI_API_KEY) {
-    console.log("⚠ OPENAI_API_KEY no configurada — salteando OpenAI");
+async function testOpenRouter() {
+  if (!process.env.OPENROUTER_API_KEYS && !process.env.OPENROUTER_API_KEY) {
+    console.log("⚠ OPENROUTER_API_KEYS no configurada — salteando OpenRouter");
     return;
   }
-  const { OpenAIProvider } = await import("../src/lib/ai/openai");
+  const { OpenRouterEnsembleProvider } = await import("../src/lib/ai/openrouter");
   const { getSetting } = await import("../src/lib/settings");
-  const model = await getSetting("default_model_openai", "gpt-5.2");
-  const provider = new OpenAIProvider();
+  const model = await getSetting("default_model_openrouter", "openrouter/ensemble-5+1");
+  const provider = new OpenRouterEnsembleProvider();
   let text = "";
   let deltas = 0;
   for await (const delta of provider.generateStream({
@@ -61,15 +61,15 @@ async function testOpenAI() {
     text += delta;
     deltas++;
   }
-  if (deltas === 0) throw new Error("OpenAI: el stream no emitió deltas");
-  console.log(`✓ OpenAI OK — ${deltas} deltas`);
+  if (deltas === 0) throw new Error("OpenRouter: el stream no emitió deltas");
+  console.log(`✓ OpenRouter OK — ${deltas} deltas`);
   console.log(`  "${text.slice(0, 100)}"`);
 }
 
 (async () => {
   try {
+    await testOpenRouter();
     await testAnthropic();
-    await testOpenAI();
     console.log("Smoke test completo.");
   } catch (e) {
     console.error("✗ FALLÓ:", (e as Error).message);

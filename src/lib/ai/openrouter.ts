@@ -1,12 +1,13 @@
 import OpenAI from "openai";
-import type { UsageInfo } from "@/db/schema";
-import { getSetting, setSetting } from "@/lib/settings";
+import { inArray, sql } from "drizzle-orm";
+import { getDb } from "@/db";
+import { settings, type UsageInfo } from "@/db/schema";
 import type { GenerateRequest } from "./provider";
-import { apiKeyEngine } from "./key-rotator";
+import { getApiKeyEngine, hasOpenRouterKeys } from "./key-rotator";
 
 const DAILY_LIMIT = 50;
 const ENSEMBLE_SIZE = 5;
-const CALLS_PER_RUN = ENSEMBLE_SIZE + 1;
+export const OPENROUTER_CALLS_PER_RUN = ENSEMBLE_SIZE + 1;
 const MODEL_CACHE_MS = 10 * 60 * 1000;
 
 const ROLES = [
@@ -30,7 +31,7 @@ type RunUsage = UsageInfo & { models: string[]; degraded: boolean };
 let modelCache: { at: number; models: ModelRecord[] } | null = null;
 
 function client(forceKey?: string): OpenAI {
-  const apiKey = forceKey || apiKeyEngine.getKey();
+  const apiKey = forceKey || getApiKeyEngine().getKey();
   return new OpenAI({
     apiKey,
     baseURL: "https://openrouter.ai/api/v1",
@@ -47,30 +48,74 @@ function todayUtc(): string {
 }
 
 export async function getOpenRouterQuota() {
+  if (!hasOpenRouterKeys()) {
+    return { day: todayUtc(), used: 0, remaining: 0, limit: 0, available: false };
+  }
   const today = todayUtc();
-  const storedDay = await getSetting("openrouter_quota_day");
-  const limit = DAILY_LIMIT * apiKeyEngine.keyCount;
-  const used = storedDay === today
-    ? Number.parseInt(await getSetting("openrouter_quota_used", "0"), 10) || 0
+  const rows = await getDb()
+    .select()
+    .from(settings)
+    .where(inArray(settings.key, ["openrouter_quota_day", "openrouter_quota_used"]));
+  const values = Object.fromEntries(rows.map((row) => [row.key, row.value]));
+  const limit = DAILY_LIMIT * getApiKeyEngine().keyCount;
+  const used = values.openrouter_quota_day === today
+    ? Number.parseInt(values.openrouter_quota_used ?? "0", 10) || 0
     : 0;
-  return { day: today, used, remaining: Math.max(0, limit - used), limit };
+  return { day: today, used, remaining: Math.max(0, limit - used), limit, available: true };
 }
 
 async function reserveEnsembleCalls(): Promise<void> {
-  const quota = await getOpenRouterQuota();
-  if (quota.remaining < CALLS_PER_RUN) {
-    throw new Error(
-      `Cuota diaria insuficiente: quedan ${quota.remaining} llamadas y el arnés 5+1 necesita ${CALLS_PER_RUN}.`
-    );
+  if (!hasOpenRouterKeys()) {
+    throw new Error("OpenRouter no está configurado. Agregá una clave o elegí otro proveedor.");
   }
-  await setSetting("openrouter_quota_day", quota.day);
-  await setSetting("openrouter_quota_used", String(quota.used + CALLS_PER_RUN));
+  const engine = getApiKeyEngine();
+  await getDb().transaction(async (tx) => {
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtext('vsl_openrouter_quota'))`);
+    const today = todayUtc();
+    const rows = await tx
+      .select()
+      .from(settings)
+      .where(inArray(settings.key, ["openrouter_quota_day", "openrouter_quota_used"]));
+    const values = Object.fromEntries(rows.map((row) => [row.key, row.value]));
+    const used = values.openrouter_quota_day === today
+      ? Number.parseInt(values.openrouter_quota_used ?? "0", 10) || 0
+      : 0;
+    const limit = DAILY_LIMIT * engine.keyCount;
+    const remaining = Math.max(0, limit - used);
+    if (remaining < OPENROUTER_CALLS_PER_RUN) {
+      throw new Error(
+        `Cuota diaria insuficiente: quedan ${remaining} llamadas y el arnés 5+1 necesita ${OPENROUTER_CALLS_PER_RUN}.`
+      );
+    }
+    await tx.insert(settings).values({ key: "openrouter_quota_day", value: today })
+      .onConflictDoUpdate({ target: settings.key, set: { value: today } });
+    await tx.insert(settings).values({ key: "openrouter_quota_used", value: String(used + OPENROUTER_CALLS_PER_RUN) })
+      .onConflictDoUpdate({ target: settings.key, set: { value: String(used + OPENROUTER_CALLS_PER_RUN) } });
+  });
+}
+
+async function refundUnusedCalls(unused: number): Promise<void> {
+  if (unused <= 0 || !hasOpenRouterKeys()) return;
+  await getDb().transaction(async (tx) => {
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtext('vsl_openrouter_quota'))`);
+    const today = todayUtc();
+    const rows = await tx
+      .select()
+      .from(settings)
+      .where(inArray(settings.key, ["openrouter_quota_day", "openrouter_quota_used"]));
+    const values = Object.fromEntries(rows.map((row) => [row.key, row.value]));
+    if (values.openrouter_quota_day !== today) return;
+    const used = Number.parseInt(values.openrouter_quota_used ?? "0", 10) || 0;
+    const next = String(Math.max(0, used - unused));
+    await tx.insert(settings).values({ key: "openrouter_quota_used", value: next })
+      .onConflictDoUpdate({ target: settings.key, set: { value: next } });
+  });
 }
 
 async function freeModels(needsStructuredOutput: boolean): Promise<string[]> {
   if (!modelCache || Date.now() - modelCache.at > MODEL_CACHE_MS) {
     const res = await fetch("https://openrouter.ai/api/v1/models", {
-      headers: { Authorization: `Bearer ${apiKeyEngine.getKey()}` },
+      headers: { Authorization: `Bearer ${getApiKeyEngine().getKey()}` },
       cache: "no-store",
     });
     if (!res.ok) throw new Error(`No se pudo consultar modelos de OpenRouter (${res.status}).`);
@@ -90,8 +135,8 @@ async function freeModels(needsStructuredOutput: boolean): Promise<string[]> {
     })
     .sort((a, b) => (b.context_length ?? 0) - (a.context_length ?? 0));
 
-  const ids = compatible.map((m) => m.id).slice(0, CALLS_PER_RUN);
-  while (ids.length < CALLS_PER_RUN) ids.push("openrouter/free");
+  const ids = compatible.map((m) => m.id).slice(0, OPENROUTER_CALLS_PER_RUN);
+  while (ids.length < OPENROUTER_CALLS_PER_RUN) ids.push("openrouter/free");
   return ids;
 }
 
@@ -114,12 +159,13 @@ function messages(req: GenerateRequest, role?: string) {
 }
 
 async function executeWithRetry<T>(fn: (api: OpenAI) => Promise<T>): Promise<T> {
-  const maxAttempts = apiKeyEngine.keyCount;
+  const engine = getApiKeyEngine();
+  const maxAttempts = engine.keyCount;
   let attempt = 0;
   let lastError: any;
 
   while (attempt < maxAttempts) {
-    const currentKey = apiKeyEngine.getKey();
+    const currentKey = engine.getKey();
     const api = client(currentKey);
     try {
       return await fn(api);
@@ -128,7 +174,7 @@ async function executeWithRetry<T>(fn: (api: OpenAI) => Promise<T>): Promise<T> 
       const status = error?.status || error?.response?.status;
       // 429: Too Many Requests, 401: Unauthorized, 403: Forbidden
       if (status === 429 || status === 401 || status === 403) {
-        apiKeyEngine.markExhausted(currentKey);
+        engine.markExhausted(currentKey);
         attempt++;
         continue;
       }
@@ -143,15 +189,18 @@ export class OpenRouterEnsembleProvider {
 
   async *generateStream(req: GenerateRequest): AsyncIterable<string> {
     await reserveEnsembleCalls();
-    req.onStatus?.({ stage: "Seleccionando modelos gratuitos", completed: 0, total: CALLS_PER_RUN });
+    let attemptedCalls = 0;
+    try {
+    req.onStatus?.({ stage: "Seleccionando modelos gratuitos", completed: 0, total: OPENROUTER_CALLS_PER_RUN });
     const models = await freeModels(false);
     const total: UsageInfo = { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheCreationTokens: 0 };
 
     let completed = 0;
-    req.onStatus?.({ stage: "Consultando especialistas", completed, total: CALLS_PER_RUN });
+    req.onStatus?.({ stage: "Consultando especialistas", completed, total: OPENROUTER_CALLS_PER_RUN });
     const attempts = await Promise.allSettled(
       ROLES.map(async (role, index) => {
         try {
+          attemptedCalls += 1;
           const result = await executeWithRetry((api) => api.chat.completions.create({
             model: models[index],
             messages: messages(req, role),
@@ -163,7 +212,7 @@ export class OpenRouterEnsembleProvider {
           return { text, model: result.model ?? models[index] };
         } finally {
           completed += 1;
-          req.onStatus?.({ stage: "Consultando especialistas", completed, total: CALLS_PER_RUN });
+          req.onStatus?.({ stage: "Consultando especialistas", completed, total: OPENROUTER_CALLS_PER_RUN });
         }
       })
     );
@@ -171,7 +220,7 @@ export class OpenRouterEnsembleProvider {
     if (candidates.length === 0) throw new Error("Ningún modelo gratuito pudo completar la tarea.");
 
     if (candidates.length === 1) {
-      req.onStatus?.({ stage: "Resultado degradado", completed: CALLS_PER_RUN, total: CALLS_PER_RUN, degraded: true });
+      req.onStatus?.({ stage: "Resultado degradado", completed: OPENROUTER_CALLS_PER_RUN, total: OPENROUTER_CALLS_PER_RUN, degraded: true });
       this.usage = { ...total, models: [candidates[0].model], degraded: true };
       yield candidates[0].text;
       return;
@@ -180,7 +229,8 @@ export class OpenRouterEnsembleProvider {
     const synthesisPrompt = candidates
       .map((c, i) => `## Propuesta ${i + 1} (${c.model})\n${c.text}`)
       .join("\n\n---\n\n");
-    req.onStatus?.({ stage: "Sintetizando resultado final", completed: 5, total: CALLS_PER_RUN, degraded: candidates.length < ENSEMBLE_SIZE });
+    req.onStatus?.({ stage: "Sintetizando resultado final", completed: 5, total: OPENROUTER_CALLS_PER_RUN, degraded: candidates.length < ENSEMBLE_SIZE });
+    attemptedCalls += 1;
     const stream = await executeWithRetry((api) => api.chat.completions.create({
       model: models[5],
       stream: true,
@@ -206,7 +256,10 @@ export class OpenRouterEnsembleProvider {
       models: [...candidates.map((c) => c.model), finalModel],
       degraded: candidates.length < ENSEMBLE_SIZE,
     };
-    req.onStatus?.({ stage: "Completado", completed: CALLS_PER_RUN, total: CALLS_PER_RUN, degraded: candidates.length < ENSEMBLE_SIZE });
+    req.onStatus?.({ stage: "Completado", completed: OPENROUTER_CALLS_PER_RUN, total: OPENROUTER_CALLS_PER_RUN, degraded: candidates.length < ENSEMBLE_SIZE });
+    } finally {
+      await refundUnusedCalls(OPENROUTER_CALLS_PER_RUN - attemptedCalls);
+    }
   }
 
   getFinalUsage(): RunUsage | null {
@@ -221,6 +274,8 @@ export async function generateOpenRouterJSON<T>(args: {
   maxTokens?: number;
 }): Promise<T> {
   await reserveEnsembleCalls();
+  let attemptedCalls = 0;
+  try {
   const models = await freeModels(true);
   const baseSystem = args.systemBlocks.map((b) => b.text).join("\n\n---\n\n");
   const responseFormat = {
@@ -229,6 +284,7 @@ export async function generateOpenRouterJSON<T>(args: {
   };
   const attempts = await Promise.allSettled(
     ROLES.map(async (role, index) => {
+      attemptedCalls += 1;
       const result = await executeWithRetry((api) => api.chat.completions.create({
         model: models[index],
         max_tokens: args.maxTokens ?? 8192,
@@ -248,6 +304,7 @@ export async function generateOpenRouterJSON<T>(args: {
   if (candidates.length === 0) throw new Error("Ningún modelo produjo JSON válido.");
   if (candidates.length === 1) return JSON.parse(candidates[0]) as T;
 
+  attemptedCalls += 1;
   const result = await executeWithRetry((api) => api.chat.completions.create({
     model: models[5],
     max_tokens: args.maxTokens ?? 8192,
@@ -266,4 +323,7 @@ export async function generateOpenRouterJSON<T>(args: {
   const text = result.choices[0]?.message?.content;
   if (!text) throw new Error("El sintetizador devolvió una respuesta vacía.");
   return JSON.parse(text) as T;
+  } finally {
+    await refundUnusedCalls(OPENROUTER_CALLS_PER_RUN - attemptedCalls);
+  }
 }

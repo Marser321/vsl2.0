@@ -10,23 +10,27 @@ type Args = {
 
 /**
  * Llamada única con salida estructurada (JSON Schema).
- * Usa el proveedor por defecto (Configuración): Claude u OpenAI.
+ * Prioriza OpenRouter y conserva Anthropic como alternativa explícita.
  * Usada por las features de análisis: hooks, crítica, autopilot, aprendizajes.
  */
 export async function generateJSON<T>(args: Args): Promise<T> {
-  const provider = await getSetting("default_provider", "anthropic");
-  if (provider === "openrouter") {
+  const provider = await getSetting("default_provider", "openrouter");
+  if (provider !== "anthropic") {
+    const keys = process.env.OPENROUTER_API_KEYS ?? process.env.OPENROUTER_API_KEY;
+    if (!keys) {
+      if (process.env.ANTHROPIC_API_KEY) return generateJSONAnthropic<T>(args);
+      throw new Error("Falta OPENROUTER_API_KEYS (o ANTHROPIC_API_KEY) en .env.local.");
+    }
     const { generateOpenRouterJSON } = await import("./openrouter");
     return generateOpenRouterJSON<T>(args);
   }
-  if (provider === "openai") {
-    if (process.env.OPENAI_API_KEY) return generateJSONOpenAI<T>(args);
-    if (process.env.ANTHROPIC_API_KEY) return generateJSONAnthropic<T>(args);
-    throw new Error("Falta OPENAI_API_KEY (u ANTHROPIC_API_KEY) en .env.local.");
-  }
   if (process.env.ANTHROPIC_API_KEY) return generateJSONAnthropic<T>(args);
-  if (process.env.OPENAI_API_KEY) return generateJSONOpenAI<T>(args);
-  throw new Error("Falta ANTHROPIC_API_KEY (u OPENAI_API_KEY) en .env.local.");
+  const keys = process.env.OPENROUTER_API_KEYS ?? process.env.OPENROUTER_API_KEY;
+  if (keys) {
+    const { generateOpenRouterJSON } = await import("./openrouter");
+    return generateOpenRouterJSON<T>(args);
+  }
+  throw new Error("Falta ANTHROPIC_API_KEY (u OPENROUTER_API_KEYS) en .env.local.");
 }
 
 async function generateJSONAnthropic<T>(args: Args): Promise<T> {
@@ -56,35 +60,6 @@ async function generateJSONAnthropic<T>(args: Args): Promise<T> {
 
   const final = await stream.finalMessage();
   const text = final.content.find((b) => b.type === "text")?.text;
-  if (!text) throw new Error("La respuesta del modelo llegó vacía.");
-  return JSON.parse(text) as T;
-}
-
-async function generateJSONOpenAI<T>(args: Args): Promise<T> {
-  const { default: OpenAI } = await import("openai");
-  const client = new OpenAI();
-  const model = await getSetting("default_model_openai", "gpt-5.2");
-
-  const system = args.systemBlocks.map((b) => b.text).join("\n\n---\n\n");
-
-  const res = await client.chat.completions.create({
-    model,
-    max_completion_tokens: args.maxTokens ?? 8192,
-    response_format: {
-      type: "json_schema",
-      json_schema: {
-        name: "resultado",
-        strict: true,
-        schema: args.schema,
-      },
-    },
-    messages: [
-      { role: "system", content: system },
-      { role: "user", content: args.userMessage },
-    ],
-  });
-
-  const text = res.choices[0]?.message?.content;
   if (!text) throw new Error("La respuesta del modelo llegó vacía.");
   return JSON.parse(text) as T;
 }

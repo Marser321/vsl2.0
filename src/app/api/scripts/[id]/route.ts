@@ -4,6 +4,7 @@ import { scripts, scriptVersions, scriptRatings, clients, documents, frameworks 
 import { and, asc, eq, inArray } from "drizzle-orm";
 import { guardAdminRequest } from "@/lib/auth/session";
 import { parsePromotionTags } from "@/lib/scripts/promotions";
+import { effectiveScriptStatus } from "@/lib/generation/status";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -63,7 +64,14 @@ export async function GET(_req: NextRequest, { params }: Params) {
     ...parsePromotionTags(document.tags, document.visibility),
   }));
 
-  return NextResponse.json({ ...script, client, framework, versions: versionsWithRating, promotions });
+  return NextResponse.json({
+    ...script,
+    status: effectiveScriptStatus(script.status, script.generationHeartbeatAt),
+    client,
+    framework,
+    versions: versionsWithRating,
+    promotions,
+  });
 }
 
 export async function PATCH(req: NextRequest, { params }: Params) {

@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { z } from "zod";
 import { getDb } from "@/db";
 import { documents } from "@/db/schema";
-import { getProvider, type ProviderName } from "@/lib/ai/provider";
+import { getProvider, type OperationalProviderName } from "@/lib/ai/provider";
 import { getSetting } from "@/lib/settings";
 import { countTokens } from "@/lib/ai/anthropic";
 import { guardAdminRequest } from "@/lib/auth/session";
@@ -32,13 +32,12 @@ export async function POST(req: NextRequest) {
   }
   const { title, transcript, clientId } = parsed.data;
 
-  const providerName = await getSetting("default_provider", "anthropic") as ProviderName;
+  const configuredProvider = await getSetting("default_provider", "openrouter");
+  const providerName: OperationalProviderName = configuredProvider === "anthropic" ? "anthropic" : "openrouter";
   const model = await getSetting(
     providerName === "anthropic"
       ? "default_model_anthropic"
-      : providerName === "openai"
-        ? "default_model_openai"
-        : "default_model_openrouter",
+      : "default_model_openrouter",
     providerName === "openrouter" ? "openrouter/ensemble-5+1" : "claude-opus-4-8"
   );
   const encoder = new TextEncoder();

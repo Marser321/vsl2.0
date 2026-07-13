@@ -6,10 +6,11 @@ import { guardAdminRequest } from "@/lib/auth/session";
 export async function GET() {
   const guard = await guardAdminRequest(); if (guard) return guard;
   const [all, quota] = await Promise.all([getAllSettings(), getOpenRouterQuota()]);
+  const supported = { ...all };
+  delete supported.default_model_openai;
   return NextResponse.json({
-    ...all,
+    ...supported,
     anthropic_key_set: Boolean(process.env.ANTHROPIC_API_KEY),
-    openai_key_set: Boolean(process.env.OPENAI_API_KEY),
     openrouter_key_set: Boolean(process.env.OPENROUTER_API_KEYS || process.env.OPENROUTER_API_KEY),
     openrouter_quota: quota,
   });
@@ -21,7 +22,6 @@ export async function PATCH(req: NextRequest) {
   const ALLOWED = [
     "default_provider",
     "default_model_anthropic",
-    "default_model_openai",
     "default_model_openrouter",
     "system_prompt",
     "wpm_es",
@@ -29,6 +29,9 @@ export async function PATCH(req: NextRequest) {
   ];
   for (const [key, value] of Object.entries(body)) {
     if (ALLOWED.includes(key) && typeof value === "string") {
+      if (key === "default_provider" && value !== "openrouter" && value !== "anthropic") {
+        return NextResponse.json({ error: "Proveedor no soportado" }, { status: 400 });
+      }
       await setSetting(key, value);
     }
   }

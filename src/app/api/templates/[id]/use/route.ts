@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/db";
-import { clients, scripts, scriptVersions, templates, type ProviderName, type ScriptBrief } from "@/db/schema";
+import { clients, scripts, scriptVersions, templates, type ScriptBrief } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { getSetting } from "@/lib/settings";
@@ -35,13 +35,12 @@ export async function POST(req: NextRequest, { params }: Params) {
     .limit(1);
   if (!client) return NextResponse.json({ error: "Cliente no encontrado" }, { status: 404 });
 
-  const providerName = (await getSetting("default_provider", "anthropic")) as ProviderName;
+  const configuredProvider = await getSetting("default_provider", "openrouter");
+  const providerName = configuredProvider === "anthropic" ? "anthropic" : "openrouter";
   const model = await getSetting(
     providerName === "anthropic"
       ? "default_model_anthropic"
-      : providerName === "openai"
-        ? "default_model_openai"
-        : "default_model_openrouter",
+      : "default_model_openrouter",
     providerName === "openrouter" ? "openrouter/ensemble-5+1" : "claude-opus-4-8"
   );
 

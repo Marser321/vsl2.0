@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { use, useCallback, useEffect, useState } from "react";
 import DocumentManager from "@/components/DocumentManager";
-import { Badge, Button, Card, PageTitle, Skeleton, btnPrimary, btnSecondary, inputCls } from "@/components/ui";
-import { Radar, Sparkles } from "lucide-react";
+import { Badge, Button, Card, EmptyState, PageTitle, Skeleton, btnPrimary, btnSecondary, inputCls } from "@/components/ui";
+import { ClipboardList, Radar, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 type Client = {
@@ -24,6 +24,18 @@ type ScriptRow = {
 };
 
 type RadarDoc = { id: number; title: string; createdAt: string };
+type ClientContext = {
+  campaigns: Array<{
+    campaignId: number;
+    campaignTitle: string;
+    campaignObjective: string | null;
+    offerId: number;
+    offerName: string;
+    brandId: number;
+    brandName: string;
+  }>;
+  latestIntake: { id: string; title: string; status: string } | null;
+};
 
 export default function ClientePage({
   params,
@@ -38,12 +50,14 @@ export default function ClientePage({
   const [radarBusy, setRadarBusy] = useState(false);
   const [radarErr, setRadarErr] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [context, setContext] = useState<ClientContext>({ campaigns: [], latestIntake: null });
 
   const load = useCallback(async () => {
-    const [c, s, docs] = await Promise.all([
+    const [c, s, docs, strategicContext] = await Promise.all([
       fetch(`/api/clients/${id}`).then((r) => r.json()),
       fetch(`/api/scripts?clientId=${id}`).then((r) => r.json()),
       fetch(`/api/documents?clientId=${id}`).then((r) => r.json()),
+      fetch(`/api/clients/${id}/context`).then((r) => r.json()),
     ]);
     setClient(c);
     setScripts(s);
@@ -54,6 +68,7 @@ export default function ClientePage({
         )
       : null;
     setRadar(radarDoc ?? null);
+    if (Array.isArray(strategicContext.campaigns)) setContext(strategicContext);
   }, [id]);
 
   async function updateRadar() {
@@ -217,6 +232,38 @@ export default function ClientePage({
           </Card>
         )
       )}
+
+      <Card className="mb-6 p-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="font-semibold text-brand-navy">Contexto estratégico</h2>
+            <p className="mt-1 text-xs text-slate-500">Los relevamientos aprobados crean la marca, la oferta y la campaña que alimentan el brief.</p>
+          </div>
+          <Link href={`/relevamientos?clientId=${id}`} className={btnSecondary}><ClipboardList size={16} /> Crear relevamiento</Link>
+        </div>
+        {context.campaigns.length ? (
+          <ul className="mt-4 space-y-3">
+            {context.campaigns.map((campaign) => (
+              <li key={campaign.campaignId} className="flex flex-wrap items-center gap-3 rounded-lg border border-slate-200 p-4">
+                <div className="min-w-52 flex-1">
+                  <div className="text-sm font-semibold text-brand-navy">{campaign.campaignTitle}</div>
+                  <div className="mt-1 text-xs text-slate-500">{campaign.brandName} · {campaign.offerName}</div>
+                </div>
+                <Link href={`/generar?clientId=${id}&brandId=${campaign.brandId}&offerId=${campaign.offerId}&campaignId=${campaign.campaignId}`} className={btnPrimary}>
+                  <Sparkles size={16} /> Generar con este dossier
+                </Link>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <EmptyState
+            icon={ClipboardList}
+            title="Todavía no hay una campaña aprobada"
+            description={context.latestIntake ? `El relevamiento “${context.latestIntake.title}” está en estado ${context.latestIntake.status}.` : "Creá un relevamiento, envialo al cliente y aprobalo para formar el dossier estratégico."}
+            action={<Link href={`/relevamientos?clientId=${id}`} className={btnPrimary}>Crear relevamiento</Link>}
+          />
+        )}
+      </Card>
 
       <div className="grid grid-cols-1 gap-8 xl:grid-cols-2">
         <DocumentManager scope={id} />

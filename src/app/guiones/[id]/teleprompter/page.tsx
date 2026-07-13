@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { use, useEffect, useMemo, useRef, useState } from "react";
+import { use, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { analyzeScript, fmtTime } from "@/lib/readtime";
 import { AlertTriangle, ArrowLeft, CheckCircle2, Pause, Play } from "lucide-react";
-import { Skeleton } from "@/components/ui";
+import { Button, Card, InlineAlert, Skeleton } from "@/components/ui";
+import { fetchJson } from "@/lib/http/fetch-json";
 
 type ScriptDetail = {
   id: number;
@@ -25,17 +26,25 @@ export default function TeleprompterPage({
   const [playing, setPlaying] = useState(false);
   const [fontSize, setFontSize] = useState(28);
   const [showMap, setShowMap] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number | null>(null);
 
-  useEffect(() => {
-    fetch(`/api/scripts/${id}`)
-      .then((r) => r.json())
-      .then(setScript);
-    fetch("/api/settings")
-      .then((r) => r.json())
-      .then((s) => setWpm(Number(s.wpm_es) || 150));
+  const load = useCallback(async () => {
+    setLoadError(null);
+    try {
+      const [scriptData, settings] = await Promise.all([
+        fetchJson<ScriptDetail>(`/api/scripts/${id}`),
+        fetchJson<{ wpm_es?: string }>("/api/settings"),
+      ]);
+      setScript(scriptData);
+      setWpm(Number(settings.wpm_es) || 150);
+    } catch (cause) {
+      setLoadError((cause as Error).message);
+    }
   }, [id]);
+
+  useEffect(() => { void load(); }, [load]);
 
   const content =
     script?.versions[script.versions.length - 1]?.content ?? "";
@@ -80,6 +89,16 @@ export default function TeleprompterPage({
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
   }, [playing, analysis]);
+
+  if (loadError)
+    return (
+      <div className="fixed inset-0 z-50 bg-slate-950 p-6 text-white">
+        <Card className="mx-auto mt-16 max-w-lg p-6 text-slate-800">
+          <InlineAlert tone="danger">{loadError}</InlineAlert>
+          <Button className="mt-4" onClick={() => void load()}>Reintentar</Button>
+        </Card>
+      </div>
+    );
 
   if (!script || !analysis)
     return (
