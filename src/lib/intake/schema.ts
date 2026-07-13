@@ -1,7 +1,29 @@
 import { z } from "zod";
 
 const text = z.string().trim().max(20_000).default("");
-const urlText = z.union([z.literal(""), z.url()]).default("");
+
+// Los campos de URL son opcionales: no deben bloquear el envío por formato.
+// Normalizamos lo que parezca una URL (agregando https:// si falta) y, si aun
+// así no es válida, conservamos el texto tal cual en vez de rechazarlo.
+function normalizeUrl(raw: string): string {
+  const trimmed = raw.trim();
+  if (!trimmed) return "";
+  const candidate = /^[a-z][a-z0-9+.-]*:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+  return z.url().safeParse(candidate).success ? candidate : trimmed;
+}
+
+const urlText = z
+  .string()
+  .trim()
+  .max(4_000)
+  .default("")
+  .transform(normalizeUrl);
+
+const urlList = z
+  .array(z.string().trim().max(4_000))
+  .max(12)
+  .default([])
+  .transform((links) => links.map(normalizeUrl).filter(Boolean));
 
 export const contactSchema = z.object({
   name: z.string().trim().min(2).max(160),
@@ -14,7 +36,7 @@ export const contactSchema = z.object({
 export const brandSchema = z.object({
   name: z.string().trim().min(1).max(200),
   website: urlText,
-  socialLinks: z.array(z.url()).max(12).default([]),
+  socialLinks: urlList,
   country: text,
   market: text,
   language: z.string().trim().max(40).default("Español LATAM"),
@@ -123,11 +145,15 @@ export function validateSection(section: IntakeSection, value: unknown) {
   ).safeParse(value);
 }
 
+// Chequea únicamente que los datos provistos tengan un formato/tamaño sano
+// (mismo criterio que el autosave), sin exigir presencia ni longitud mínima.
+// La completitud —qué campos son obligatorios— la resuelve validateForSubmission
+// con mensajes claros, para que un relevamiento con poca información igual se envíe.
 export function validateAnswerFormats(answers: IntakeAnswers): string[] {
   return (Object.keys(sectionSchemas) as IntakeSection[]).flatMap((section) => {
     const value = answers[section];
     if (value === undefined) return [];
-    const parsed = sectionSchemas[section].safeParse(value);
+    const parsed = validateSection(section, value);
     return parsed.success ? [] : [`Datos inválidos en ${section}: ${parsed.error.issues[0].message}`];
   });
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { completionScore, missingHighValueFields, validateForSubmission, validateSection, type IntakeAnswers } from "./schema";
+import { completionScore, missingHighValueFields, validateAnswerFormats, validateForSubmission, validateSection, type IntakeAnswers } from "./schema";
 
 const minimum: IntakeAnswers = {
   contact: { name: "Ana Pérez", role: "CMO", email: "ana@example.com", phone: "", consent: true },
@@ -19,6 +19,19 @@ describe("intake schema", () => {
     expect(validateForSubmission(minimum)).toEqual([]);
     expect(missingHighValueFields(minimum)).toContain("Mecanismo diferencial");
     expect(completionScore(minimum)).toBeGreaterThan(30);
+  });
+  it("no bloquea el envío por URLs incompletas en la marca", () => {
+    const answers = structuredClone(minimum);
+    answers.brand!.website = "instagram.com/marca";
+    answers.brand!.socialLinks = ["tiktok.com/@marca", "no es una url"];
+    expect(validateAnswerFormats(answers)).toEqual([]);
+  });
+  it("no arroja errores de formato por campos ausentes o breves", () => {
+    // Simula lo que envía el wizard con una sección casi vacía: solo el
+    // formato importa aquí, la completitud la reporta validateForSubmission.
+    const answers: IntakeAnswers = { audience: { primaryAvatar: "corto" } as IntakeAnswers["audience"] };
+    expect(validateAnswerFormats(answers)).toEqual([]);
+    expect(validateForSubmission(answers)).toContain("Dolores");
   });
   it("bloquea entrega sin consentimiento", () => {
     const answers = structuredClone(minimum);
