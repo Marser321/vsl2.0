@@ -7,7 +7,7 @@ import { generationInputSchema } from "@/lib/generation/schema";
 import { effectiveScriptStatus } from "@/lib/generation/status";
 import { createGenerationStream } from "@/lib/generation/stream";
 
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 type Params = { params: Promise<{ id: string }> };
 

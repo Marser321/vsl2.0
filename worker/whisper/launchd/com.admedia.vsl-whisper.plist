@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.admedia.vsl-whisper</string>
+
+  <!-- caffeinate -s mantiene la Mac despierta mientras el worker corre (sin sudo).
+       El runtime vive en ~/vsl-whisper (NO en ~/Desktop, que macOS protege con TCC
+       y bloquea a los LaunchAgents). Reemplazá __WHISPER_API_KEY__ por la clave real. -->
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/bin/caffeinate</string>
+    <string>-s</string>
+    <string>/Users/macmini/vsl-whisper/.venv/bin/python</string>
+    <string>-m</string>
+    <string>uvicorn</string>
+    <string>app:app</string>
+    <string>--host</string>
+    <string>127.0.0.1</string>
+    <string>--port</string>
+    <string>8000</string>
+    <string>--app-dir</string>
+    <string>/Users/macmini/vsl-whisper</string>
+  </array>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>WHISPER_MODEL_SIZE</key>
+    <string>small</string>
+    <key>WHISPER_LANGUAGE</key>
+    <string>es</string>
+    <key>WHISPER_COMPUTE_TYPE</key>
+    <string>int8</string>
+    <key>WHISPER_API_KEY</key>
+    <string>__WHISPER_API_KEY__</string>
+  </dict>
+
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+
+  <key>StandardOutPath</key>
+  <string>/Users/macmini/Library/Logs/vsl-whisper.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/macmini/Library/Logs/vsl-whisper.log</string>
+</dict>
+</plist>

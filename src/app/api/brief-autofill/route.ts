@@ -7,7 +7,7 @@ import { generateJSON } from "@/lib/ai/structured";
 import { renderDocument } from "@/lib/ai/prompts";
 import { guardAdminRequest } from "@/lib/auth/session";
 
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 const BRIEF_SCHEMA = {
   type: "object",

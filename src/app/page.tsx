@@ -85,7 +85,7 @@ export default async function Home() {
           </Link>
           <Link href="/generar" className="rounded-lg border border-slate-200 p-4 hover:border-brand-blue">
             <div className="flex items-center gap-2 text-sm font-semibold text-brand-navy"><Sparkles size={17} /> 3. Generá con contexto</div>
-            <p className="mt-1 text-xs leading-5 text-slate-500">Elegí el framework, revisá el brief y confirmá el provider.</p>
+            <p className="mt-1 text-xs leading-5 text-slate-500">Revisá el brief; la IA elige la estructura y las opciones avanzadas quedan disponibles.</p>
           </Link>
         </div>
       </Card>

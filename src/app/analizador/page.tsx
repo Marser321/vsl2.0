@@ -1,225 +1,216 @@
 "use client";
 
+import { createClient } from "@supabase/supabase-js";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import ScriptMarkdown from "@/components/ScriptMarkdown";
-import { AsyncStatus, Button, Card, CopyButton, PageTitle, inputCls, type ProcessStatus } from "@/components/ui";
-import { Check, Microscope } from "lucide-react";
+import { AsyncStatus, Button, Card, CopyButton, InlineAlert, PageTitle, inputCls, type ProcessStatus } from "@/components/ui";
+import { Check, FileAudio, Microscope, Sparkles, Upload } from "lucide-react";
 import { toast } from "sonner";
 
 type Client = { id: number; name: string };
+type TranscriptionReadiness = {
+  available: boolean;
+  provider: "openrouter" | "groq" | "none";
+  model: string;
+  error: string | null;
+};
+type StreamEvent = {
+  type: "status" | "transcript" | "delta" | "done" | "error";
+  stage?: string;
+  completed?: number;
+  total?: number;
+  text?: string;
+  title?: string;
+  documentId?: number;
+  message?: string;
+  uploadFallback?: boolean;
+};
+
+const STAGE_LABELS: Record<string, string> = {
+  validando: "Validando la fuente",
+  obteniendo_subtitulos: "Buscando subtítulos públicos",
+  descargando_audio: "Descargando el audio público",
+  transcribiendo: "Transcribiendo el audio",
+  analizando: "Analizando la ingeniería persuasiva",
+  guardando: "Guardando en la biblioteca",
+};
+
+async function consumeSse(response: Response, onEvent: (event: StreamEvent) => void) {
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data.error || "No se pudo iniciar el análisis");
+  }
+  if (!response.body) throw new Error("El servidor no inició el stream");
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const events = buffer.split("\n\n");
+    buffer = events.pop() ?? "";
+    for (const raw of events) {
+      if (!raw.startsWith("data: ")) continue;
+      const event = JSON.parse(raw.slice(6)) as StreamEvent;
+      onEvent(event);
+      if (event.type === "error") throw new Error(event.message || "El análisis falló");
+    }
+  }
+}
 
 export default function AnalizadorPage() {
   const [clients, setClients] = useState<Client[]>([]);
-  const [analyzing, setAnalyzing] = useState(false);
-  const [importing, setImporting] = useState(false);
+  const [clientId, setClientId] = useState("");
+  const [title, setTitle] = useState("");
   const [sourceUrl, setSourceUrl] = useState("");
+  const [sourceFile, setSourceFile] = useState<File | null>(null);
   const [transcript, setTranscript] = useState("");
   const [output, setOutput] = useState("");
   const [savedDocId, setSavedDocId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [uploadSuggested, setUploadSuggested] = useState(false);
+  const [busy, setBusy] = useState(false);
   const [aiStatus, setAiStatus] = useState<ProcessStatus | null>(null);
+  const [transcriptionReadiness, setTranscriptionReadiness] = useState<TranscriptionReadiness | null>(null);
   const outputRef = useRef<HTMLDivElement>(null);
-  const titleRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetch("/api/clients")
-      .then((r) => r.json())
-      .then(setClients);
+      .then((response) => response.ok ? response.json() : Promise.reject(new Error("No se pudieron cargar los clientes")))
+      .then(setClients)
+      .catch((cause) => setError((cause as Error).message));
+    fetch("/api/readiness")
+      .then((response) => response.ok ? response.json() : Promise.reject(new Error("No se pudo verificar la transcripción")))
+      .then((data) => setTranscriptionReadiness(data.transcription))
+      .catch(() => setTranscriptionReadiness(null));
   }, []);
 
-  async function handleImport() {
-    setImporting(true);
+  function resetRun() {
+    setBusy(true);
+    setOutput("");
+    setSavedDocId(null);
     setError(null);
-    try {
-      const response = await fetch("/api/analyze/import-url", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: sourceUrl }),
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "No se pudo importar la URL");
-      setTranscript(data.text);
-      if (titleRef.current && !titleRef.current.value.trim()) {
-        titleRef.current.value = data.title;
-      }
-      toast.success("Transcript importado. Podés revisarlo antes de analizar.");
-    } catch (err) {
-      setError((err as Error).message);
-    } finally {
-      setImporting(false);
-    }
+    setUploadSuggested(false);
+    setAiStatus({ stage: "Preparando la referencia" });
   }
 
-  async function handleAnalyze(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const fd = new FormData(e.currentTarget);
-    setAnalyzing(true);
-    setOutput("");
-    setError(null);
-    setAiStatus({ stage: "Preparando arnés 5+1" });
-    setSavedDocId(null);
+  async function createUpload(file: File) {
+    const response = await fetch("/api/analyze/uploads", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ filename: file.name, mimeType: file.type, sizeBytes: file.size }),
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || "No se pudo preparar el upload");
+    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
+    const uploaded = await supabase.storage.from(data.bucket).uploadToSignedUrl(data.path, data.token, file, { contentType: file.type });
+    if (uploaded.error) throw new Error(uploaded.error.message);
+    return data.path as string;
+  }
 
+  async function handleSocialImport() {
+    resetRun();
     try {
-      const res = await fetch("/api/analyze", {
+      const storagePath = sourceFile ? await createUpload(sourceFile) : undefined;
+      const response = await fetch("/api/analyze/import-social", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          title: fd.get("title"),
-          transcript: fd.get("transcript"),
-          clientId: fd.get("clientId") ? Number(fd.get("clientId")) : null,
+          ...(storagePath ? { storagePath } : { url: sourceUrl.trim() }),
+          title: title.trim() || undefined,
+          clientId: clientId ? Number(clientId) : null,
         }),
       });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Error al analizar");
-      }
-      const reader = res.body!.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        const events = buffer.split("\n\n");
-        buffer = events.pop() ?? "";
-        for (const evt of events) {
-          if (!evt.startsWith("data: ")) continue;
-          const data = JSON.parse(evt.slice(6));
-          if (data.type === "status") {
-            setAiStatus({ stage: data.stage, completed: data.completed, total: data.total });
-          } else if (data.type === "delta") {
-            setOutput((prev) => prev + data.text);
-            outputRef.current?.scrollTo({ top: outputRef.current.scrollHeight });
-          } else if (data.type === "done") {
-            setSavedDocId(data.documentId);
-            toast.success("Análisis guardado en la biblioteca");
-          } else if (data.type === "error") {
-            throw new Error(data.message);
-          }
+      await consumeSse(response, (event) => {
+        if (event.type === "status") {
+          setAiStatus({ stage: STAGE_LABELS[event.stage || ""] || event.stage || "Procesando", completed: event.completed, total: event.total });
+        } else if (event.type === "transcript") {
+          setTranscript(event.text || "");
+          if (!title.trim() && event.title) setTitle(event.title);
+        } else if (event.type === "delta") {
+          setOutput((current) => current + (event.text || ""));
+          outputRef.current?.scrollTo({ top: outputRef.current.scrollHeight });
+        } else if (event.type === "done") {
+          setSavedDocId(event.documentId || null);
+          toast.success("Referencia analizada y guardada");
+        } else if (event.type === "error") {
+          setUploadSuggested(Boolean(event.uploadFallback));
         }
-      }
-      setAnalyzing(false);
-    } catch (err) {
-      setAnalyzing(false);
-      setError((err as Error).message);
+      });
+    } catch (cause) {
+      setError((cause as Error).message);
+      if (!sourceFile) setUploadSuggested(true);
+    } finally {
+      setBusy(false);
     }
   }
 
+  async function handleManualAnalyze(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    resetRun();
+    try {
+      const response = await fetch("/api/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title, transcript, clientId: clientId ? Number(clientId) : null }),
+      });
+      await consumeSse(response, (streamEvent) => {
+        if (streamEvent.type === "status") setAiStatus({ stage: streamEvent.stage || "Analizando", completed: streamEvent.completed, total: streamEvent.total });
+        if (streamEvent.type === "delta") setOutput((current) => current + (streamEvent.text || ""));
+        if (streamEvent.type === "done") setSavedDocId(streamEvent.documentId || null);
+      });
+      toast.success("Análisis guardado en la biblioteca");
+    } catch (cause) {
+      setError((cause as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const generateHref = `/generar?${new URLSearchParams({
+    ...(clientId ? { clientId } : {}),
+    ...(savedDocId ? { documentId: String(savedDocId) } : {}),
+  }).toString()}`;
+
   return (
     <div className="max-w-4xl">
-      <PageTitle
-        title="Analizador de VSLs"
-        subtitle="Pegá el transcript de un VSL de la competencia y obtené su ingeniería persuasiva: framework, beats, ganchos, objeciones y qué vale la pena adaptar. El análisis se guarda en la biblioteca."
-      />
+      <PageTitle title="Analizador de referencias" subtitle="Pegá una URL pública de YouTube, Instagram o TikTok. VSL Studio obtiene el transcript, extrae la ingeniería persuasiva y lo guarda como contexto reutilizable." />
 
-      <Card className="p-6 mb-6">
-        <form onSubmit={handleAnalyze} className="space-y-4">
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <div>
-              <label htmlFor="analysis-title" className="block text-xs font-semibold text-slate-600 mb-1">
-                Título / referencia *
-              </label>
-              <input
-                id="analysis-title"
-                ref={titleRef}
-                name="title"
-                required
-                className={inputCls}
-                placeholder="Ej: VSL competidor X — oferta de enero"
-              />
-            </div>
-            <div>
-              <label htmlFor="analysis-client" className="block text-xs font-semibold text-slate-600 mb-1">
-                Asociar a cliente (opcional)
-              </label>
-              <select id="analysis-client" name="clientId" className={inputCls}>
-                <option value="">Biblioteca global</option>
-                {clients.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-          <div>
-            <label htmlFor="analysis-url" className="mb-1 block text-xs font-semibold text-slate-600">
-              Importar desde URL
-            </label>
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <input
-                id="analysis-url"
-                type="url"
-                value={sourceUrl}
-                onChange={(event) => setSourceUrl(event.target.value)}
-                className={inputCls}
-                placeholder="https://youtube.com/watch?v=…"
-                aria-label="URL para importar"
-              />
-              <Button
-                type="button"
-                variant="secondary"
-                className="shrink-0"
-                onClick={handleImport}
-                disabled={!sourceUrl.trim()}
-                loading={importing}
-                loadingLabel="Importando…"
-              >
-                Importar transcript
-              </Button>
-            </div>
-          </div>
-          <div>
-            <label htmlFor="analysis-transcript" className="block text-xs font-semibold text-slate-600 mb-1">
-              Transcript del VSL *
-            </label>
-            <textarea
-              id="analysis-transcript"
-              name="transcript"
-              required
-              rows={10}
-              value={transcript}
-              onChange={(event) => setTranscript(event.target.value)}
-              className={inputCls}
-              placeholder="Pegá aquí el transcript completo del VSL a analizar…"
-            />
-          </div>
-          <Button type="submit" loading={analyzing} loadingLabel="Analizando…" icon={<Microscope size={16} strokeWidth={1.75} />}>Analizar VSL</Button>
-        </form>
+      <Card className="mb-6 p-6">
+        <div className="mb-5 flex items-start gap-3">
+          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-blue-50 text-brand-blue"><Sparkles size={20} /></div>
+          <div><h2 className="font-semibold text-brand-navy">Importar y analizar</h2><p className="mt-1 text-xs leading-5 text-slate-500">Solo contenido público de hasta 7 minutos. Primero buscamos subtítulos; si no existen, procesamos el audio sin depender de OpenAI.</p></div>
+        </div>
+        {transcriptionReadiness && <div className={`mb-5 rounded-lg border px-3 py-2 text-xs ${transcriptionReadiness.available ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-amber-200 bg-amber-50 text-amber-900"}`}><strong>{transcriptionReadiness.available ? "Audio listo" : "Audio pendiente"}:</strong> {transcriptionReadiness.available ? `${transcriptionReadiness.provider === "groq" ? "Groq" : "OpenRouter"} · ${transcriptionReadiness.model}` : transcriptionReadiness.error}</div>}
+        <div className="grid gap-4 sm:grid-cols-2">
+          <label><span className="mb-1 block text-xs font-semibold text-slate-600">Título opcional</span><input value={title} onChange={(event) => setTitle(event.target.value)} className={inputCls} placeholder="Se completa desde el video" /></label>
+          <label><span className="mb-1 block text-xs font-semibold text-slate-600">Cliente opcional</span><select value={clientId} onChange={(event) => setClientId(event.target.value)} className={inputCls}><option value="">Biblioteca global</option>{clients.map((client) => <option key={client.id} value={client.id}>{client.name}</option>)}</select></label>
+        </div>
+        <label className="mt-4 block"><span className="mb-1 block text-xs font-semibold text-slate-600">URL social</span><input type="url" value={sourceUrl} onChange={(event) => { setSourceUrl(event.target.value); setSourceFile(null); }} className={inputCls} placeholder="https://youtube.com/… · instagram.com/… · tiktok.com/…" /></label>
+        <div className="my-4 flex items-center gap-3 text-[11px] uppercase tracking-wider text-slate-400"><span className="h-px flex-1 bg-slate-200" />o subí el archivo<span className="h-px flex-1 bg-slate-200" /></div>
+        <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-dashed border-slate-300 p-4 hover:border-brand-blue">
+          <Upload size={18} className="text-brand-blue" /><span className="flex-1 text-sm text-slate-600">{sourceFile ? sourceFile.name : "MP3, M4A, WAV, MP4 o WebM · máximo 7 min / 100 MB"}</span>
+          <input type="file" className="sr-only" accept="audio/mpeg,audio/mp4,audio/x-m4a,audio/wav,audio/webm,video/mp4,video/webm" onChange={(event) => { setSourceFile(event.target.files?.[0] || null); setSourceUrl(""); }} />
+        </label>
+        <Button className="mt-5" onClick={handleSocialImport} disabled={!sourceUrl.trim() && !sourceFile} loading={busy} loadingLabel={aiStatus?.stage || "Procesando…"} icon={<Microscope size={16} />}>Importar y analizar</Button>
       </Card>
 
-      {error && (
-        <div className="rounded-lg bg-rose-50 border border-rose-200 px-4 py-3 text-sm text-rose-800 mb-4">
-          {error}
-        </div>
-      )}
+      {error && <InlineAlert tone="danger"><strong>No pudimos completar la importación.</strong><p className="mt-1">{error}</p>{uploadSuggested && !sourceFile && <p className="mt-2 font-medium">Descargá el video desde una fuente autorizada y subilo en el recuadro anterior.</p>}</InlineAlert>}
 
-      {(output || analyzing) && (
-        <Card className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-semibold text-brand-navy">
-              Análisis estructural
-            </h2>
-            {analyzing ? (
-              <AsyncStatus status={aiStatus} fallback="Los modelos están trabajando" />
-            ) : output ? (
-              <CopyButton text={output} label="Copiar análisis" copiedLabel="Análisis copiado" />
-            ) : null}
-            {savedDocId && (
-              <Link
-                href="/biblioteca"
-                className="text-xs text-emerald-600 hover:underline"
-              >
-                <Check className="inline" size={14} strokeWidth={1.75} /> Guardado en la biblioteca
-              </Link>
-            )}
-          </div>
-          <div ref={outputRef} className="max-h-[65vh] overflow-y-auto">
-            <ScriptMarkdown content={output || "…"} />
-          </div>
-        </Card>
-      )}
+      <details className="my-6 rounded-xl border border-slate-200 bg-white">
+        <summary className="cursor-pointer px-5 py-4 text-sm font-semibold text-brand-navy">¿Ya tenés el transcript? Pegalo manualmente</summary>
+        <form onSubmit={handleManualAnalyze} className="space-y-4 border-t border-slate-100 p-5">
+          <label><span className="mb-1 block text-xs font-semibold text-slate-600">Título *</span><input required value={title} onChange={(event) => setTitle(event.target.value)} className={inputCls} /></label>
+          <label><span className="mb-1 block text-xs font-semibold text-slate-600">Transcript *</span><textarea required minLength={100} rows={10} value={transcript} onChange={(event) => setTranscript(event.target.value)} className={inputCls} /></label>
+          <Button type="submit" loading={busy} icon={<FileAudio size={16} />}>Analizar transcript</Button>
+        </form>
+      </details>
+
+      {(output || busy) && <Card className="p-6"><div className="mb-4 flex flex-wrap items-center gap-3"><h2 className="flex-1 font-semibold text-brand-navy">Análisis estructural</h2>{busy ? <AsyncStatus status={aiStatus} fallback="Procesando referencia" /> : output ? <CopyButton text={output} label="Copiar análisis" copiedLabel="Análisis copiado" /> : null}</div><div ref={outputRef} className="max-h-[65vh] overflow-y-auto"><ScriptMarkdown content={output || "…"} /></div></Card>}
+
+      {savedDocId && <Card className="mt-6 border-emerald-200 bg-emerald-50 p-5"><div className="flex flex-wrap items-center gap-3"><Check className="text-emerald-600" size={20} /><div className="min-w-56 flex-1"><h2 className="font-semibold text-emerald-900">Referencia lista para usar</h2><p className="mt-1 text-xs text-emerald-700">El transcript y su análisis quedaron guardados en la biblioteca.</p></div><Link href={generateHref} className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-brand-blue px-4 py-2 text-sm font-semibold text-white hover:brightness-95"><Sparkles size={16} />Usar en un nuevo guion</Link></div></Card>}
     </div>
   );
 }

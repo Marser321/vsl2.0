@@ -2,12 +2,11 @@ import { NextRequest } from "next/server";
 import { z } from "zod";
 import { getDb } from "@/db";
 import { documents } from "@/db/schema";
-import { getProvider, type OperationalProviderName } from "@/lib/ai/provider";
-import { getSetting } from "@/lib/settings";
 import { countTokens } from "@/lib/ai/anthropic";
 import { guardAdminRequest } from "@/lib/auth/session";
+import { createVslAnalysis } from "@/lib/ai/analyze-vsl";
 
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 const analyzeSchema = z.object({
   title: z.string().min(1, "Poné un título para identificar el VSL"),
@@ -32,67 +31,22 @@ export async function POST(req: NextRequest) {
   }
   const { title, transcript, clientId } = parsed.data;
 
-  const configuredProvider = await getSetting("default_provider", "openrouter");
-  const providerName: OperationalProviderName = configuredProvider === "anthropic" ? "anthropic" : "openrouter";
-  const model = await getSetting(
-    providerName === "anthropic"
-      ? "default_model_anthropic"
-      : "default_model_openrouter",
-    providerName === "openrouter" ? "openrouter/ensemble-5+1" : "claude-opus-4-8"
-  );
   const encoder = new TextEncoder();
 
   const stream = new ReadableStream({
     async start(controller) {
       const send = (data: unknown) => controller.enqueue(encoder.encode(sse(data)));
       try {
-        const provider = await getProvider(providerName);
+        const analysisRun = await createVslAnalysis({ transcript, onStatus: (status) => send({ type: "status", ...status }) });
         let analysis = "";
-        for await (const delta of provider.generateStream({
-          model,
-          systemBlocks: [
-            {
-              text: `Sos un analista senior de VSLs de respuesta directa. Desarmás guiones ajenos para extraer su ingeniería persuasiva. Respondés en español, en Markdown, con precisión quirúrgica: citás frases textuales del transcript como evidencia.`,
-              cache: true,
-            },
-          ],
-          messages: [
-            {
-              role: "user",
-              content: `Analizá este transcript de un VSL de la competencia y devolvé el desglose estructural completo:
-
-# Formato de salida (Markdown)
-## Ficha rápida
-Producto/oferta detectada, audiencia objetivo, duración estimada, framework dominante (VSL clásico / PAS / AIDA / Star-Story-Solution / otro).
-## Mapa de beats
-Tabla: | # | Beat | Función persuasiva | Frase de apertura textual |
-## Ganchos y re-enganches
-El gancho inicial + cada re-enganche a lo largo del guion, citados textualmente, con por qué funcionan.
-## Mecanismo único
-Cómo presenta el "por qué esto funciona cuando lo demás falló".
-## Prueba y credibilidad
-Qué tipos de prueba usa (testimonios, datos, autoridad, demo) y cómo los secuencia.
-## Manejo de objeciones
-Qué objeciones ataca y con qué técnica (historia, garantía, reframe).
-## Oferta y CTAs
-Estructura de la oferta, apilamiento de valor, urgencia/escasez, cuántas veces pide la acción y cómo.
-## Robable
-Las 5-8 técnicas concretas de este VSL que vale la pena adaptar en nuestros guiones.
-
-# Transcript
-${transcript}`,
-            },
-          ],
-          maxTokens: 16000,
-          onStatus: (status) => send({ type: "status", ...status }),
-        })) {
+        for await (const delta of analysisRun.stream) {
           analysis += delta;
           send({ type: "delta", text: delta });
         }
 
         // Guardar transcript + análisis como documento reutilizable
         const fullText = `# Transcript\n\n${transcript}\n\n---\n\n# Análisis estructural\n\n${analysis}`;
-        const tokenCount = await countTokens(fullText, model);
+        const tokenCount = await countTokens(fullText, analysisRun.model);
         const [doc] = await getDb()
           .insert(documents)
           .values({

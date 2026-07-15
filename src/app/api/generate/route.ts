@@ -3,7 +3,9 @@ import { guardAdminRequest } from "@/lib/auth/session";
 import { createGenerationStream } from "@/lib/generation/stream";
 import { generationInputSchema } from "@/lib/generation/schema";
 
-export const maxDuration = 60;
+// El arnés OpenRouter ejecuta cinco propuestas y una síntesis. En producción
+// puede superar un minuto aun cuando todos los proveedores estén sanos.
+export const maxDuration = 300;
 
 export async function POST(req: NextRequest) {
   const guard = await guardAdminRequest(req, true);

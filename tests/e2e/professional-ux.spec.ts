@@ -19,6 +19,12 @@ test("la navegación responde en desktop y mobile", async ({ page }, testInfo) =
 });
 
 test("el generador explica contexto, mercado y señales en conflicto", async ({ page }) => {
+  await page.route("**/api/readiness", (route) => route.fulfill({ json: {
+    readyToGenerate: true, database: { available: true, error: null },
+    provider: { label: "Anthropic", model: "claude-test", available: true, error: null },
+    prompt: { available: true, error: null }, transcription: { available: true, model: "gpt-4o-transcribe", error: null },
+    publicUrl: { available: true, url: "http://localhost:3000", error: null },
+  } }));
   await page.route("**/api/clients*", (route) => route.fulfill({ json: [{ id: 1, name: "Cliente QA" }] }));
   await page.route(/\/api\/frameworks/, (route) => route.fulfill({
     json: [{ id: 2, name: "Reel UGC", description: "Testimonio a cámara" }],
@@ -38,7 +44,8 @@ test("el generador explica contexto, mercado y señales en conflicto", async ({ 
   await page.goto("/generar");
   await page.getByRole("button", { name: /Reel Vertical/ }).click();
   await page.getByRole("button", { name: "Cliente QA" }).click();
-  await page.getByRole("button", { name: /Reel UGC/ }).click();
+
+  await expect(page.getByRole("button", { name: /Elegir estructura manualmente/ })).toBeVisible();
 
   await expect(page.getByRole("heading", { name: "Radar, transcripts y referencias" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Ejemplares con señales de calidad" })).toBeVisible();
@@ -51,6 +58,12 @@ test("el generador explica contexto, mercado y señales en conflicto", async ({ 
 });
 
 test("el generador valida inline y confirma OpenRouter antes de reservar", async ({ page }) => {
+  await page.route("**/api/readiness", (route) => route.fulfill({ json: {
+    readyToGenerate: true, database: { available: true, error: null },
+    provider: { label: "OpenRouter — arnés 5+1", model: "ensemble", available: true, error: null },
+    prompt: { available: true, error: null }, transcription: { available: true, model: "gpt-4o-transcribe", error: null },
+    publicUrl: { available: true, url: "http://localhost:3000", error: null },
+  } }));
   await page.route("**/api/clients*", (route) => route.fulfill({ json: [{ id: 1, name: "Cliente QA" }] }));
   await page.route(/\/api\/frameworks/, (route) => route.fulfill({ json: [] }));
   await page.route(/\/api\/stats/, (route) => route.fulfill({ json: { byFramework: [] } }));
@@ -64,7 +77,6 @@ test("el generador valida inline y confirma OpenRouter antes de reservar", async
   await page.goto("/generar");
   await page.getByRole("button", { name: /VSL Video/ }).click();
   await page.getByRole("button", { name: "Cliente QA" }).click();
-  await page.getByRole("button", { name: "Dejar que la IA elija la mejor estructura" }).click();
   await page.getByRole("button", { name: "Generar guion" }).click();
   await expect(page.getByRole("alert").filter({ hasText: "Revisá los campos marcados" })).toBeVisible();
   await expect(page.locator("#error-title")).toHaveText("Escribí un título interno");

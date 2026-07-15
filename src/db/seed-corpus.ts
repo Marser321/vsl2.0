@@ -318,7 +318,7 @@ Regla: **cuanto menos consciente, más largo el camino narrativo y más indirect
 
 ## Aplicación al brief
 
-- Tráfico frío + mercado saturado (caso más común en LATAM hoy): gancho de curiosidad/historia/contrarian, mecanismo con nombre propio, prueba espejo abundante.
+- Tráfico frío + mercado saturado (el caso más común hoy): gancho de curiosidad/historia/contrarian, mecanismo con nombre propio, prueba espejo abundante.
 - Si el brief no especifica temperatura del tráfico: asumir frío para VSL y preguntarse qué reel/ad vio ANTES el espectador para llegar acá.
 - La sofisticación se lee en los ads de la competencia: si tres competidores prometen lo mismo, subir un nivel (mecanismo → identidad).`,
   },

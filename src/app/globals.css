@@ -37,7 +37,7 @@
   --color-danger: var(--danger);
   --color-danger-strong: var(--danger-strong);
   --color-danger-border: var(--danger-border);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: "Geist", "Geist Fallback", ui-sans-serif, system-ui, sans-serif;
 }
 
 body {

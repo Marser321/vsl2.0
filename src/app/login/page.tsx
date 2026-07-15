@@ -31,7 +31,7 @@ function LoginForm() {
   return (
     <div className="min-h-screen bg-brand-mist grid place-items-center p-6">
       <form onSubmit={submit} className="w-full max-w-sm rounded-2xl bg-white border border-slate-200 shadow-xl p-7">
-        <Brandmark size={36} />
+        <Brandmark size={34} lockup="horizontal" />
         <h1 className="text-xl font-bold text-brand-navy">Acceso al estudio</h1>
         <p className="text-sm text-slate-500 mt-1 mb-6">Ingresá la clave compartida del piloto.</p>
         <Field label="Clave" error={error || undefined}>

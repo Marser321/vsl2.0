@@ -12,6 +12,7 @@ Sistema de relevamiento, biblioteca y generación de guiones VSL. Organiza el co
 - Dossiers persistentes de marca y oferta, campañas específicas y snapshot del contexto usado por cada VSL.
 - Aprendizajes anonimizados por rubro, siempre pendientes de aprobación antes de cruzar entre clientes.
 - OpenRouter 5+1 prioritario y Anthropic opcional, streaming, versiones, Hook Lab, crítica y teleprompter.
+- Importación de referencias públicas de YouTube, Instagram y TikTok con subtítulos normales/automáticos, audio por OpenRouter y Groq opcional, y upload privado como respaldo.
 
 ## Requisitos
 
@@ -42,6 +43,13 @@ Generá `SESSION_SECRET` y `AUTH_RATE_LIMIT_SALT` con valores aleatorios indepen
 - `CRON_SECRET`: protege el radar semanal invocado por Vercel Cron. Generá uno con `openssl rand -hex 32`.
 - `INTAKE_NOTIFICATION_EMAIL`: destinatario de los avisos de relevamientos y del resumen semanal del radar.
 - `NEXT_PUBLIC_APP_URL`: URL pública de VSL Studio usada en los enlaces de los emails.
+- `OPENROUTER_TRANSCRIPTION_MODEL`: modelo multimodal para audio; por defecto `nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free`.
+- `TRANSCRIPTION_PROVIDER`: `auto` intenta OpenRouter primero y usa Groq solo si está configurado y OpenRouter falla; también admite `openrouter` o `groq`.
+- `GROQ_API_KEY`: respaldo opcional para audio con `whisper-large-v3-turbo`; no se necesita para URLs con subtítulos públicos.
+- OpenRouter exige tener al menos USD 0,50 cargados en la cuenta para habilitar entradas de audio, incluso cuando el modelo elegido no cobra tokens. Es un saldo mínimo de activación, no una dependencia de OpenAI.
+- `YT_DLP_VERSION`: opcional; fija la release del binario autónomo que instala `postinstall`.
+
+En producción, `NEXT_PUBLIC_APP_URL` debe ser HTTPS y apuntar al dominio público estable, no a localhost ni a un preview protegido. El dominio puede dejar la interfaz pública de relevamientos accesible mientras `REQUIRE_AUTH=true` protege el área interna desde la propia aplicación.
 
 El radar corre los lunes a las 08:00 UTC (05:00 en Montevideo); los cron de Vercel siempre usan UTC.
 
@@ -119,4 +127,4 @@ Vercel Hobby sirve únicamente para el piloto interno. Antes del uso comercial r
 
 ## Stack
 
-Next.js 16 · React 19.2 · TypeScript · Tailwind 4 · Supabase Postgres/Storage · Drizzle ORM · Resend · Anthropic SDK · OpenAI-compatible SDK para OpenRouter · Zod · Vitest · Playwright.
+Next.js 16 · React 19.2 · TypeScript · Tailwind 4 · Supabase Postgres/Storage · Drizzle ORM · Resend · Anthropic SDK · OpenRouter · Groq opcional · Zod · Vitest · Playwright.

@@ -2,6 +2,7 @@ import { Resend } from "resend";
 import { getDb } from "@/db";
 import { emailDeliveries } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { resolvePublicAppUrl } from "@/lib/public-url";
 
 let client: Resend | null = null;
 
@@ -39,7 +40,7 @@ export async function sendIntakeSubmittedEmail(args: {
     return;
   }
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  const appUrl = resolvePublicAppUrl();
   const { data, error } = await resend.emails.send(
     {
       from: process.env.RESEND_FROM_EMAIL ?? "VSL Studio <onboarding@resend.dev>",
@@ -95,7 +96,7 @@ export async function sendRadarDigestEmail(args: {
     return;
   }
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  const appUrl = resolvePublicAppUrl();
   const list = args.results
     .map((result) => {
       const marker = result.status === "ok" ? "✓" : "—";

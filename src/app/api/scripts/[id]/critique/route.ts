@@ -7,7 +7,7 @@ import { buildContext } from "@/lib/ai/context-builder";
 import { generateJSON } from "@/lib/ai/structured";
 import { guardAdminRequest } from "@/lib/auth/session";
 
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 const scoreDef = { type: "integer", enum: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] };
 const commentDef = { type: "string" };

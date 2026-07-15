@@ -3,7 +3,7 @@ import { z } from "zod";
 import { guardAdminRequest } from "@/lib/auth/session";
 import { runRadarForClient } from "@/lib/radar/run";
 
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 const radarBodySchema = z.object({ keywords: z.string().max(200).optional() });
 

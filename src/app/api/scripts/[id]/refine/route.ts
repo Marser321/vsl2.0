@@ -9,7 +9,7 @@ import { renderBriefMessage } from "@/lib/ai/prompts";
 import { frameworks } from "@/db/schema";
 import { guardAdminRequest } from "@/lib/auth/session";
 
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 const refineSchema = z.object({
   instruction: z.string().min(1, "Escribí la instrucción de ajuste"),

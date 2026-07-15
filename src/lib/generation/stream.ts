@@ -163,7 +163,18 @@ export async function createGenerationStream(
           systemBlocks: context.systemBlocks,
           messages: context.messages,
           maxTokens: 64_000,
-          onStatus: (status) => send({ type: "status", ...status }),
+          onStatus: (status) => {
+            send({ type: "status", ...status });
+            // El arnés 5+1 puede pasar varios minutos construyendo propuestas
+            // antes de emitir el primer delta. Mantener vivo el heartbeat evita
+            // clasificar como interrumpido un trabajo que sigue activo.
+            const heartbeatAt = new Date();
+            void db
+              .update(scripts)
+              .set({ generationHeartbeatAt: heartbeatAt, updatedAt: heartbeatAt })
+              .where(eq(scripts.id, prepared.scriptId))
+              .catch(() => undefined);
+          },
         })) {
           content += delta;
           send({ type: "delta", text: delta });

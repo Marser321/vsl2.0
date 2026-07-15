@@ -45,3 +45,10 @@ next-env.d.ts
 
 # datos locales (DB + uploads)
 /data/
+vendor/yt-dlp
+vendor/yt-dlp.exe
+
+# Worker Whisper (Python) — runtime local, no versionar
+worker/**/.venv/
+**/__pycache__/
+*.pyc

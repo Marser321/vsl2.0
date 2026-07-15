@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.admedia.vsl-tunnel</string>
+
+  <!-- Túnel ngrok con subdominio GRATIS y ESTABLE (1 por cuenta free).
+       Reemplazá __NGROK_BIN__ por la ruta de ngrok (which ngrok) y
+       __NGROK_DOMAIN__ por tu dominio reservado, ej. vsl-xxxx.ngrok-free.app.
+       El authtoken se configura aparte con: ngrok config add-authtoken <token>. -->
+  <key>ProgramArguments</key>
+  <array>
+    <string>__NGROK_BIN__</string>
+    <string>http</string>
+    <string>8000</string>
+    <string>--domain=__NGROK_DOMAIN__</string>
+    <string>--log=stdout</string>
+  </array>
+
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+
+  <key>StandardOutPath</key>
+  <string>/Users/macmini/Library/Logs/vsl-tunnel.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/macmini/Library/Logs/vsl-tunnel.log</string>
+</dict>
+</plist>

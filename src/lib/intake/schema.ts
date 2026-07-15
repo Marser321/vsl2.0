@@ -39,7 +39,7 @@ export const brandSchema = z.object({
   socialLinks: urlList,
   country: text,
   market: text,
-  language: z.string().trim().max(40).default("Español LATAM"),
+  language: z.string().trim().max(40).default("Español neutro (Latinos EE. UU.)"),
   industry: z.string().trim().min(1).max(160),
   subindustry: text,
   story: text,

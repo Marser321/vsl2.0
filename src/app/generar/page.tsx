@@ -61,6 +61,14 @@ type Preflight = {
   quota: { used: number; remaining: number; limit: number } | null;
   setup: { frameworkCount: number; hasFrameworks: boolean; hasSystemPrompt: boolean };
 };
+type Readiness = {
+  readyToGenerate: boolean;
+  database: { available: boolean; error: string | null };
+  provider: { label: string; model: string; available: boolean; error: string | null };
+  prompt: { available: boolean; error: string | null };
+  transcription: { available: boolean; model: string; error: string | null };
+  publicUrl: { available: boolean; url: string | null; error: string | null };
+};
 type Recovery = { id: number; title: string; status: string; generationError?: string | null; versions?: Array<{ content: string }> };
 type StoredDraft = {
   step: number;
@@ -102,12 +110,24 @@ function GenerarWizard() {
   const [aiStatus, setAiStatus] = useState<ProcessStatus | null>(null);
   const [preflight, setPreflight] = useState<Preflight | null>(null);
   const [preflightError, setPreflightError] = useState<string | null>(null);
+  const [readiness, setReadiness] = useState<Readiness | null>(null);
+  const [readinessError, setReadinessError] = useState<string | null>(null);
   const [pendingPayload, setPendingPayload] = useState<GenerationInput | null>(null);
   const [openrouterAccepted, setOpenrouterAccepted] = useState(false);
   const [recovery, setRecovery] = useState<Recovery | null>(null);
   const outputRef = useRef<HTMLDivElement>(null);
   const submittingRef = useRef(false);
   const restoredDocsRef = useRef<number[] | null>(null);
+  const requestedDocumentId = searchParams.get("documentId") ? Number(searchParams.get("documentId")) : null;
+
+  function loadReadiness() {
+    setReadinessError(null);
+    fetchJson<Readiness>("/api/readiness")
+      .then(setReadiness)
+      .catch((cause) => setReadinessError((cause as Error).message));
+  }
+
+  useEffect(() => { loadReadiness(); }, []);
 
   // Brief autopilot: pre-llenado con IA a partir de los docs del cliente
   const [autofill, setAutofill] = useState<Record<string, string> | null>(null);
@@ -151,63 +171,59 @@ function GenerarWizard() {
     if (!clientId) return;
     setAutofilling(true);
     setAutofillError(null);
-    const res = await fetch("/api/brief-autofill", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ clientId }),
-    });
-    const data = await res.json();
-    setAutofilling(false);
-    if (!res.ok) {
-      setAutofillError(data.error || "Error al pre-llenar");
-      return;
+    try {
+      const data = await fetchJson<Record<string, string>>("/api/brief-autofill", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ clientId }),
+      }, 60_000);
+      setAutofill(data);
+      setAutofillKey((k) => k + 1);
+    } catch (cause) {
+      setAutofillError((cause as Error).message);
+    } finally {
+      setAutofilling(false);
     }
-    setAutofill(data);
-    setAutofillKey((k) => k + 1); // remonta los campos con los nuevos defaults
   }
 
   useEffect(() => {
-    fetch("/api/clients")
-      .then((r) => r.json())
-      .then(setClients);
+    fetchJson<Client[]>("/api/clients")
+      .then(setClients)
+      .catch((cause) => setReadinessError((cause as Error).message));
   }, []);
 
   useEffect(() => {
-    fetch(`/api/frameworks?format=${format}`)
-      .then((r) => r.json())
-      .then(setFrameworksList);
-    fetch(`/api/stats?format=${format}`)
-      .then((r) => r.json())
+    fetchJson<Framework[]>(`/api/frameworks?format=${format}`)
+      .then(setFrameworksList)
+      .catch((cause) => setReadinessError((cause as Error).message));
+    fetchJson<{ byFramework?: FrameworkStat[] }>(`/api/stats?format=${format}`)
       .then((s) => setFrameworkStats(s.byFramework ?? []))
       .catch(() => setFrameworkStats([]));
   }, [format]);
 
   useEffect(() => {
     if (!campaignId) return;
-    fetch(`/api/campaigns/${campaignId}/generation-brief`)
-      .then((response) => response.json())
+    fetchJson<Record<string, string> & { error?: string }>(`/api/campaigns/${campaignId}/generation-brief`)
       .then((data) => {
         if (data.error) return;
         setAutofill(data);
         setAutofillKey((key) => key + 1);
-      });
+      })
+      .catch((cause) => setReadinessError((cause as Error).message));
   }, [campaignId]);
 
   // Prefill desde una plantilla (?templateId=): formato + framework + brief base.
   const templateIdParam = searchParams.get("templateId");
   useEffect(() => {
     if (!templateIdParam) return;
-    fetch("/api/templates")
-      .then((r) => r.json())
+    fetchJson<Array<{
+      id: number;
+      format: "vsl" | "reel";
+      frameworkId: number | null;
+      briefDefaults: Record<string, unknown>;
+    }>>("/api/templates")
       .then(
-        (
-          list: Array<{
-            id: number;
-            format: "vsl" | "reel";
-            frameworkId: number | null;
-            briefDefaults: Record<string, unknown>;
-          }>
-        ) => {
+        (list) => {
           const t = list.find((x) => x.id === Number(templateIdParam));
           if (!t) return;
           setFormat(t.format);
@@ -221,21 +237,24 @@ function GenerarWizard() {
           setAutofillKey((key) => key + 1);
           setStep(2);
         }
-      );
+      )
+      .catch((cause) => setReadinessError((cause as Error).message));
   }, [templateIdParam]);
 
   useEffect(() => {
     if (!clientId) return;
-    fetch(`/api/documents?suggestedFor=${clientId}`)
-      .then((r) => r.json())
+    fetchJson<Doc[]>(`/api/documents?suggestedFor=${clientId}`)
       .then((d: Doc[]) => {
         setDocs(d);
         // Los ejemplares mal puntuados por el equipo quedan destildados por defecto.
         const restored = restoredDocsRef.current;
-        setSelectedDocs(new Set(restored ?? d.filter((x) => x.preselect !== false).map((x) => x.id)));
+        const defaults = restored ?? d.filter((x) => x.preselect !== false).map((x) => x.id);
+        if (requestedDocumentId && d.some((doc) => doc.id === requestedDocumentId)) defaults.push(requestedDocumentId);
+        setSelectedDocs(new Set(defaults));
         restoredDocsRef.current = null;
-      });
-  }, [clientId]);
+      })
+      .catch((cause) => setReadinessError((cause as Error).message));
+  }, [clientId, requestedDocumentId]);
 
   const selectedTokens = useMemo(
     () =>
@@ -429,7 +448,8 @@ function GenerarWizard() {
     await startGeneration(parsed.data, e.currentTarget);
   }
 
-  const steps = ["Formato", "Cliente", "Framework", "Brief y documentos", "Generación"];
+  const steps = ["Formato", "Cliente", "Brief y documentos", "Generación"];
+  const displayStep = step >= 5 ? 4 : step >= 4 ? 3 : step;
 
   return (
     <div className="max-w-4xl">
@@ -437,6 +457,22 @@ function GenerarWizard() {
         title="Generar guion"
         subtitle="El contexto del cliente + la biblioteca de la agencia alimentan cada generación"
       />
+
+      <Card className="mb-6 p-4">
+        {readinessError ? (
+          <InlineAlert tone="danger"><div><strong>No pudimos verificar el sistema.</strong><p className="mt-1">{readinessError}</p><button type="button" className={`${btnSecondary} mt-3`} onClick={loadReadiness}>Reintentar diagnóstico</button></div></InlineAlert>
+        ) : !readiness ? (
+          <AsyncStatus status={{ stage: "Verificando base, proveedor y configuración" }} fallback="Verificando sistema" />
+        ) : (
+          <div className="flex flex-wrap items-center gap-3 text-xs">
+            <Badge tone={readiness.database.available ? "green" : "red"}>Base {readiness.database.available ? "lista" : "bloqueada"}</Badge>
+            <Badge tone={readiness.provider.available ? "green" : "red"}>{readiness.provider.label} {readiness.provider.available ? "listo" : "bloqueado"}</Badge>
+            <Badge tone={readiness.prompt.available ? "green" : "red"}>Prompt {readiness.prompt.available ? "listo" : "faltante"}</Badge>
+            <span className="min-w-48 flex-1 text-slate-500">{readiness.readyToGenerate ? `Todo listo · ${readiness.provider.model}` : readiness.database.error || readiness.provider.error || readiness.prompt.error}</span>
+            {!readiness.readyToGenerate && <a href="/configuracion" className={btnSecondary}>Abrir Configuración</a>}
+          </div>
+        )}
+      </Card>
 
       {recovery && (
         <div className="mb-6">
@@ -459,10 +495,10 @@ function GenerarWizard() {
         {steps.map((label, i) => (
           <div key={label} className="flex-1">
             <div
-              className={`h-1.5 rounded-full mb-1.5 ${i + 1 <= step ? "bg-brand-blue" : "bg-slate-200"}`}
+              className={`h-1.5 rounded-full mb-1.5 ${i + 1 <= displayStep ? "bg-brand-blue" : "bg-slate-200"}`}
             />
             <div
-              className={`text-xs ${i + 1 === step ? "font-semibold text-brand-navy" : "text-slate-400"}`}
+              className={`text-xs ${i + 1 === displayStep ? "font-semibold text-brand-navy" : "text-slate-400"}`}
             >
               {i + 1}. {label}
             </div>
@@ -536,7 +572,8 @@ function GenerarWizard() {
                   key={c.id}
                   onClick={() => {
                     setClientId(c.id);
-                    setStep(3);
+                    setFrameworkId(null);
+                    setStep(4);
                   }}
                   className={`rounded-lg border p-4 text-left text-sm font-medium transition-colors ${
                     clientId === c.id
@@ -652,7 +689,7 @@ function GenerarWizard() {
           )}
           <Card className="p-6 space-y-4" key={autofillKey}>
             <div className="flex items-center justify-between">
-              <h2 className="font-semibold text-brand-navy">Brief del guion</h2>
+              <div><h2 className="font-semibold text-brand-navy">Brief del guion</h2><button type="button" className="mt-1 text-xs font-medium text-brand-blue hover:underline" onClick={() => setStep(3)}>{frameworkId ? "Cambiar estructura" : "Elegir estructura manualmente (opcional)"}</button></div>
               <Button
                 type="button"
                 variant="secondary"
@@ -895,7 +932,7 @@ function GenerarWizard() {
             <button
               type="button"
               className={btnSecondary}
-              onClick={() => setStep(3)}
+              onClick={() => setStep(2)}
             >
               <ArrowLeft size={16} strokeWidth={1.75} /> Volver
             </button>

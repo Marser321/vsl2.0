@@ -24,7 +24,7 @@ const NAV = [
   { href: "/clientes", label: "Clientes", icon: Users },
   { href: "/biblioteca", label: "Biblioteca", icon: Library },
   { href: "/aprendizajes", label: "Aprendizajes", icon: Brain },
-  { href: "/analizador", label: "Analizador de VSLs", icon: ScanSearch },
+  { href: "/analizador", label: "Analizar referencias", icon: ScanSearch },
   { href: "/configuracion", label: "Configuración", icon: Settings },
 ];
 
@@ -73,7 +73,7 @@ export function AppNavigation({
           <button className="min-h-11 w-full rounded-lg border border-white/15 px-3 py-2 text-left text-xs text-blue-200 hover:bg-white/10">Cerrar sesión</button>
         </form>
       )}
-      <div className="px-5 py-4 text-[10px] text-blue-300">Guiones que venden · es-LATAM</div>
+      <div className="px-5 py-4 text-[10px] text-blue-300">Guiones que venden · español neutro</div>
     </div>
   );
 }

@@ -14,3 +14,4 @@ export function getSupabaseAdmin(): SupabaseClient {
 }
 
 export const INTAKE_BUCKET = "intake-assets";
+export const ANALYSIS_BUCKET = "analysis-media";

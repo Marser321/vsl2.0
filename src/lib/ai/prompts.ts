@@ -103,5 +103,10 @@ ${brief.instruccionesExtra ? `- **Instrucciones adicionales:** ${brief.instrucci
 
 ${fwSection}
 
+## Restricciones de duración y evidencia
+- La locución debe quedar entre ${Math.round(brief.duracionMin * 150 * 0.9)} y ${Math.round(brief.duracionMin * 150 * 1.1)} palabras (objetivo: ${brief.duracionMin * 150}). Las indicaciones visuales no cuentan.
+- Si usás timestamps, el último debe terminar en ${brief.duracionMin}:00; redistribuí los beats dentro de ese límite y no extiendas la pieza.
+- No agregues precios, métricas, testimonios, garantías, plazos, cantidad de reuniones, páginas, entregables ni historia del fundador si no aparecen explícitamente en el brief o los documentos.
+
 Escribí el guion completo ahora.`;
 }

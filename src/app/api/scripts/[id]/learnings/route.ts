@@ -7,7 +7,7 @@ import { getSetting } from "@/lib/settings";
 import { guardAdminRequest } from "@/lib/auth/session";
 import { anonymizeLearning } from "@/lib/intake/anonymize";
 
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 const LEARNINGS_SCHEMA = {
   type: "object",

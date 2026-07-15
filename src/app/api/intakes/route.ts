@@ -5,6 +5,7 @@ import { getDb } from "@/db";
 import { brands, clients, intakeRequests, intakeSubmissions, offers } from "@/db/schema";
 import { assertSameOrigin, isAdminSession } from "@/lib/auth/session";
 import { createAccessToken } from "@/lib/intake/access";
+import { resolvePublicAppUrl } from "@/lib/public-url";
 
 const createSchema = z.object({
   clientId: z.number().int().positive(),
@@ -64,9 +65,17 @@ export async function POST(req: NextRequest) {
     expiresAt,
   }).returning();
   await db.insert(intakeSubmissions).values({ requestId: request.id });
-  const origin = process.env.NEXT_PUBLIC_APP_URL ?? new URL(req.url).origin;
+  let origin: string;
+  try {
+    origin = resolvePublicAppUrl({ requestOrigin: new URL(req.url).origin });
+  } catch (error) {
+    await db.delete(intakeRequests).where(eq(intakeRequests.id, request.id));
+    return NextResponse.json({ error: (error as Error).message }, { status: 503 });
+  }
+  const accessUrl = `${origin}/api/intakes/access?token=${encodeURIComponent(token)}`;
   return NextResponse.json({
     request,
-    accessUrl: `${origin}/api/intakes/access?token=${encodeURIComponent(token)}`,
+    accessUrl,
+    testUrl: accessUrl,
   }, { status: 201 });
 }

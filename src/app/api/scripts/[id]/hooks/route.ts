@@ -7,7 +7,7 @@ import { buildContext } from "@/lib/ai/context-builder";
 import { generateJSON } from "@/lib/ai/structured";
 import { guardAdminRequest } from "@/lib/auth/session";
 
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 const HOOKS_SCHEMA = {
   type: "object",

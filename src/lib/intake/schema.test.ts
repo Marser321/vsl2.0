@@ -3,7 +3,7 @@ import { completionScore, missingHighValueFields, validateAnswerFormats, validat
 
 const minimum: IntakeAnswers = {
   contact: { name: "Ana Pérez", role: "CMO", email: "ana@example.com", phone: "", consent: true },
-  brand: { name: "Marca", website: "", socialLinks: [], country: "", market: "", language: "Español LATAM", industry: "Educación", subindustry: "", story: "", purpose: "", values: "", personality: "", tone: "", preferredExpressions: "", forbiddenExpressions: "" },
+  brand: { name: "Marca", website: "", socialLinks: [], country: "", market: "", language: "Español neutro (Latinos EE. UU.)", industry: "Educación", subindustry: "", story: "", purpose: "", values: "", personality: "", tone: "", preferredExpressions: "", forbiddenExpressions: "" },
   offer: { name: "Programa", type: "course", description: "Programa para lograr un resultado concreto", mechanism: "", benefits: "", differentiators: "", price: "", paymentOptions: "", bonuses: "", guarantee: "", delivery: "", availability: "", urgency: "", serviceProcess: "", courseModules: "", ecommerceSpecs: "", saasFeatures: "", localCoverage: "" },
   audience: { primaryAvatar: "Profesionales que buscan crecer", secondaryAvatar: "", awareness: "", pains: "No consiguen resultados sostenidos", desires: "", previousAttempts: "", objections: "", triggers: "", ownLanguage: "", alternatives: "", competitors: "" },
   proof: { founderStory: "", experience: "", metrics: "", cases: "", testimonials: "", claimSources: "", certifications: "", legalRestrictions: "" },

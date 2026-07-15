@@ -7,7 +7,7 @@ import { countTokens } from "@/lib/ai/anthropic";
 import { getSetting } from "@/lib/settings";
 import { guardAdminRequest } from "@/lib/auth/session";
 
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 const PREFS_TAG = "auto-preferencias";
 const PREFS_TITLE = "[AUTO] Preferencias aprendidas del equipo";
