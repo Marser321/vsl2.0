@@ -90,6 +90,7 @@ function GuionDetail({ id }: { id: string }) {
   const [error, setError] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [retrying, setRetrying] = useState(false);
+  const [restoring, setRestoring] = useState(false);
   const [retryDialogOpen, setRetryDialogOpen] = useState(false);
   const [retryAccepted, setRetryAccepted] = useState(false);
   const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
@@ -151,6 +152,28 @@ function GuionDetail({ id }: { id: string }) {
   const current = script?.versions.find(
     (v) => v.versionNumber === activeVersion
   );
+
+  async function restoreVersion() {
+    if (!script || !current) return;
+    setRestoring(true);
+    try {
+      const data = await fetchJson<{ version: { versionNumber: number } }>(
+        `/api/scripts/${script.id}/versions`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content: current.content }),
+        }
+      );
+      toast.success(`v${current.versionNumber} restaurada como v${data.version.versionNumber}`);
+      await load();
+      setActiveVersion(data.version.versionNumber);
+    } catch (cause) {
+      toast.error((cause as Error).message);
+    } finally {
+      setRestoring(false);
+    }
+  }
 
   async function handleRefine() {
     const instruction = refineRef.current?.value.trim();
@@ -436,6 +459,24 @@ function GuionDetail({ id }: { id: string }) {
           </span>
         )}
       </div>
+
+      {script.versions.length > 0 && current && !editing &&
+        current.versionNumber !== script.versions[script.versions.length - 1].versionNumber && (
+        <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-xs text-slate-600">
+          <span className="flex-1 min-w-48">
+            Estás viendo la v{current.versionNumber}. La versión activa del guion sigue siendo la última
+            (v{script.versions[script.versions.length - 1].versionNumber}).
+          </span>
+          <button
+            type="button"
+            className="font-semibold text-brand-blue hover:underline disabled:opacity-50"
+            disabled={restoring}
+            onClick={() => void restoreVersion()}
+          >
+            {restoring ? "Restaurando…" : `Restaurar la v${current.versionNumber} como versión nueva`}
+          </button>
+        </div>
+      )}
 
       {current?.refinementInstruction && (
         <div className="text-xs text-slate-500 mb-3">
