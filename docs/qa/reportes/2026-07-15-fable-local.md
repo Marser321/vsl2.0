@@ -141,6 +141,16 @@ Verificación manual del orquestador sobre los 3 hallazgos más graves: confirma
 
 Pendiente sugerido para una segunda pasada (con B1 arreglado): M4 completa, extractor end-to-end, import-url, plantillas, corte de stream en vivo, y la pasada de producción contra Vercel.
 
+## Update 2026-07-16 — fixes aplicados y re-test
+
+- B1: causa raíz confirmada (pool postgres.js corrupto en el proceso, con `write CONNECTION_DESTROYED` bajo apertura concurrente de conexiones contra Supavisor). Fix: pool max 10 + keepalive + watchdog de dos strikes que recrea el pool solo (falla rápido en ~18s en vez de colgarse para siempre). Ráfagas sintéticas de 36 queries simultáneas siguen degradando (limitación del driver contra el pooler); el uso real de 1–3 personas queda holgado y en Vercel no aplica (1 request por instancia).
+- Y1: errores de IA traducidos y accionables (`describeAiError`); Anthropic eliminado por decisión de producto — OpenRouter único proveedor con rotación de claves.
+- Y2: implementado — tabla `analysis_jobs`, `GET /api/analyze/jobs`, panel "Trabajos recientes" en `/analizador` con estados por heartbeat.
+- Y3, Y4, m1, m2, m4: arreglados y verificados en UI. m3: falso positivo (el label ya estaba asociado).
+- **M4 re-testeada completa con el pool arreglado: todo OK** (guardar con confirmación en segundos, autosave, refinar con streaming, rating, paneles, teleprompter, exportar). Hallazgo nuevo mayor: seleccionar una versión vieja no persiste como activa y no hay acción directa "restaurar esta versión" (el camino editar-y-guardar existe pero es poco descubrible). Hallazgo menor: doble-fetch benigno de `/api/scripts/[id]/metrics` en dev.
+- Hallazgo de seguridad en la configuración de producción reportado por canal privado al equipo (no se detalla acá por ser este un repo público).
+- Datos QA de ambas corridas eliminados de la DB; guion 10 restaurado byte-idéntico (v1, v2 y su rating original).
+
 ## Datos de prueba creados (para limpieza)
 
 - Clientes: `QA Test Cliente` (id 9), `QA-M3 Cliente` (id 10), `QA-Cliente M5` (id 11).
