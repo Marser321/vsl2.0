@@ -4,9 +4,8 @@ import { getDb } from "@/db";
 import { documents, DOCUMENT_KINDS, type DocumentKind } from "@/db/schema";
 import { and, desc, eq, isNull } from "drizzle-orm";
 import { extractText } from "@/lib/ingest/extract";
-import { countTokens } from "@/lib/ai/anthropic";
+import { estimateTokens } from "@/lib/ai/tokens";
 import { suggestedDocuments } from "@/lib/ai/context-builder";
-import { getSetting } from "@/lib/settings";
 import { getSupabaseAdmin, INTAKE_BUCKET } from "@/lib/supabase";
 import { guardAdminRequest } from "@/lib/auth/session";
 
@@ -79,8 +78,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const model = await getSetting("default_model_anthropic", "claude-opus-4-8");
-  const tokenCount = extractedText ? await countTokens(extractedText, model) : 0;
+  const tokenCount = extractedText ? estimateTokens(extractedText) : 0;
 
   const db = getDb();
   const [row] = await db

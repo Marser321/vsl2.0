@@ -10,7 +10,6 @@ export async function GET() {
   delete supported.default_model_openai;
   return NextResponse.json({
     ...supported,
-    anthropic_key_set: Boolean(process.env.ANTHROPIC_API_KEY),
     openrouter_key_set: Boolean(process.env.OPENROUTER_API_KEYS || process.env.OPENROUTER_API_KEY),
     openrouter_quota: quota,
   });
@@ -21,7 +20,6 @@ export async function PATCH(req: NextRequest) {
   const body = (await req.json()) as Record<string, string>;
   const ALLOWED = [
     "default_provider",
-    "default_model_anthropic",
     "default_model_openrouter",
     "system_prompt",
     "wpm_es",
@@ -29,8 +27,8 @@ export async function PATCH(req: NextRequest) {
   ];
   for (const [key, value] of Object.entries(body)) {
     if (ALLOWED.includes(key) && typeof value === "string") {
-      if (key === "default_provider" && value !== "openrouter" && value !== "anthropic") {
-        return NextResponse.json({ error: "Proveedor no soportado" }, { status: 400 });
+      if (key === "default_provider" && value !== "openrouter") {
+        return NextResponse.json({ error: "Proveedor inválido: solo openrouter está habilitado." }, { status: 400 });
       }
       await setSetting(key, value);
     }

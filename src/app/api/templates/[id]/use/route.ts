@@ -35,14 +35,8 @@ export async function POST(req: NextRequest, { params }: Params) {
     .limit(1);
   if (!client) return NextResponse.json({ error: "Cliente no encontrado" }, { status: 404 });
 
-  const configuredProvider = await getSetting("default_provider", "openrouter");
-  const providerName = configuredProvider === "anthropic" ? "anthropic" : "openrouter";
-  const model = await getSetting(
-    providerName === "anthropic"
-      ? "default_model_anthropic"
-      : "default_model_openrouter",
-    providerName === "openrouter" ? "openrouter/ensemble-5+1" : "claude-opus-4-8"
-  );
+  const providerName = "openrouter" as const;
+  const model = await getSetting("default_model_openrouter", "openrouter/ensemble-5+1");
 
   const content = resolvePlaceholders(template.contentMd, client, template.briefDefaults);
   const brief: ScriptBrief = {

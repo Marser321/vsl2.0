@@ -12,7 +12,7 @@ export const generationInputSchema = z
     documentIds: z.array(z.number().int().positive()),
     title: requiredText("Escribí un título interno"),
     format: z.enum(["vsl", "reel"]).default("vsl"),
-    provider: z.enum(["anthropic", "openrouter"]),
+    provider: z.enum(["openrouter"]),
     model: requiredText("No hay un modelo configurado para este proveedor"),
     openrouterConfirmed: z.boolean().optional(),
     brief: z.object({

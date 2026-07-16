@@ -7,8 +7,9 @@ const valid = {
   documentIds: [],
   title: "Guion QA",
   format: "vsl" as const,
-  provider: "anthropic" as const,
-  model: "claude-test",
+  provider: "openrouter" as const,
+  model: "openrouter/ensemble-5+1",
+  openrouterConfirmed: true,
   brief: {
     producto: "Producto",
     audiencia: "Audiencia",
@@ -35,9 +36,9 @@ describe("generationInputSchema", () => {
   });
 
   it("exige confirmación específica para OpenRouter", () => {
-    const rejected = generationInputSchema.safeParse({ ...valid, provider: "openrouter", model: "ensemble" });
+    const rejected = generationInputSchema.safeParse({ ...valid, model: "ensemble", openrouterConfirmed: false });
     expect(rejected.success).toBe(false);
-    const accepted = generationInputSchema.safeParse({ ...valid, provider: "openrouter", model: "ensemble", openrouterConfirmed: true });
+    const accepted = generationInputSchema.safeParse({ ...valid, model: "ensemble", openrouterConfirmed: true });
     expect(accepted.success).toBe(true);
   });
 

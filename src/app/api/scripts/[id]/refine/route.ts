@@ -87,7 +87,10 @@ export async function POST(req: NextRequest, { params }: Params) {
     async start(controller) {
       const send = (data: unknown) => controller.enqueue(encoder.encode(sse(data)));
       try {
-        const provider = await getProvider(script.provider);
+        // script.provider es el tipo histórico de la columna (puede tener
+        // valores de proveedores viejos ya deshabilitados); OpenRouter es el
+        // único proveedor operativo.
+        const provider = await getProvider("openrouter");
         let content = "";
         for await (const delta of provider.generateStream({
           model: script.model,

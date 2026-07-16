@@ -2,7 +2,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import { getDb } from "@/db";
 import { brands, clients, documents } from "@/db/schema";
 import { generateJSON } from "@/lib/ai/structured";
-import { countTokens } from "@/lib/ai/anthropic";
+import { estimateTokens } from "@/lib/ai/tokens";
 import { getSetting } from "@/lib/settings";
 import { fetchGoogleNews } from "@/lib/radar/rss";
 
@@ -152,8 +152,7 @@ ${headlines}`;
       await db.update(documents).set({ isActive: false }).where(inArray(documents.id, oldRadarIds));
     }
 
-    const model = await getSetting("default_model_anthropic", "claude-opus-4-8");
-    const tokenCount = await countTokens(md, model);
+    const tokenCount = estimateTokens(md);
     const [doc] = await db
       .insert(documents)
       .values({

@@ -14,33 +14,6 @@ if (fs.existsSync(envPath)) {
   }
 }
 
-async function testAnthropic() {
-  if (!process.env.ANTHROPIC_API_KEY) {
-    console.log("⚠ ANTHROPIC_API_KEY no configurada — salteando Claude");
-    return;
-  }
-  const { AnthropicProvider } = await import("../src/lib/ai/anthropic");
-  const provider = new AnthropicProvider();
-  let text = "";
-  let deltas = 0;
-  for await (const delta of provider.generateStream({
-    model: "claude-opus-4-8",
-    systemBlocks: [
-      { text: "Sos un copywriter. Respondé en una sola frase corta.", cache: false },
-    ],
-    messages: [{ role: "user", content: "Escribí un gancho de VSL para un curso de cocina." }],
-    maxTokens: 1024,
-  })) {
-    text += delta;
-    deltas++;
-  }
-  const usage = provider.getFinalUsage();
-  if (deltas === 0) throw new Error("Claude: el stream no emitió deltas");
-  if (!usage) throw new Error("Claude: usage no disponible");
-  console.log(`✓ Claude OK — ${deltas} deltas, ${usage.outputTokens} tokens de salida`);
-  console.log(`  "${text.slice(0, 100)}"`);
-}
-
 async function testOpenRouter() {
   if (!process.env.OPENROUTER_API_KEYS && !process.env.OPENROUTER_API_KEY) {
     console.log("⚠ OPENROUTER_API_KEYS no configurada — salteando OpenRouter");
@@ -69,7 +42,6 @@ async function testOpenRouter() {
 (async () => {
   try {
     await testOpenRouter();
-    await testAnthropic();
     console.log("Smoke test completo.");
   } catch (e) {
     console.error("✗ FALLÓ:", (e as Error).message);

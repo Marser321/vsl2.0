@@ -2,14 +2,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 import { getDb } from "@/db";
 import { guardAdminRequest } from "@/lib/auth/session";
-import { countTokens } from "@/lib/ai/anthropic";
-import { getSetting } from "@/lib/settings";
+import { estimateTokens } from "@/lib/ai/tokens";
 import { POST } from "./route";
 
 vi.mock("@/db", () => ({ getDb: vi.fn() }));
 vi.mock("@/lib/auth/session", () => ({ guardAdminRequest: vi.fn() }));
-vi.mock("@/lib/ai/anthropic", () => ({ countTokens: vi.fn() }));
-vi.mock("@/lib/settings", () => ({ getSetting: vi.fn() }));
+vi.mock("@/lib/ai/tokens", () => ({ estimateTokens: vi.fn() }));
 
 function queryResult<T>(result: T) {
   const query: Record<string, unknown> = {};
@@ -47,8 +45,7 @@ describe("POST /api/scripts/[id]/promote", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(guardAdminRequest).mockResolvedValue(null);
-    vi.mocked(countTokens).mockResolvedValue(10);
-    vi.mocked(getSetting).mockResolvedValue("modelo");
+    vi.mocked(estimateTokens).mockReturnValue(10);
   });
 
   it("promueve exactamente la versión solicitada y el scope global", async () => {

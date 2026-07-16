@@ -25,17 +25,12 @@ export interface CopyProvider {
   getFinalUsage(): UsageInfo | null;
 }
 
-export type ProviderName = "anthropic" | "openai" | "openrouter";
-export type OperationalProviderName = Exclude<ProviderName, "openai">;
+export type ProviderName = "openrouter";
 
 export async function getProvider(name: ProviderName): Promise<CopyProvider> {
   if (name === "openrouter") {
     const { OpenRouterEnsembleProvider } = await import("./openrouter");
     return new OpenRouterEnsembleProvider();
   }
-  if (name === "anthropic") {
-    const { AnthropicProvider } = await import("./anthropic");
-    return new AnthropicProvider();
-  }
-  throw new Error("OpenAI está deshabilitado. Usá OpenRouter o Anthropic.");
+  throw new Error("Solo está habilitado OpenRouter como proveedor de generación.");
 }

@@ -1,0 +1,1 @@
+ALTER TABLE "scripts" ALTER COLUMN "provider" SET DEFAULT 'openrouter';

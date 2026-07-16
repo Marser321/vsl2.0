@@ -52,7 +52,7 @@ type Doc = {
 
 type FrameworkStat = { frameworkId: number | null; n: number; avgScore: number };
 type Preflight = {
-  provider: "anthropic" | "openrouter";
+  provider: "openrouter";
   providerLabel: string;
   model: string;
   available: boolean;
@@ -140,6 +140,18 @@ function GenerarWizard() {
       const raw = localStorage.getItem(DRAFT_KEY);
       if (!raw) return;
       const draft = JSON.parse(raw) as StoredDraft;
+      const urlClientId = searchParams.get("clientId") ? Number(searchParams.get("clientId")) : null;
+      if (urlClientId && draft.clientId && draft.clientId !== urlClientId) {
+        // Vinieron desde la ficha de un cliente puntual: un borrador guardado
+        // de OTRO cliente no debe pisar ese contexto (riesgo de mezclar
+        // título, brief y documentos entre clientes).
+        if (draft.activeScriptId) {
+          fetchJson<Recovery>(`/api/scripts/${draft.activeScriptId}`)
+            .then(setRecovery)
+            .catch(() => undefined);
+        }
+        return;
+      }
       setFormat(draft.format ?? "vsl");
       setClientId(draft.clientId ?? null);
       setFrameworkId(draft.frameworkId ?? null);
@@ -334,6 +346,7 @@ function GenerarWizard() {
     if (form) saveDraft(form);
 
     let scriptId: number | null = null;
+    let completed = false;
     try {
       const res = await fetch("/api/generate", {
         method: "POST",
@@ -369,6 +382,7 @@ function GenerarWizard() {
             outputRef.current?.scrollTo({ top: outputRef.current.scrollHeight });
           } else if (data.type === "done") {
             scriptId = data.scriptId;
+            completed = true;
           } else if (data.type === "error") {
             scriptId = data.scriptId ?? scriptId;
             throw new Error(data.message);
@@ -378,6 +392,15 @@ function GenerarWizard() {
 
       setGenerating(false);
       if (!scriptId) throw new Error("El stream terminó sin confirmar el guardado");
+      if (!completed) {
+        // El stream se cerró sin el evento `done`: no fue un final feliz.
+        // El servidor sigue generando y guardando checkpoints por su cuenta.
+        setError(
+          "La conexión se cortó antes de confirmar el final de la generación. El contenido recibido quedó guardado y el servidor puede seguir completándolo — revisalo en unos minutos desde Guiones."
+        );
+        setRecovery({ id: scriptId, title: payload.title, status: "generating" });
+        return;
+      }
       localStorage.removeItem(DRAFT_KEY);
       setTimeout(() => router.push(`/guiones/${scriptId}`), 800);
     } catch (cause) {
@@ -508,9 +531,12 @@ function GenerarWizard() {
 
       {step === 1 && (
         <Card className="p-6">
-          <h2 className="font-semibold text-brand-navy mb-4">
+          <h2 className="font-semibold text-brand-navy mb-1">
             ¿Qué formato vamos a escribir?
           </h2>
+          <p className="mb-4 text-xs text-slate-500">
+            Elegí una tarjeta y avanzamos al siguiente paso.
+          </p>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <button
               onClick={() => {
@@ -689,7 +715,7 @@ function GenerarWizard() {
           )}
           <Card className="p-6 space-y-4" key={autofillKey}>
             <div className="flex items-center justify-between">
-              <div><h2 className="font-semibold text-brand-navy">Brief del guion</h2><button type="button" className="mt-1 text-xs font-medium text-brand-blue hover:underline" onClick={() => setStep(3)}>{frameworkId ? "Cambiar estructura" : "Elegir estructura manualmente (opcional)"}</button></div>
+              <div><h2 className="font-semibold text-brand-navy">Brief del guion{clientId ? <span className="font-normal text-slate-500"> — {clients.find((c) => c.id === clientId)?.name ?? `cliente #${clientId}`}</span> : null}</h2><button type="button" className="mt-1 text-xs font-medium text-brand-blue hover:underline" onClick={() => setStep(3)}>{frameworkId ? "Cambiar estructura" : "Elegir estructura manualmente (opcional)"}</button></div>
               <Button
                 type="button"
                 variant="secondary"
@@ -702,6 +728,11 @@ function GenerarWizard() {
                 Pre-llenar con IA
               </Button>
             </div>
+            {!campaignId && (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-800">
+                Este guion se genera sin dossier aprobado (marca, oferta y campaña). Podés continuar, pero va a tener menos contexto verificado — lo recomendado es aprobar primero un relevamiento del cliente.
+              </div>
+            )}
             {autofillError && (
               <div className="rounded-lg bg-rose-50 border border-rose-200 px-4 py-2 text-sm text-rose-800">
                 {autofillError}

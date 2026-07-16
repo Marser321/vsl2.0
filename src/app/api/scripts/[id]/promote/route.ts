@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/db";
 import { documents, scripts, scriptVersions } from "@/db/schema";
 import { desc, eq } from "drizzle-orm";
-import { countTokens } from "@/lib/ai/anthropic";
-import { getSetting } from "@/lib/settings";
+import { estimateTokens } from "@/lib/ai/tokens";
 import { guardAdminRequest } from "@/lib/auth/session";
 import { z } from "zod";
 import { promotionScopeTag, promotionVersionTag } from "@/lib/scripts/promotions";
@@ -72,8 +71,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     return NextResponse.json({ ...existing, alreadyPromoted: true });
   }
 
-  const model = await getSetting("default_model_anthropic", "claude-opus-4-8");
-  const tokenCount = await countTokens(targetVersion.content, model);
+  const tokenCount = estimateTokens(targetVersion.content);
 
   const [doc] = await db
     .insert(documents)

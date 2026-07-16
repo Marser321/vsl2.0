@@ -2,9 +2,9 @@
 
 import { createClient } from "@supabase/supabase-js";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import ScriptMarkdown from "@/components/ScriptMarkdown";
-import { AsyncStatus, Button, Card, CopyButton, InlineAlert, PageTitle, inputCls, type ProcessStatus } from "@/components/ui";
+import { AsyncStatus, Badge, Button, Card, CopyButton, InlineAlert, PageTitle, inputCls, type ProcessStatus } from "@/components/ui";
 import { Check, FileAudio, Microscope, Sparkles, Upload } from "lucide-react";
 import { toast } from "sonner";
 
@@ -25,6 +25,30 @@ type StreamEvent = {
   documentId?: number;
   message?: string;
   uploadFallback?: boolean;
+};
+
+type AnalysisJob = {
+  id: number;
+  title: string;
+  sourceUrl: string | null;
+  status: "processing" | "ready" | "failed" | "interrupted";
+  stage: string | null;
+  documentId: number | null;
+  error: string | null;
+  createdAt: string;
+};
+
+const JOB_STATUS_LABELS: Record<AnalysisJob["status"], string> = {
+  processing: "Procesando",
+  ready: "Listo",
+  failed: "Falló",
+  interrupted: "Interrumpido",
+};
+const JOB_STATUS_TONES: Record<AnalysisJob["status"], "blue" | "green" | "red" | "yellow"> = {
+  processing: "blue",
+  ready: "green",
+  failed: "red",
+  interrupted: "yellow",
 };
 
 const STAGE_LABELS: Record<string, string> = {
@@ -74,7 +98,25 @@ export default function AnalizadorPage() {
   const [busy, setBusy] = useState(false);
   const [aiStatus, setAiStatus] = useState<ProcessStatus | null>(null);
   const [transcriptionReadiness, setTranscriptionReadiness] = useState<TranscriptionReadiness | null>(null);
+  const [jobs, setJobs] = useState<AnalysisJob[]>([]);
   const outputRef = useRef<HTMLDivElement>(null);
+
+  const loadJobs = useCallback(() => {
+    fetch("/api/analyze/jobs")
+      .then((response) => (response.ok ? response.json() : []))
+      .then(setJobs)
+      .catch(() => undefined);
+  }, []);
+
+  useEffect(() => { loadJobs(); }, [loadJobs]);
+
+  // Mientras haya un trabajo vivo (acá o en otra pestaña) el panel se
+  // refresca solo; el estado real vive en la DB, no en esta pestaña.
+  useEffect(() => {
+    if (!busy && !jobs.some((job) => job.status === "processing")) return;
+    const timer = setInterval(loadJobs, 5_000);
+    return () => clearInterval(timer);
+  }, [busy, jobs, loadJobs]);
 
   useEffect(() => {
     fetch("/api/clients")
@@ -144,6 +186,7 @@ export default function AnalizadorPage() {
       if (!sourceFile) setUploadSuggested(true);
     } finally {
       setBusy(false);
+      loadJobs();
     }
   }
 
@@ -211,6 +254,37 @@ export default function AnalizadorPage() {
       {(output || busy) && <Card className="p-6"><div className="mb-4 flex flex-wrap items-center gap-3"><h2 className="flex-1 font-semibold text-brand-navy">Análisis estructural</h2>{busy ? <AsyncStatus status={aiStatus} fallback="Procesando referencia" /> : output ? <CopyButton text={output} label="Copiar análisis" copiedLabel="Análisis copiado" /> : null}</div><div ref={outputRef} className="max-h-[65vh] overflow-y-auto"><ScriptMarkdown content={output || "…"} /></div></Card>}
 
       {savedDocId && <Card className="mt-6 border-emerald-200 bg-emerald-50 p-5"><div className="flex flex-wrap items-center gap-3"><Check className="text-emerald-600" size={20} /><div className="min-w-56 flex-1"><h2 className="font-semibold text-emerald-900">Referencia lista para usar</h2><p className="mt-1 text-xs text-emerald-700">El transcript y su análisis quedaron guardados en la biblioteca.</p></div><Link href={generateHref} className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-brand-blue px-4 py-2 text-sm font-semibold text-white hover:brightness-95"><Sparkles size={16} />Usar en un nuevo guion</Link></div></Card>}
+
+      {jobs.length > 0 && (
+        <Card className="mt-6">
+          <div className="flex items-center justify-between px-5 pt-5">
+            <h2 className="font-semibold text-brand-navy">Trabajos recientes</h2>
+            <p className="text-xs text-slate-400">El estado se guarda aunque cierres esta pestaña</p>
+          </div>
+          <ul className="mt-3 divide-y divide-slate-100">
+            {jobs.map((job) => (
+              <li key={job.id} className="flex flex-wrap items-center gap-3 px-5 py-3 sm:flex-nowrap">
+                <div className="min-w-48 flex-1">
+                  <div className="truncate text-sm font-medium text-brand-navy">{job.title || job.sourceUrl || `Trabajo #${job.id}`}</div>
+                  <div className="mt-0.5 text-xs text-slate-500">
+                    {job.status === "processing" && (STAGE_LABELS[job.stage || ""] || job.stage || "Procesando")}
+                    {job.status === "failed" && (job.error || "El análisis falló")}
+                    {job.status === "interrupted" && "El proceso se cortó sin terminar — relanzalo desde el formulario"}
+                    {job.status === "ready" && "Análisis guardado en la biblioteca"}
+                  </div>
+                </div>
+                <Badge tone={JOB_STATUS_TONES[job.status]}>{JOB_STATUS_LABELS[job.status]}</Badge>
+                {job.status === "ready" && job.documentId && (
+                  <Link href={`/generar?documentId=${job.documentId}`} className="text-xs font-semibold text-brand-blue hover:underline">
+                    Usar en guion
+                  </Link>
+                )}
+                <time className="text-xs text-slate-400">{new Date(job.createdAt).toLocaleString("es-UY", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}</time>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
     </div>
   );
 }

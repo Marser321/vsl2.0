@@ -18,16 +18,14 @@ export async function GET(req: Request) {
   }
 
   const settings: Record<string, string> = database.available ? await getAllSettings().catch(() => ({})) : {};
-  const provider = settings.default_provider === "anthropic" ? "anthropic" : "openrouter";
-  const providerLabel = provider === "anthropic" ? "Claude (Anthropic)" : "OpenRouter — arnés 5+1";
-  const model = settings[provider === "anthropic" ? "default_model_anthropic" : "default_model_openrouter"] || "";
-  const keyAvailable = provider === "anthropic"
-    ? Boolean(process.env.ANTHROPIC_API_KEY)
-    : Boolean(process.env.OPENROUTER_API_KEYS || process.env.OPENROUTER_API_KEY);
-  const quota = provider === "openrouter" && database.available
+  const provider = "openrouter" as const;
+  const providerLabel = "OpenRouter — arnés 5+1";
+  const model = settings.default_model_openrouter || "";
+  const keyAvailable = Boolean(process.env.OPENROUTER_API_KEYS || process.env.OPENROUTER_API_KEY);
+  const quota = database.available
     ? await getOpenRouterQuota().catch(() => null)
     : null;
-  const quotaAvailable = provider !== "openrouter" || (quota?.remaining ?? 0) >= OPENROUTER_CALLS_PER_RUN;
+  const quotaAvailable = (quota?.remaining ?? 0) >= OPENROUTER_CALLS_PER_RUN;
   const promptAvailable = Boolean(settings.system_prompt?.trim());
   const providerAvailable = keyAvailable && Boolean(model) && quotaAvailable;
   const publicUrl = publicUrlReadiness(new URL(req.url).origin);

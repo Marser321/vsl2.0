@@ -26,7 +26,7 @@ const script = {
   campaignId: null,
   frameworkId: null,
   format: "reel",
-  provider: "anthropic",
+  provider: "openrouter",
   model: "modelo",
   brief: {},
 };

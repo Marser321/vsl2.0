@@ -7,7 +7,6 @@ import { toast } from "sonner";
 import { fetchJson } from "@/lib/http/fetch-json";
 
 type Settings = Record<string, unknown> & {
-  anthropic_key_set?: boolean;
   openrouter_key_set?: boolean;
   openrouter_quota?: { used: number; remaining: number; limit: number; day: string };
 };
@@ -38,8 +37,7 @@ export default function ConfiguracionPage() {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        default_provider: fd.get("default_provider"),
-        default_model_anthropic: String(fd.get("default_model_anthropic") ?? ""),
+        default_provider: "openrouter",
         default_model_openrouter: "openrouter/ensemble-5+1",
         system_prompt: String(fd.get("system_prompt") ?? ""),
         wpm_es: String(fd.get("wpm_es") ?? ""),
@@ -83,14 +81,6 @@ export default function ConfiguracionPage() {
               <Badge tone="red">falta</Badge>
             )}
           </div>
-          <div className="flex items-center gap-2">
-            Anthropic (Claude):{" "}
-            {settings.anthropic_key_set ? (
-              <Badge tone="green">configurada</Badge>
-            ) : (
-              <Badge tone="red">falta</Badge>
-            )}
-          </div>
         </div>
         {settings.openrouter_quota && (
           <p className="text-xs text-slate-600 mt-3">
@@ -100,7 +90,7 @@ export default function ConfiguracionPage() {
         )}
         <p className="text-xs text-slate-500 mt-2">
           Las claves se configuran en el archivo <code>.env.local</code> del
-          servidor (<code>OPENROUTER_API_KEYS</code> y <code>ANTHROPIC_API_KEY</code>)
+          servidor (<code>OPENROUTER_API_KEYS</code>)
           y requieren reiniciar la app.
         </p>
       </Card>
@@ -108,30 +98,11 @@ export default function ConfiguracionPage() {
       <form onSubmit={handleSave} className="space-y-6">
         <Card className="p-5 space-y-4">
           <h2 className="font-semibold text-brand-navy text-sm">Modelos</h2>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">
-                Proveedor por defecto
-              </label>
-              <select
-                name="default_provider"
-                defaultValue={settings.default_provider === "anthropic" ? "anthropic" : "openrouter"}
-                className={inputCls}
-              >
-                <option value="openrouter">OpenRouter — arnés gratuito 5+1</option>
-                <option value="anthropic">Claude (Anthropic)</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">
-                Modelo Claude
-              </label>
-              <input
-                name="default_model_anthropic"
-                defaultValue={String(settings.default_model_anthropic ?? "")}
-                className={inputCls}
-              />
-            </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-600 mb-1">
+              Proveedor
+            </label>
+            <p className="text-sm text-slate-700">OpenRouter — arnés gratuito 5+1</p>
           </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>

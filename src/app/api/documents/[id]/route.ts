@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/db";
 import { documents } from "@/db/schema";
 import { eq } from "drizzle-orm";
-import { countTokens } from "@/lib/ai/anthropic";
-import { getSetting } from "@/lib/settings";
+import { estimateTokens } from "@/lib/ai/tokens";
 import { getSupabaseAdmin, INTAKE_BUCKET } from "@/lib/supabase";
 import { guardAdminRequest } from "@/lib/auth/session";
 
@@ -34,8 +33,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   if (body.tags !== undefined) updates.tags = body.tags;
   if (body.extractedText !== undefined) {
     updates.extractedText = body.extractedText;
-    const model = await getSetting("default_model_anthropic", "claude-opus-4-8");
-    updates.tokenCount = await countTokens(body.extractedText, model);
+    updates.tokenCount = estimateTokens(body.extractedText);
   }
 
   const [row] = await getDb()

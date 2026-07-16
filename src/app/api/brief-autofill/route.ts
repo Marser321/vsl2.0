@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getDb } from "@/db";
 import { clients, documents } from "@/db/schema";
 import { and, asc, eq } from "drizzle-orm";
+import { describeAiError } from "@/lib/ai/errors";
 import { generateJSON } from "@/lib/ai/structured";
 import { renderDocument } from "@/lib/ai/prompts";
 import { guardAdminRequest } from "@/lib/auth/session";
@@ -84,6 +85,6 @@ ${docs.map((doc) => renderDocument(doc)).join("\n\n")}`,
 
     return NextResponse.json(brief);
   } catch (e) {
-    return NextResponse.json({ error: (e as Error).message }, { status: 500 });
+    return NextResponse.json({ error: describeAiError(e) }, { status: 502 });
   }
 }

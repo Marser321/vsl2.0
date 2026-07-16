@@ -21,7 +21,7 @@ test("la navegación responde en desktop y mobile", async ({ page }, testInfo) =
 test("el generador explica contexto, mercado y señales en conflicto", async ({ page }) => {
   await page.route("**/api/readiness", (route) => route.fulfill({ json: {
     readyToGenerate: true, database: { available: true, error: null },
-    provider: { label: "Anthropic", model: "claude-test", available: true, error: null },
+    provider: { label: "OpenRouter — arnés 5+1", model: "openrouter/ensemble-5+1", available: true, error: null },
     prompt: { available: true, error: null }, transcription: { available: true, model: "gpt-4o-transcribe", error: null },
     publicUrl: { available: true, url: "http://localhost:3000", error: null },
   } }));
@@ -31,7 +31,7 @@ test("el generador explica contexto, mercado y señales en conflicto", async ({ 
   }));
   await page.route(/\/api\/stats/, (route) => route.fulfill({ json: { byFramework: [] } }));
   await page.route("**/api/generation-preflight", (route) => route.fulfill({ json: {
-    provider: "anthropic", providerLabel: "Anthropic", model: "claude-test", available: true,
+    provider: "openrouter", providerLabel: "OpenRouter — arnés 5+1", model: "openrouter/ensemble-5+1", available: true,
     keyAvailable: true, callsPerRun: 1, quota: null,
     setup: { frameworkCount: 1, hasFrameworks: true, hasSystemPrompt: true },
   } }));
@@ -114,7 +114,7 @@ test("un guion fallido conserva el parcial y reintenta en una versión nueva", a
     generationError: retried ? null : "El provider se interrumpió",
     outcome: "unknown",
     format: "vsl",
-    provider: "anthropic",
+    provider: "openrouter",
     model: "claude-test",
     client: { id: 1, name: "Cliente QA" },
     framework: null,
@@ -157,7 +157,7 @@ test("el detalle muestra una sola promoción y confirma el copiado", async ({ pa
     status: "final",
     outcome: "won",
     format: "reel",
-    provider: "anthropic",
+    provider: "openrouter",
     model: "modelo",
     client: { id: 1, name: "Cliente QA" },
     framework: { id: 2, name: "Reel UGC" },

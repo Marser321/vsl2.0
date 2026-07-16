@@ -259,6 +259,33 @@ export const documents = pgTable(
   ]
 );
 
+// Trabajos del analizador de referencias (extractor). Persisten desde el
+// arranque para que el usuario pueda cerrar la pestaña y saber igual si el
+// trabajo sigue vivo, terminó o falló.
+export const ANALYSIS_JOB_STATUSES = ["processing", "ready", "failed"] as const;
+export type AnalysisJobStatus = (typeof ANALYSIS_JOB_STATUSES)[number];
+
+export const analysisJobs = pgTable(
+  "analysis_jobs",
+  {
+    id: serial("id").primaryKey(),
+    clientId: integer("client_id").references(() => clients.id, { onDelete: "set null" }),
+    title: text("title").notNull().default(""),
+    sourceUrl: text("source_url"),
+    storagePath: text("storage_path"),
+    status: text("status").$type<AnalysisJobStatus>().notNull().default("processing"),
+    stage: text("stage"),
+    transcript: text("transcript").notNull().default(""),
+    analysis: text("analysis").notNull().default(""),
+    documentId: integer("document_id").references(() => documents.id, { onDelete: "set null" }),
+    error: text("error"),
+    heartbeatAt: timestamp("heartbeat_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("analysis_jobs_status_idx").on(table.status)]
+);
+
 export const frameworks = pgTable("frameworks", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
@@ -301,7 +328,7 @@ export const scripts = pgTable(
     title: text("title").notNull(),
     brief: jsonb("brief").$type<ScriptBrief>().notNull(),
     format: text("format").$type<ScriptFormat>().notNull().default("vsl"),
-    provider: text("provider").$type<ProviderName>().notNull().default("anthropic"),
+    provider: text("provider").$type<ProviderName>().notNull().default("openrouter"),
     model: text("model").notNull(),
     status: text("status").$type<ScriptStatus>().notNull().default("draft"),
     generationError: text("generation_error"),
@@ -437,6 +464,7 @@ export const settings = pgTable("settings", {
   value: text("value").notNull(),
 });
 
+// Incluye proveedores históricos: guiones viejos pueden tener "anthropic"/"openai".
 export type ProviderName = "anthropic" | "openai" | "openrouter";
 
 export type ScriptBrief = {

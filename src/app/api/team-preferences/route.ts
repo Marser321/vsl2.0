@@ -3,7 +3,7 @@ import { getDb } from "@/db";
 import { documents, frameworks, scriptRatings, scripts, scriptVersions } from "@/db/schema";
 import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import { generateJSON } from "@/lib/ai/structured";
-import { countTokens } from "@/lib/ai/anthropic";
+import { estimateTokens } from "@/lib/ai/tokens";
 import { getSetting } from "@/lib/settings";
 import { guardAdminRequest } from "@/lib/auth/session";
 
@@ -133,8 +133,7 @@ ${result.antipatrones.map((r) => `- ${r}`).join("\n")}
 ## Notas de tono
 ${result.notasDeTono.map((r) => `- ${r}`).join("\n")}`;
 
-    const model = await getSetting("default_model_anthropic", "claude-opus-4-8");
-    const tokenCount = await countTokens(md, model);
+    const tokenCount = estimateTokens(md);
 
     // Reemplazo total: el doc es 100% derivado, se borra y re-crea.
     const existing = await findPrefsDoc(db);

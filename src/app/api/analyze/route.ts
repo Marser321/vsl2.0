@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { z } from "zod";
 import { getDb } from "@/db";
 import { documents } from "@/db/schema";
-import { countTokens } from "@/lib/ai/anthropic";
+import { estimateTokens } from "@/lib/ai/tokens";
 import { guardAdminRequest } from "@/lib/auth/session";
 import { createVslAnalysis } from "@/lib/ai/analyze-vsl";
 
@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
 
         // Guardar transcript + análisis como documento reutilizable
         const fullText = `# Transcript\n\n${transcript}\n\n---\n\n# Análisis estructural\n\n${analysis}`;
-        const tokenCount = await countTokens(fullText, analysisRun.model);
+        const tokenCount = estimateTokens(fullText);
         const [doc] = await getDb()
           .insert(documents)
           .values({

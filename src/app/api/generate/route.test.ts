@@ -13,8 +13,9 @@ const payload = {
   documentIds: [],
   title: "Guion QA",
   format: "vsl",
-  provider: "anthropic",
-  model: "claude-test",
+  provider: "openrouter",
+  model: "openrouter/ensemble-5+1",
+  openrouterConfirmed: true,
   brief: {
     producto: "Producto",
     audiencia: "Audiencia",
@@ -50,7 +51,7 @@ describe("POST /api/generate", () => {
   });
 
   it("no permite OpenRouter sin confirmación", async () => {
-    const response = await POST(request({ ...payload, provider: "openrouter", model: "ensemble" }));
+    const response = await POST(request({ ...payload, provider: "openrouter", model: "ensemble", openrouterConfirmed: false }));
     expect(response.status).toBe(400);
     expect((await response.json()).error).toMatch(/Confirmá el uso de 6 llamadas/);
   });

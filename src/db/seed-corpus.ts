@@ -16,7 +16,7 @@
 import { getDb } from "./index";
 import { documents, frameworks, templates, type DocumentKind, type ScriptBrief, type ScriptFormat } from "./schema";
 import { and, eq, isNull } from "drizzle-orm";
-import { countTokens } from "../lib/ai/anthropic";
+import { estimateTokens } from "../lib/ai/tokens";
 
 type CorpusDoc = {
   slug: string;
@@ -682,9 +682,6 @@ Si te viste en alguno, {{CTA}} — y guardate este video para no repetirlos.`,
 async function seedCorpus() {
   const db = getDb();
 
-  // Modelo solo para contar tokens (fallback interno: length/4 si no hay API key).
-  const tokenModel = "claude-opus-4-8";
-
   // Una sola consulta de docs globales; el match por tag se hace en JS.
   const existingGlobals = await db
     .select({ id: documents.id, tags: documents.tags })
@@ -700,7 +697,7 @@ async function seedCorpus() {
       skipped++;
       continue;
     }
-    const tokenCount = await countTokens(doc.text, tokenModel);
+    const tokenCount = estimateTokens(doc.text);
     await db.insert(documents).values({
       clientId: null,
       visibility: "global",

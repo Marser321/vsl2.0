@@ -1,16 +1,12 @@
-import { getProvider, type OperationalProviderName } from "./provider";
+import { getProvider } from "./provider";
 import { getSetting } from "@/lib/settings";
 
 export async function createVslAnalysis(args: {
   transcript: string;
   onStatus?: (status: { stage: string; completed?: number; total?: number }) => void;
 }) {
-  const configuredProvider = await getSetting("default_provider", "openrouter");
-  const providerName: OperationalProviderName = configuredProvider === "anthropic" ? "anthropic" : "openrouter";
-  const model = await getSetting(
-    providerName === "anthropic" ? "default_model_anthropic" : "default_model_openrouter",
-    providerName === "openrouter" ? "openrouter/ensemble-5+1" : "claude-opus-4-8"
-  );
+  const providerName = "openrouter" as const;
+  const model = await getSetting("default_model_openrouter", "openrouter/ensemble-5+1");
   const provider = await getProvider(providerName);
   const stream = provider.generateStream({
     model,

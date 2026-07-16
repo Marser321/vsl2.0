@@ -3,7 +3,7 @@ import { getDb } from "@/db";
 import { scripts, scriptVersions } from "@/db/schema";
 import { buildContext } from "@/lib/ai/context-builder";
 import { getProvider } from "@/lib/ai/provider";
-import { sanitizeAiError } from "@/lib/ai/errors";
+import { describeAiError } from "@/lib/ai/errors";
 import type { GenerationInput } from "./schema";
 
 const CHECKPOINT_INTERVAL_MS = 1_500;
@@ -200,7 +200,7 @@ export async function createGenerationStream(
         });
         send({ type: "done", ...prepared, usage });
       } catch (error) {
-        const message = sanitizeAiError(error);
+        const message = describeAiError(error);
         const failedAt = new Date();
         try {
           await db.transaction(async (tx) => {

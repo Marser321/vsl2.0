@@ -22,7 +22,6 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.111.0",
     "@supabase/supabase-js": "^2.110.2",
     "argon2": "^0.44.0",
     "better-sqlite3": "^12.11.1",

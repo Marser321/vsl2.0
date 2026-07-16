@@ -14,7 +14,12 @@ export async function POST(req: NextRequest) {
   const parsed = generationInputSchema.safeParse(await req.json().catch(() => ({})));
   if (!parsed.success) {
     const issue = parsed.error.issues[0];
-    return Response.json({ error: issue.message, path: issue.path }, { status: 400 });
+    // Los mensajes custom del schema ya están en español; el default de Zod
+    // para campos ausentes ("Invalid input: expected…") no.
+    const message = issue.code === "invalid_type"
+      ? `Falta o es inválido el campo "${issue.path.join(".")}".`
+      : issue.message;
+    return Response.json({ error: message, path: issue.path }, { status: 400 });
   }
 
   try {

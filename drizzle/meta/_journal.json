@@ -43,6 +43,20 @@
       "when": 1783902777235,
       "tag": "0005_shocking_doctor_octopus",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1784163943367,
+      "tag": "0006_striped_malcolm_colcord",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1784221821095,
+      "tag": "0007_lumpy_sheva_callister",
+      "breakpoints": true
     }
   ]
 }
