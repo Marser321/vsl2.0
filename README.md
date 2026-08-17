@@ -8,10 +8,10 @@ Sistema de relevamiento, biblioteca y generación de guiones VSL. Organiza el co
 - Enlaces secretos de 32 bytes, almacenados como hash, revocables y con vencimiento de 30 días.
 - Revisión humana: `draft → submitted → in_review → approved` o `changes_requested`.
 - Imágenes y documentos en un bucket privado de Supabase; URLs con extracción best effort y protección SSRF.
-- OCR/visión de imágenes con OpenRouter y alternativa Anthropic para imágenes o PDFs escaneados.
+- OCR/visión de imágenes con OpenRouter. Los PDFs escaneados todavía no se pueden extraer: hay que pegar el texto a mano.
 - Dossiers persistentes de marca y oferta, campañas específicas y snapshot del contexto usado por cada VSL.
 - Aprendizajes anonimizados por rubro, siempre pendientes de aprobación antes de cruzar entre clientes.
-- OpenRouter 5+1 prioritario y Anthropic opcional, streaming, versiones, Hook Lab, crítica y teleprompter.
+- Arnés OpenRouter 5+1 (cinco especialistas y una síntesis) como único proveedor, con rotación de claves, streaming, versiones, Hook Lab, crítica y teleprompter.
 - Importación de referencias públicas de YouTube, Instagram y TikTok con subtítulos normales/automáticos, audio por OpenRouter y Groq opcional, y upload privado como respaldo.
 
 ## Requisitos
@@ -108,10 +108,43 @@ npm run test:e2e
 6. Al aprobar se crean/actualizan marca y oferta, se crea la campaña y se promueven las fuentes listas a la biblioteca privada.
 7. **Generar VSL** abre el wizard interno con el brief de campaña prellenado.
 
+## Baterías por vertical
+
+Cuando una agencia acumula guiones de un mismo rubro, el sistema puede destilar
+lo que se repite entre ellos y usarlo como doctrina de ese vertical.
+
+```bash
+# 1. Escanear una carpeta de .docx/.pdf/.txt y escribir un manifiesto revisable
+npm run corpus:import -- --dir ~/guiones-credito --industria "Reparación de crédito"
+
+# 2. Revisar y corregir corpus-manifiesto.json a mano, y recién entonces aplicar
+npm run corpus:import -- --aplicar corpus-manifiesto.json
+
+# 3. Destilar los patrones recurrentes del vertical
+npm run corpus:destilar -- --industria "Reparación de crédito"
+
+# 4. Aprobar en /aprendizajes lo que sirva, y generar la batería
+npm run bateria -- --plan data/bateria-credito.json
+```
+
+- El importador clasifica formato y tipo por heurística; `--clasificar` manda a
+  un modelo, en lotes, solo lo que quedó en zona gris. Es idempotente por
+  `documents.content_hash`, así que reimportar no duplica.
+- La destilación es map-reduce: un modelo por lote (barato) y el panel 5+1 una
+  sola vez para redactar las reglas. Cada regla lleva en cuántos lotes
+  independientes apareció el patrón que la respalda.
+- Los aprendizajes nacen inactivos: hasta aprobarlos en **/aprendizajes** no
+  entran al contexto de generación.
+- La batería consume 6 llamadas de cuota por guion, chequea antes de cada uno y
+  guarda estado: si la cuota se agota, volvé a correr el mismo comando mañana.
+
 ## Privacidad del contexto
 
 - Documentos, testimonios, URLs, claims y respuestas pertenecen a un cliente.
-- El constructor rechaza documentos seleccionados que no sean globales ni pertenezcan al cliente actual.
+- El constructor rechaza documentos seleccionados que no sean globales, del
+  vertical del cliente, ni propios del cliente actual.
+- La biblioteca por vertical (`visibility='industry'`) se comparte entre clientes
+  del mismo rubro: cargá ahí solo material que pueda cruzar esa frontera.
 - Solo los aprendizajes anonimizados y aprobados se comparten con marcas del mismo rubro.
 - Cada versión registra IDs de documentos y la jerarquía de marca/oferta/campaña utilizada.
 
@@ -127,4 +160,4 @@ Vercel Hobby sirve únicamente para el piloto interno. Antes del uso comercial r
 
 ## Stack
 
-Next.js 16 · React 19.2 · TypeScript · Tailwind 4 · Supabase Postgres/Storage · Drizzle ORM · Resend · Anthropic SDK · OpenRouter · Groq opcional · Zod · Vitest · Playwright.
+Next.js 16 · React 19.2 · TypeScript · Tailwind 4 · Supabase Postgres/Storage · Drizzle ORM · Resend · OpenRouter · Groq opcional · Zod · Vitest · Playwright.

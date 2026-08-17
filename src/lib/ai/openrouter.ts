@@ -64,7 +64,12 @@ export async function getOpenRouterQuota() {
   return { day: today, used, remaining: Math.max(0, limit - used), limit, available: true };
 }
 
-async function reserveEnsembleCalls(): Promise<void> {
+/**
+ * Reserva cuota antes de llamar. `calls` permite pedir menos que el arnés
+ * completo: las pasadas mecánicas (clasificar, mapear lotes al destilar) corren
+ * con un solo modelo y no tiene sentido que descuenten 6 llamadas cada una.
+ */
+async function reserveEnsembleCalls(calls: number = OPENROUTER_CALLS_PER_RUN): Promise<void> {
   if (!hasOpenRouterKeys()) {
     throw new Error("OpenRouter no está configurado. Agregá una clave o elegí otro proveedor.");
   }
@@ -82,15 +87,15 @@ async function reserveEnsembleCalls(): Promise<void> {
       : 0;
     const limit = DAILY_LIMIT * engine.keyCount;
     const remaining = Math.max(0, limit - used);
-    if (remaining < OPENROUTER_CALLS_PER_RUN) {
+    if (remaining < calls) {
       throw new Error(
-        `Cuota diaria insuficiente: quedan ${remaining} llamadas y el arnés 5+1 necesita ${OPENROUTER_CALLS_PER_RUN}.`
+        `Cuota diaria insuficiente: quedan ${remaining} llamadas y esta corrida necesita ${calls}.`
       );
     }
     await tx.insert(settings).values({ key: "openrouter_quota_day", value: today })
       .onConflictDoUpdate({ target: settings.key, set: { value: today } });
-    await tx.insert(settings).values({ key: "openrouter_quota_used", value: String(used + OPENROUTER_CALLS_PER_RUN) })
-      .onConflictDoUpdate({ target: settings.key, set: { value: String(used + OPENROUTER_CALLS_PER_RUN) } });
+    await tx.insert(settings).values({ key: "openrouter_quota_used", value: String(used + calls) })
+      .onConflictDoUpdate({ target: settings.key, set: { value: String(used + calls) } });
   });
 }
 
@@ -272,8 +277,17 @@ export async function generateOpenRouterJSON<T>(args: {
   userMessage: string;
   schema: Record<string, unknown>;
   maxTokens?: number;
+  /**
+   * `false` corre un solo modelo en vez del panel 5+1 y reserva 1 llamada de
+   * cuota en lugar de 6. Para trabajo mecánico y de alto volumen (clasificar
+   * archivos, mapear lotes del destilador), donde el consenso del panel no
+   * agrega nada y la cuota diaria sí es el cuello de botella.
+   */
+  ensemble?: boolean;
 }): Promise<T> {
-  await reserveEnsembleCalls();
+  const ensemble = args.ensemble ?? true;
+  const budget = ensemble ? OPENROUTER_CALLS_PER_RUN : 1;
+  await reserveEnsembleCalls(budget);
   let attemptedCalls = 0;
   try {
   const models = await freeModels(true);
@@ -282,8 +296,9 @@ export async function generateOpenRouterJSON<T>(args: {
     type: "json_schema" as const,
     json_schema: { name: "resultado", strict: true, schema: args.schema },
   };
+  const roles = ensemble ? ROLES : ROLES.slice(0, 1);
   const attempts = await Promise.allSettled(
-    ROLES.map(async (role, index) => {
+    roles.map(async (role, index) => {
       attemptedCalls += 1;
       const result = await executeWithRetry((api) => api.chat.completions.create({
         model: models[index],
@@ -324,6 +339,6 @@ export async function generateOpenRouterJSON<T>(args: {
   if (!text) throw new Error("El sintetizador devolvió una respuesta vacía.");
   return JSON.parse(text) as T;
   } finally {
-    await refundUnusedCalls(OPENROUTER_CALLS_PER_RUN - attemptedCalls);
+    await refundUnusedCalls(budget - attemptedCalls);
   }
 }

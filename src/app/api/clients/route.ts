@@ -14,7 +14,9 @@ const clientSchema = z.object({
 
 export async function GET() {
   const guard = await guardAdminRequest(); if (guard) return guard;
-  const rows = await getDb().select().from(clients).orderBy(desc(clients.createdAt));
+  // Desempate por id: sin él, dos clientes creados en el mismo tick (seed,
+  // importador) se reordenan entre fetches y podés abrir el equivocado.
+  const rows = await getDb().select().from(clients).orderBy(desc(clients.createdAt), desc(clients.id));
   return NextResponse.json(rows);
 }
 

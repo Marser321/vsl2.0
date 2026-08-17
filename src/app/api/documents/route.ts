@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { randomUUID } from "node:crypto";
 import { getDb } from "@/db";
 import { documents, DOCUMENT_KINDS, type DocumentKind } from "@/db/schema";
-import { and, desc, eq, isNull } from "drizzle-orm";
+import { desc, eq, isNull } from "drizzle-orm";
 import { extractText } from "@/lib/ingest/extract";
+import { huellaContenido } from "@/lib/ingest/classify";
+import { saveOriginal, safeFilename } from "@/lib/ingest/storage";
 import { estimateTokens } from "@/lib/ai/tokens";
 import { suggestedDocuments } from "@/lib/ai/context-builder";
-import { getSupabaseAdmin, INTAKE_BUCKET } from "@/lib/supabase";
 import { guardAdminRequest } from "@/lib/auth/session";
+import { industrySlug } from "@/lib/industry";
 
 export async function GET(req: NextRequest) {
   const guard = await guardAdminRequest(); if (guard) return guard;
@@ -53,6 +54,10 @@ export async function POST(req: NextRequest) {
   const file = form.get("file") as File | null;
   const pastedText = (form.get("text") as string | null)?.trim() || "";
   const title = ((form.get("title") as string | null) || file?.name || "Sin título").trim();
+  // Rubro opcional: sube el documento a la biblioteca del vertical en vez de a
+  // la global, para que lo vean todos los clientes de esa industria.
+  const industry = (form.get("industry") as string | null)?.trim() || null;
+  const industrySlugValue = industrySlug(industry);
 
   let extractedText = pastedText;
   let warning: string | null = null;
@@ -64,7 +69,7 @@ export async function POST(req: NextRequest) {
   if (file) {
     const buffer = Buffer.from(await file.arrayBuffer());
     savedBuffer = buffer;
-    filename = file.name.replace(/[^a-zA-Z0-9._-]+/g, "-");
+    filename = safeFilename(file.name);
     mimeType = file.type || "application/octet-stream";
     const result = await extractText(buffer, mimeType, filename);
     extractedText = result.text || pastedText;
@@ -85,7 +90,10 @@ export async function POST(req: NextRequest) {
     .insert(documents)
     .values({
       clientId,
-      visibility: clientId === null ? "global" : "private",
+      visibility: clientId !== null ? "private" : industrySlugValue ? "industry" : "global",
+      industry,
+      industrySlug: industrySlugValue,
+      contentHash: extractedText ? huellaContenido(extractedText) : null,
       title,
       kind,
       filename,
@@ -99,9 +107,11 @@ export async function POST(req: NextRequest) {
 
   // Guardar el original en el bucket privado; el filesystem de Vercel es efímero.
   if (savedBuffer && filename) {
-    filePath = `library/${row.id}/${randomUUID()}-${filename}`;
-    const { error: uploadError } = await getSupabaseAdmin().storage.from(INTAKE_BUCKET).upload(filePath, savedBuffer, { contentType: mimeType ?? undefined, upsert: false });
-    if (uploadError) return NextResponse.json({ error: uploadError.message }, { status: 502 });
+    try {
+      filePath = await saveOriginal({ documentId: row.id, buffer: savedBuffer, filename, mimeType });
+    } catch (error) {
+      return NextResponse.json({ error: (error as Error).message }, { status: 502 });
+    }
     await db.update(documents)
       .set({ filePath })
       .where(eq(documents.id, row.id));

@@ -5,6 +5,8 @@ type Args = {
   userMessage: string;
   schema: Record<string, unknown>;
   maxTokens?: number;
+  /** `false` = un solo modelo, 1 llamada de cuota en vez de 6. Ver openrouter.ts. */
+  ensemble?: boolean;
 };
 
 /**

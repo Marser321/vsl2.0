@@ -44,7 +44,13 @@ yarn-error.log*
 next-env.d.ts
 
 # datos locales (DB + uploads)
-/data/
+# Se excluye el contenido, no el directorio: git no puede reincluir un archivo
+# si su directorio padre está excluido.
+/data/*
+# …salvo los planes de batería, que son configuración versionable. El estado de
+# avance de cada corrida (*.estado.json) sí queda fuera.
+!/data/bateria-*.json
+/data/*.estado.json
 vendor/yt-dlp
 vendor/yt-dlp.exe
 

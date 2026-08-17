@@ -15,6 +15,15 @@ Estado al 2026-07-12. Los cinco briefs ejecutables quedaron implementados y veri
 - **Radar de tendencias semanal**: runner compartido manual/cron, ejecución serial e idempotente los lunes 08:00 UTC, con digest por email.
 - **Métricas reales de plataformas**: snapshots por versión y plataforma, candidata a ganadora, agregados en Aprendizajes y señal de hook en ejemplares.
 
+## Hecho (agosto 2026)
+
+- **Biblioteca por vertical**: `documents.visibility='industry'` + `industry_slug` pasaron de capacidad muerta a Bloque 1.5 del contexto — un prefijo cacheado que comparten todos los clientes del mismo rubro. Normalización de rubro única en `src/lib/industry.ts` (con alias), usada también por `industry_learnings`.
+- **Filtro de formato en el contexto**: `documents.format` (`vsl`/`reel`/`null`=agnóstico) evita que un reel de 20 segundos arrastre la doctrina de VSL largo.
+- **Importación masiva** (`npm run corpus:import`): carpeta de .docx/.pdf/.txt → manifiesto revisable → inserción idempotente por `content_hash`. Clasificación heurística de formato/tipo, con pasada de modelo en lotes solo para la zona gris.
+- **Destilación de verticales** (`npm run corpus:destilar`): map-reduce sobre el corpus del rubro → doctrina beat-a-beat por formato + reglas a `industry_learnings` pendientes de aprobación, con `evidence_count` real.
+- **Batería por lista de briefs** (`npm run bateria`): generación serial reanudable con control de cuota.
+- **Modo `ensemble: false`** en `generateJSON`: 1 llamada de cuota en vez de 6 para trabajo mecánico de volumen.
+
 ## Backlog restante (orden sugerido)
 
 1. **Swipe file / clipper.** Pegar un ad/hook visto en redes → se guarda como `reference` etiquetado con ángulo detectado → alimenta la taxonomía de ganchos con ejemplos frescos del mercado local.
@@ -27,5 +36,7 @@ Estado al 2026-07-12. Los cinco briefs ejecutables quedaron implementados y veri
 
 - Corpus: versionar con tags `corpus-v2`, `corpus-v3` (nunca editar in-place los `corpus-v1` sembrados; el seed no pisa ediciones).
 - Bloque 1 cacheado: cada edición de frameworks/corpus/preferencias invalida el caché una vez — agrupar cambios.
+- El filtro por formato duplica las variantes de caché del Bloque 1 (una para `vsl`, otra para `reel`). Al sembrar doctrina nueva, decidir su `format` a conciencia: dejarlo en `null` la mete en las dos variantes.
+- Biblioteca por vertical: cruza la frontera entre clientes del mismo rubro. Nada identificable de un cliente puede vivir en `visibility='industry'`.
 - Modelos free de OpenRouter: piso de contexto en 60k (`src/lib/ai/openrouter.ts`); si el pool se achica, revisar ese filtro.
 - Schemas de salida estructurada: sin `minimum`/`maximum` — enums y validación Zod en el borde.

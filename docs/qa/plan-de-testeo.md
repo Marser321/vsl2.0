@@ -8,7 +8,7 @@ Objetivo: detectar problemas de flujo y de funcionamiento en la app, con foco en
 
 - Next.js (App Router) + Drizzle + Supabase Postgres. Código en `src/`.
 - Flujo esperado: Cliente → Marca → Oferta → Campaña → Generar VSL (`/generar`, wizard de 5 pasos) → Editor (`/guiones/[id]`) → refinar/versionar/puntuar.
-- Generación por SSE en `POST /api/generate` (providers: Anthropic, OpenAI, OpenRouter arnés 5+1). El guión se persiste recién al final del stream.
+- Generación por SSE en `POST /api/generate` (proveedor único: OpenRouter, arnés 5+1). El guion se persiste por checkpoints durante el stream.
 - Seeds requeridos: `npm run db:seed` (prompt maestro + frameworks) y `npm run db:seed-corpus`.
 
 ## Hipótesis a confirmar o descartar (de la exploración de código)
@@ -55,7 +55,7 @@ Precondición: DB con seeds, al menos una API key de LLM configurada.
 4. **Durante la generación**: ¿hay indicador de progreso? ¿El texto va apareciendo (streaming)? Cronometrar. Si supera ~60s, anotar qué pasa exactamente (H2).
 5. **Final feliz**: al terminar, ¿navega automáticamente a `/guiones/[id]`? ¿El guión está completo y persistido (recargar la página)?
 6. **Final infeliz**: si la generación falla o se corta, ¿el usuario ve un error accionable o queda colgado con texto parcial? ¿Se guardó algo? (H2, H3)
-7. **Repetir con cada provider configurado** (Anthropic / OpenAI / OpenRouter) si hay claves; anotar diferencias de comportamiento y tiempos.
+7. **Repetir con varias claves de OpenRouter** si hay más de una configurada; verificar que la rotación reparte la cuota y anotar tiempos.
 
 ## M2 — Manejo de errores y estados vacíos
 

@@ -6,6 +6,7 @@ import { generateJSON } from "@/lib/ai/structured";
 import { getSetting } from "@/lib/settings";
 import { guardAdminRequest } from "@/lib/auth/session";
 import { anonymizeLearning } from "@/lib/intake/anonymize";
+import { industrySlug } from "@/lib/industry";
 
 export const maxDuration = 300;
 
@@ -71,6 +72,9 @@ export async function POST(_req: NextRequest, { params }: Params) {
     const rows = await db.insert(industryLearnings).values(sanitized.map((content) => ({
       industry,
       subindustry,
+      // El match en generación es por slug; sin esto el aprendizaje queda huérfano.
+      industrySlug: industrySlug(industry),
+      subindustrySlug: industrySlug(subindustry),
       content,
       sourceScriptId: script.id,
       isActive: false,

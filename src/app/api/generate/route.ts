@@ -11,7 +11,14 @@ export async function POST(req: NextRequest) {
   const guard = await guardAdminRequest(req, true);
   if (guard) return guard;
 
-  const parsed = generationInputSchema.safeParse(await req.json().catch(() => ({})));
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return Response.json({ error: "El cuerpo de la petición no es JSON válido." }, { status: 400 });
+  }
+
+  const parsed = generationInputSchema.safeParse(body);
   if (!parsed.success) {
     const issue = parsed.error.issues[0];
     // Los mensajes custom del schema ya están en español; el default de Zod

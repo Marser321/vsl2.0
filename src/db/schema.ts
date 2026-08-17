@@ -234,7 +234,16 @@ export const documents = pgTable(
     intakeRequestId: uuid("intake_request_id").references(() => intakeRequests.id, { onDelete: "set null" }),
     sourceAssetId: uuid("source_asset_id").references(() => sourceAssets.id, { onDelete: "set null" }),
     visibility: text("visibility").$type<"private" | "global" | "industry">().notNull().default("private"),
+    // `industry` conserva el rubro tal como se escribió; `industrySlug` es la
+    // llave normalizada por la que se agrupa el vertical (ver src/lib/industry.ts).
     industry: text("industry"),
+    industrySlug: text("industry_slug"),
+    // Formato al que aplica el documento. `null` = agnóstico (sirve para VSL y
+    // reel por igual); si trae valor, solo entra al contexto de ese formato.
+    format: text("format").$type<ScriptFormat>(),
+    // sha256 del texto extraído normalizado. Hace idempotente la importación
+    // masiva: mismo contenido para el mismo scope = no se reinserta.
+    contentHash: text("content_hash"),
     title: text("title").notNull(),
     kind: text("kind").$type<DocumentKind>().notNull(),
     filename: text("filename"),
@@ -256,6 +265,8 @@ export const documents = pgTable(
     index("documents_client_idx").on(table.clientId),
     index("documents_brand_idx").on(table.brandId),
     index("documents_visibility_idx").on(table.visibility),
+    index("documents_industry_idx").on(table.industrySlug, table.kind, table.isActive),
+    index("documents_content_hash_idx").on(table.contentHash),
   ]
 );
 
@@ -423,6 +434,10 @@ export const industryLearnings = pgTable(
     id: serial("id").primaryKey(),
     industry: text("industry").notNull(),
     subindustry: text("subindustry"),
+    // Llaves normalizadas: el match del rubro en la generación es por slug, no
+    // por el texto libre que escribió quien cargó la marca.
+    industrySlug: text("industry_slug"),
+    subindustrySlug: text("subindustry_slug"),
     content: text("content").notNull(),
     evidenceCount: integer("evidence_count").notNull().default(1),
     sourceScriptId: integer("source_script_id").references(() => scripts.id, { onDelete: "set null" }),
@@ -430,7 +445,10 @@ export const industryLearnings = pgTable(
     approvedAt: timestamp("approved_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (table) => [index("industry_learnings_scope_idx").on(table.industry, table.subindustry)]
+  (table) => [
+    index("industry_learnings_scope_idx").on(table.industry, table.subindustry),
+    index("industry_learnings_slug_idx").on(table.industrySlug, table.isActive),
+  ]
 );
 
 export const emailDeliveries = pgTable(

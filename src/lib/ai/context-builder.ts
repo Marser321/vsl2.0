@@ -15,7 +15,8 @@ import {
   type ScriptBrief,
   type ScriptFormat,
 } from "@/db/schema";
-import { and, asc, eq, isNull, inArray, sql } from "drizzle-orm";
+import { and, asc, eq, isNull, inArray, or, sql } from "drizzle-orm";
+import { industrySlug } from "@/lib/industry";
 import { scriptMetrics, scriptRatings, scriptVersions } from "@/db/schema";
 import { getSetting } from "@/lib/settings";
 import {
@@ -98,9 +99,22 @@ async function loadQualitySignals(db: ReturnType<typeof getDb>, sourceIds: numbe
 }
 
 /**
+ * Documentos agnósticos de formato (`format` en null) sirven para cualquier
+ * guion; los que declaran formato solo entran cuando coincide. Sin este filtro
+ * un reel de 20 segundos arrastra toda la doctrina de VSL largo.
+ */
+function formatFilter(format: ScriptFormat) {
+  return or(isNull(documents.format), eq(documents.format, format));
+}
+
+/**
  * Ensambla el prompt en orden estable→volátil para maximizar cache hits:
  *  Bloque 1 (caché, compartido entre TODOS los clientes): prompt maestro +
  *    frameworks + docs globales de tipo framework/learning.
+ *  Bloque 1.5 (caché, compartido por rubro): biblioteca del vertical — la
+ *    doctrina destilada de los guiones de esa industria. Va acá y no en el
+ *    Bloque 1 porque el prefijo estable se comparte entre todos los clientes
+ *    del mismo rubro, pero no entre rubros distintos.
  *  Bloque 2 (caché, compartido por cliente): dossier con briefs, transcripts
  *    y guiones ganadores completos.
  *  Messages (volátil): brief del wizard + historial de refinamiento.
@@ -151,6 +165,11 @@ export async function buildContext(args: {
     .from(frameworks)
     .orderBy(asc(frameworks.id));
 
+  const format = args.format ?? "vsl";
+  // El vertical se resuelve por la marca y cae al rubro del cliente. Es la
+  // llave que une la biblioteca de industria con los aprendizajes del rubro.
+  const verticalSlug = industrySlug(brand?.industry ?? client.industry);
+
   // Docs globales estables (frameworks/learnings) — siempre incluidos, orden determinista.
   const globalStableDocs = await db
     .select()
@@ -160,10 +179,28 @@ export async function buildContext(args: {
         isNull(documents.clientId),
         eq(documents.visibility, "global"),
         eq(documents.isActive, true),
-        inArray(documents.kind, ["framework", "learning"])
+        inArray(documents.kind, ["framework", "learning"]),
+        formatFilter(format)
       )
     )
     .orderBy(asc(documents.id));
+
+  // Biblioteca del vertical: doctrina destilada del rubro (Bloque 1.5).
+  const industryStableDocs = verticalSlug
+    ? await db
+        .select()
+        .from(documents)
+        .where(
+          and(
+            eq(documents.visibility, "industry"),
+            eq(documents.industrySlug, verticalSlug),
+            eq(documents.isActive, true),
+            inArray(documents.kind, ["framework", "learning"]),
+            formatFilter(format)
+          )
+        )
+        .orderBy(asc(documents.id))
+    : [];
 
   // Docs elegidos en el wizard (del cliente y/o globales tipo winning_script, etc.)
   const selectedCandidates: Document[] = args.documentIds.length
@@ -178,10 +215,33 @@ export async function buildContext(args: {
         )
         .orderBy(asc(documents.id))
     : [];
-  const selectedDocs = selectedCandidates.filter((doc) => doc.visibility === "global" || doc.clientId === args.clientId);
+  // Aislamiento: un doc privado de otro cliente nunca entra, aunque su id venga
+  // en documentIds. Los del vertical solo si son del mismo rubro que la marca.
+  const selectedDocs = selectedCandidates.filter(
+    (doc) =>
+      doc.visibility === "global" ||
+      doc.clientId === args.clientId ||
+      (doc.visibility === "industry" && verticalSlug !== null && doc.industrySlug === verticalSlug)
+  );
 
-  const scopedLearnings = brand?.industry
-    ? await db.select().from(industryLearnings).where(and(eq(industryLearnings.industry, brand.industry), eq(industryLearnings.isActive, true))).orderBy(asc(industryLearnings.id))
+  // Match por slug normalizado: "Reparación de crédito" y "reparacion de
+  // credito" son el mismo rubro. `subindustrySlug` afina sin excluir — los
+  // aprendizajes generales del rubro siguen entrando.
+  const subSlug = industrySlug(brand?.subindustry);
+  const scopedLearnings = verticalSlug
+    ? await db
+        .select()
+        .from(industryLearnings)
+        .where(
+          and(
+            eq(industryLearnings.industrySlug, verticalSlug),
+            eq(industryLearnings.isActive, true),
+            subSlug
+              ? or(isNull(industryLearnings.subindustrySlug), eq(industryLearnings.subindustrySlug, subSlug))
+              : undefined
+          )
+        )
+        .orderBy(asc(industryLearnings.id))
     : [];
 
   const [approvedIntake] = campaign
@@ -192,8 +252,8 @@ export async function buildContext(args: {
     : [];
   const latestSubmittedSnapshot = approvedSubmission?.submittedSnapshots.at(-1);
 
-  // Evitar duplicados entre bloque global y selección.
-  const stableIds = new Set(globalStableDocs.map((d) => d.id));
+  // Evitar duplicados entre los bloques estables (global + vertical) y la selección.
+  const stableIds = new Set([...globalStableDocs, ...industryStableDocs].map((d) => d.id));
   const dossierDocs = selectedDocs.filter((d) => !stableIds.has(d.id));
   const selectedSourceIds = [
     ...new Set(
@@ -234,6 +294,10 @@ export async function buildContext(args: {
     .filter(Boolean)
     .join("\n\n");
 
+  const blockVertical = industryStableDocs.length
+    ? `## Doctrina del rubro: ${brand?.industry ?? client.industry}\n\n${industryStableDocs.map((doc) => renderDocument(doc)).join("\n\n")}`
+    : "";
+
   const hierarchy = [
     brand ? `## Marca seleccionada: ${brand.name}\nRubro: ${brand.industry ?? "—"}${brand.subindustry ? ` / ${brand.subindustry}` : ""}\n${JSON.stringify(brand.profile)}` : "",
     offer ? `## Oferta seleccionada: ${offer.name}\nTipo: ${offer.type}\n${JSON.stringify(offer.profile)}` : "",
@@ -244,6 +308,7 @@ export async function buildContext(args: {
 
   const systemBlocks: SystemBlock[] = [
     { text: block1, cache: true },
+    ...(blockVertical ? [{ text: blockVertical, cache: true }] : []),
     { text: block2, cache: true },
   ];
 
@@ -254,7 +319,7 @@ export async function buildContext(args: {
       : [{ role: "user" as const, content: renderBriefMessage({ brief: args.brief, framework, format: args.format }) }]),
   ];
 
-  const included = [...globalStableDocs, ...dossierDocs];
+  const included = [...globalStableDocs, ...industryStableDocs, ...dossierDocs];
   const documentHashes = included.map((document) => ({ id: document.id, hash: contentHash(document.extractedText) }));
   return {
     systemBlocks,
@@ -303,13 +368,40 @@ export async function suggestedDocuments(clientId: number): Promise<SuggestedDoc
     .where(
       and(
         isNull(documents.clientId),
+        eq(documents.visibility, "global"),
         eq(documents.isActive, true),
         inArray(documents.kind, ["winning_script", "transcript", "reference"])
       )
     )
     .orderBy(asc(documents.id));
 
-  const all = [...clientDocs, ...globalWinners];
+  // Ejemplares del rubro del cliente: el vertical se resuelve por sus marcas y
+  // cae al rubro del propio cliente.
+  const [client] = await db.select({ industry: clients.industry }).from(clients).where(eq(clients.id, clientId)).limit(1);
+  const clientBrands = await db.select({ industry: brands.industry }).from(brands).where(eq(brands.clientId, clientId));
+  const verticalSlugs = [
+    ...new Set(
+      [...clientBrands.map((b) => b.industry), client?.industry]
+        .map(industrySlug)
+        .filter((slug): slug is string => slug !== null)
+    ),
+  ];
+  const industryDocs = verticalSlugs.length
+    ? await db
+        .select()
+        .from(documents)
+        .where(
+          and(
+            eq(documents.visibility, "industry"),
+            inArray(documents.industrySlug, verticalSlugs),
+            eq(documents.isActive, true),
+            inArray(documents.kind, ["winning_script", "transcript", "reference"])
+          )
+        )
+        .orderBy(asc(documents.id))
+    : [];
+
+  const all = [...clientDocs, ...globalWinners, ...industryDocs];
   const sourceIds = [
     ...new Set(all.map((d) => d.sourceScriptId).filter((x): x is number => x !== null)),
   ];
