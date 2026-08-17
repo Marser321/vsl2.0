@@ -11,12 +11,12 @@ export async function createVslAnalysis(args: {
   const stream = provider.generateStream({
     model,
     systemBlocks: [{
-      text: "Sos un analista senior de VSLs de respuesta directa. Extraés ingeniería persuasiva y patrones adaptables sin reproducir extensamente frases distintivas del original. Respondés en español, en Markdown, con precisión y evidencia breve.",
+      text: "Eres un analista senior de VSLs de respuesta directa. Extraes ingeniería persuasiva y patrones adaptables sin reproducir extensamente frases distintivas del original. Respondes en español neutro, en Markdown, con precisión y evidencia breve.",
       cache: true,
     }],
     messages: [{
       role: "user",
-      content: `Analizá este transcript y devolvé el desglose estructural completo:
+      content: `Analiza este transcript y devuelve el desglose estructural completo:
 
 # Formato de salida (Markdown)
 ## Ficha rápida
@@ -34,7 +34,7 @@ Objeciones y técnicas usadas.
 ## Oferta y CTAs
 Oferta, valor, urgencia legítima y llamados a la acción.
 ## Principios adaptables
-Entre 5 y 8 técnicas que se pueden reinterpretar para otra marca. No copies párrafos ni frases distintivas; describí el patrón y cómo aplicarlo de manera original.
+Entre 5 y 8 técnicas que se pueden reinterpretar para otra marca. No copies párrafos ni frases distintivas; describe el patrón y cómo aplicarlo de manera original.
 
 # Transcript
 ${args.transcript}`,

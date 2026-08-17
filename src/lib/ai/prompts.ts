@@ -54,14 +54,14 @@ export function renderBriefMessage(args: {
   const format = args.format ?? "vsl";
   const fwSection = framework
     ? `## Framework a usar: ${framework.name}\n${framework.structureMd}`
-    : "## Framework: a tu criterio, elegí la mejor estructura para este caso.";
+    : "## Framework: a tu criterio, elige la mejor estructura para este caso.";
 
   if (format === "reel") {
     const seg = brief.duracionSeg ?? 45;
     // ~150 wpm en español = 2.5 palabras por segundo.
     const words = Math.round(seg * 2.5);
     const plataforma = brief.plataforma ? PLATFORM_LABELS[brief.plataforma] : "";
-    return `Generá un guion de REEL VERTICAL (video corto) completo con este brief:
+    return `Genera un guion de REEL VERTICAL (video corto) completo con este brief:
 
 ## Brief
 - **Producto/servicio:** ${brief.producto}
@@ -82,13 +82,13 @@ ${fwSection}
 - Cada beat como H2 con su rango en SEGUNDOS, ej.: \`## Gancho (0:00–0:03)\`.
 - Debajo de cada H2, en este orden: \`> [VISUAL: plano, acción o b-roll]\`, \`> [TEXTO EN PANTALLA: ...]\` y la locución EXACTA a grabar.
 - El gancho hablado, el visual y el texto en pantalla arrancan juntos en los primeros 2 segundos — nada de saludos ni contexto.
-- Ritmo: ~2.5 palabras por segundo. Respetá la duración objetivo ±10%.
-- Aplicá el "Playbook de reels verticales" y la taxonomía de ganchos de la biblioteca global.
+- Ritmo: ~2.5 palabras por segundo. Respeta la duración objetivo ±10%.
+- Aplica el "Playbook de reels verticales" y la taxonomía de ganchos de la biblioteca global.
 
-Escribí el guion completo ahora.`;
+Escribe el guion completo ahora, en español neutro con tuteo (nunca voseo).`;
   }
 
-  return `Generá un guion de VSL completo con este brief:
+  return `Genera un guion de VSL completo con este brief:
 
 ## Brief
 - **Producto/servicio:** ${brief.producto}
@@ -105,8 +105,8 @@ ${fwSection}
 
 ## Restricciones de duración y evidencia
 - La locución debe quedar entre ${Math.round(brief.duracionMin * 150 * 0.9)} y ${Math.round(brief.duracionMin * 150 * 1.1)} palabras (objetivo: ${brief.duracionMin * 150}). Las indicaciones visuales no cuentan.
-- Si usás timestamps, el último debe terminar en ${brief.duracionMin}:00; redistribuí los beats dentro de ese límite y no extiendas la pieza.
+- Si usas timestamps, el último debe terminar en ${brief.duracionMin}:00; redistribuye los beats dentro de ese límite y no extiendas la pieza.
 - No agregues precios, métricas, testimonios, garantías, plazos, cantidad de reuniones, páginas, entregables ni historia del fundador si no aparecen explícitamente en el brief o los documentos.
 
-Escribí el guion completo ahora.`;
+Escribe el guion completo ahora, en español neutro con tuteo (nunca voseo).`;
 }

@@ -50,21 +50,21 @@ Regla: los amateurs solo inflan el numerador (prometen más). Los profesionales 
 
 ## Construcción del stack de oferta
 
-1. Listá TODOS los problemas que el avatar encuentra antes, durante y después de usar la solución núcleo.
-2. Convertí cada problema en una solución con nombre propio ("Calculadora de precios lista para usar" — no "bonus #3").
-3. Asigná a cada pieza un valor en dinero justificable y presentalas apiladas: el precio final debe verse como una fracción obvia del valor total.
+1. Lista TODOS los problemas que el avatar encuentra antes, durante y después de usar la solución núcleo.
+2. Convierte cada problema en una solución con nombre propio ("Calculadora de precios lista para usar" — no "bonus #3").
+3. Asigna a cada pieza un valor en dinero justificable y preséntalas apiladas: el precio final debe verse como una fracción obvia del valor total.
 4. Cada bono existe para matar UNA objeción específica. Si no mata una objeción, no va.
 
 ## Garantías (reversión de riesgo)
 
-- **Incondicional** ("si no te gusta, te devuelvo todo"): máxima conversión, usala cuando el producto es sólido.
-- **Condicional** ("si aplicás X y no lográs Y, te devuelvo el doble"): más fuerte aún si la condición es razonable; filtra curiosos.
+- **Incondicional** ("si no te gusta, te devuelvo todo"): máxima conversión, úsala cuando el producto es sólido.
+- **Condicional** ("si aplicas X y no logras Y, te devuelvo el doble"): más fuerte aún si la condición es razonable; filtra curiosos.
 - **Anti-garantía** ("todas las ventas son finales, y este es el porqué"): para ofertas premium donde el compromiso es parte del posicionamiento.
 - La garantía se presenta INMEDIATAMENTE después del precio, nunca antes.
 
 ## Escasez y urgencia legítimas
 
-Solo escasez real: cupos con razón operativa, cohortes con fecha, precio que sube en fecha anunciada, bonos que expiran. La urgencia falsa destruye la confianza y es detectable. Si no hay escasez real, creá una razón real (capacidad de onboarding, edición limitada) antes de escribir el guion.
+Solo escasez real: cupos con razón operativa, cohortes con fecha, precio que sube en fecha anunciada, bonos que expiran. La urgencia falsa destruye la confianza y es detectable. Si no hay escasez real, crea una razón real (capacidad de onboarding, edición limitada) antes de escribir el guion.
 
 ## Nombre de la oferta
 
@@ -78,7 +78,7 @@ Fórmula: [Resultado específico] + [plazo o contenedor] + [para avatar]. "Siste
     topics: ["vsl", "estructura"],
     text: `## El principio rector: la pendiente resbaladiza
 
-Cada frase tiene UN trabajo: lograr que se escuche la siguiente. Un VSL no es un documento informativo, es una pendiente: si en algún punto el espectador puede bajarse sin perder nada, se baja. Auditá cada bloque preguntando "¿qué pierde el que se va acá?" — si la respuesta es "nada", falta un loop abierto.
+Cada frase tiene UN trabajo: lograr que se escuche la siguiente. Un VSL no es un documento informativo, es una pendiente: si en algún punto el espectador puede bajarse sin perder nada, se baja. Audita cada bloque preguntando "¿qué pierde el que se va acá?" — si la respuesta es "nada", falta un loop abierto.
 
 ## Apertura
 
@@ -91,11 +91,11 @@ Encadena afirmaciones que el avatar YA cree ("si tienes un negocio local, depend
 
 ## Loops abiertos
 
-Prometé algo concreto para más adelante ("en un minuto te muestro el error #1, pero antes…") y CUMPLILO. Dos o tres loops activos sostienen un VSL largo. Un loop que no se cierra genera desconfianza.
+Promete algo concreto para más adelante ("en un minuto te muestro el error #1, pero antes…") y CÚMPLELO. Dos o tres loops activos sostienen un VSL largo. Un loop que no se cierra genera desconfianza.
 
 ## El mecanismo único
 
-Antes de presentar el producto, respondé: "¿por qué todo lo que probé antes falló?" (culpa externa: le mintieron, el método estaba incompleto — nunca culpa del avatar) y "¿por qué ESTO sí funciona?" (el mecanismo con nombre propio). Sin mecanismo único, el producto es un commodity y compite por precio.
+Antes de presentar el producto, responde: "¿por qué todo lo que probé antes falló?" (culpa externa: le mintieron, el método estaba incompleto — nunca culpa del avatar) y "¿por qué ESTO sí funciona?" (el mecanismo con nombre propio). Sin mecanismo único, el producto es un commodity y compite por precio.
 
 ## Coreografía del precio
 
@@ -111,7 +111,7 @@ Cada 60-90 segundos, un cambio de energía: pregunta directa al espectador, mini
 
 ## Cierre
 
-El CTA se repite 2-3 veces con ángulos distintos: el lógico (recap de valor), el emocional (la escena de la vida con el problema resuelto), el de urgencia (qué pierde si lo deja para después). Después del último CTA, cortá. Todo lo que sigue diluye.`,
+El CTA se repite 2-3 veces con ángulos distintos: el lógico (recap de valor), el emocional (la escena de la vida con el problema resuelto), el de urgencia (qué pierde si lo deja para después). Después del último CTA, corta. Todo lo que sigue diluye.`,
   },
   // ────────────────────────────────────────────────────────────────────────────
   {
@@ -129,7 +129,7 @@ El avatar tiene que saber en 3 segundos que esto es PARA ÉL. Las formas elegant
 
 ### 2. Promesa grande + intriga (el "cómo raro")
 
-Una promesa específica y dimensionada + un mecanismo que suene NUEVO: "cómo conseguir 15 reuniones de venta por mes sin publicar contenido todos los días — con un sistema que funciona mientras dormís". La intriga está en el "sin X" (elimina el sacrificio que el avatar odia) y en el mecanismo con nombre. Si la promesa se puede decir de cualquier competidor, no es promesa, es ruido.
+Una promesa específica y dimensionada + un mecanismo que suene NUEVO: "cómo conseguir 15 reuniones de venta por mes sin publicar contenido todos los días — con un sistema que funciona mientras duermes". La intriga está en el "sin X" (elimina el sacrificio que el avatar odia) y en el mecanismo con nombre. Si la promesa se puede decir de cualquier competidor, no es promesa, es ruido.
 
 ### 3. Prueba apilada
 
@@ -137,7 +137,7 @@ Orden de poder: **demostración en vivo > resultados con números y nombres > te
 
 ### 4. Oferta imposible de ignorar + CTA
 
-La oferta se presenta como decisión asimétrica: todo el valor del stack + garantía que absorbe el riesgo vs. seguir exactamente igual. El CTA dice QUÉ hacer, QUÉ pasa inmediatamente después ("agendás, te llega un video de 5 minutos, llegás a la llamada con tu diagnóstico hecho") y POR QUÉ ahora. La fricción desconocida mata más ventas que el precio: describir el paso siguiente sube conversión.
+La oferta se presenta como decisión asimétrica: todo el valor del stack + garantía que absorbe el riesgo vs. seguir exactamente igual. El CTA dice QUÉ hacer, QUÉ pasa inmediatamente después ("agendas, te llega un video de 5 minutos, llegas a la llamada con tu diagnóstico hecho") y POR QUÉ ahora. La fricción desconocida mata más ventas que el precio: describir el paso siguiente sube conversión.
 
 ## Principio de valor por adelantado
 
@@ -151,14 +151,14 @@ Antes de pedir, el guion tiene que DAR algo: un reencuadre que el avatar no ten�
     topics: ["storytelling", "creencias"],
     text: `## La unidad mínima de venta: Gancho → Historia → Oferta
 
-Todo mensaje de venta, de un reel de 30 segundos a un VSL de 40 minutos, tiene los mismos tres órganos: el **gancho** captura atención, la **historia** cambia una creencia, la **oferta** canaliza la creencia nueva hacia una acción. Cuando un guion no convierte, diagnosticá en ese orden: ¿nadie lo mira? → gancho. ¿Lo miran y no desean? → historia. ¿Desean y no compran? → oferta.
+Todo mensaje de venta, de un reel de 30 segundos a un VSL de 40 minutos, tiene los mismos tres órganos: el **gancho** captura atención, la **historia** cambia una creencia, la **oferta** canaliza la creencia nueva hacia una acción. Cuando un guion no convierte, diagnostica en ese orden: ¿nadie lo mira? → gancho. ¿Lo miran y no desean? → historia. ¿Desean y no compran? → oferta.
 
-## Vendés creencias, no productos
+## Vendes creencias, no productos
 
-El avatar no compra el producto: compra la creencia de que ESTE vehículo lo lleva a SU resultado. Antes de escribir, definí:
+El avatar no compra el producto: compra la creencia de que ESTE vehículo lo lleva a SU resultado. Antes de escribir, define:
 
 - **La falsa creencia dominante**: la idea que hoy le impide comprar ("necesito más seguidores para vender", "sin inglés no puedo cobrar en dólares").
-- **La creencia nueva**: la que hace la compra inevitable ("con 1.000 seguidores correctos facturás más que con 100.000 curiosos").
+- **La creencia nueva**: la que hace la compra inevitable ("con 1.000 seguidores correctos facturas más que con 100.000 curiosos").
 
 El guion existe para derribar la primera e instalar la segunda. El producto aparece recién cuando la creencia nueva ya está instalada.
 
@@ -197,10 +197,10 @@ Un VSL largo derriba las tres, cada una con su mini-historia. Un reel derriba UN
 6. **Loops abiertos que se cierran.** Prometer algo para más adelante sostiene la atención — pero todo loop abierto SE CIERRA dentro del guion.
 7. **El CTA se prepara antes de pedirse.** Primero la escena del futuro con el problema resuelto, después el pedido. En VSL de 5+ minutos el CTA se repite 2-3 veces con ángulo distinto (lógico, emocional, urgencia).
 8. **Objeciones dentro de la narrativa.** Se responden con historia, prueba o garantía integradas — nunca como lista de FAQ dentro del guion locutado.
-9. **Beneficios como escenas, no como lista.** No "incluye 12 módulos": "el martes a la noche abrís el módulo 2 y armás tu primera campaña mientras cenás".
+9. **Beneficios como escenas, no como lista.** No "incluye 12 módulos": "el martes a la noche abres el módulo 2 y armas tu primera campaña mientras cenas".
 10. **El villano correcto.** El enemigo del guion nunca es el avatar (no "no te esforzaste"): es el método viejo, la industria que le mintió, la información incompleta.
 11. **Duración disciplinada.** ~150 palabras por minuto en español. Respetar la duración del brief ±10%. Si sobra contenido, cortar argumentos débiles enteros — no comprimir todos un poco.
-12. **Prohibidas las frases de relleno de IA:** "en el mundo actual", "en la era digital", "no es solo X, es Y", "descubrí el poder de", "llevá tu negocio al siguiente nivel", "la solución definitiva". Si una frase podría abrir cualquier video de cualquier nicho, se borra.
+12. **Prohibidas las frases de relleno de IA:** "en el mundo actual", "en la era digital", "no es solo X, es Y", "descubrí el poder de", "lleva tu negocio al siguiente nivel", "la solución definitiva". Si una frase podría abrir cualquier video de cualquier nicho, se borra.
 13. **El final corta seco.** Último CTA → fin. Sin resúmenes, sin despedidas largas, sin "gracias por ver".`,
   },
   // ────────────────────────────────────────────────────────────────────────────
@@ -228,8 +228,8 @@ Un VSL largo derriba las tres, cada una con su mini-historia. Un reel derriba UN
 
 ## CTA nativo por plataforma
 
-- **Awareness/orgánico:** CTA de interacción ("guardalo para cuando…", "comentá X y te mando…", "seguime que mañana muestro…"). El CTA de venta dura agresivo mata el alcance orgánico.
-- **Ads/retargeting:** CTA directo sin vergüenza ("tocá el botón y…"), oferta clara, urgencia real.
+- **Awareness/orgánico:** CTA de interacción ("guardalo para cuando…", "comenta X y te mando…", "seguime que mañana muestro…"). El CTA de venta dura agresivo mata el alcance orgánico.
+- **Ads/retargeting:** CTA directo sin vergüenza ("toca el botón y…"), oferta clara, urgencia real.
 - Duraciones típicas por objetivo: awareness 15-30s, educación/consideración 30-60s, conversión directa 20-45s.
 
 ## Formato de guion de reel
@@ -250,7 +250,7 @@ Por beat: rango de segundos + locución exacta + [VISUAL: …] + [TEXTO EN PANTA
 4. **prueba social** — Abrir con el resultado de un tercero verificable. Plantilla: "[Persona como el avatar] logró [resultado específico] en [plazo] — así". Ej.: "Una nutricionista de Montevideo llenó su agenda de octubre en 12 días". Usar con: avatar escéptico que ya conoce las promesas del nicho.
 5. **pregunta** — Pregunta que el avatar no puede no responderse. Plantilla: "¿Sabes cuánto te cuesta cada mes [problema oculto]?". Ej.: "¿Cuántos clientes perdiste este mes por responder tarde?". Usar con: problemas latentes o invisibles que hay que activar. La pregunta retórica floja ("¿quieres ganar más?") está prohibida.
 6. **historia** — Entrar en el medio de una escena concreta. Plantilla: "[Momento específico], y en ese momento [giro]". Ej.: "Eran las 2 de la mañana y estaba borrando la página de mi negocio". Usar con: tráfico frío, nichos de transformación personal, VSL largo. El mejor gancho para bajar defensas: nadie se resiste a una historia empezada.
-7. **estadística** — Un número que reencuadra el problema. Plantilla: "El [%] de [grupo] [dato contraintuitivo] — y la razón no es la que pensás". Ej.: "9 de cada 10 locales gastronómicos no llegan al año 3". Usar con: nichos B2B, audiencias analíticas, o para dar autoridad instantánea. El dato tiene que ser específico y defendible.
+7. **estadística** — Un número que reencuadra el problema. Plantilla: "El [%] de [grupo] [dato contraintuitivo] — y la razón no es la que piensas". Ej.: "9 de cada 10 locales gastronómicos no llegan al año 3". Usar con: nichos B2B, audiencias analíticas, o para dar autoridad instantánea. El dato tiene que ser específico y defendible.
 8. **urgencia** — La ventana de acción se cierra. Plantilla: "Si [contexto temporal real], tienes [plazo] para [acción] antes de que [consecuencia]". Ej.: "Si vendes por Instagram, tienes hasta marzo antes de que este cambio te saque del feed". Usar con: eventos reales (cambios de plataforma, temporada, regulación). Urgencia inventada = confianza destruida.
 9. **identificación** — Espejo de identidad: el avatar se ve descripto. Plantilla: "Los que [hábito/situación del avatar] sabemos que [verdad compartida]". Ej.: "Los que trabajamos solos sabemos que el problema no es la motivación: es que nadie te exige". Usar con: comunidades con identidad fuerte (freelancers, madres, dueños de X). Genera el "me está hablando a mí" más rápido que el dolor.
 10. **promesa directa** — El resultado, el plazo y el método en una frase. Plantilla: "[Resultado] en [plazo] con [mecanismo], sin [sacrificio odiado]". Ej.: "Tu agenda llena en 30 días con un solo video bien distribuido, sin bailar en TikTok". Usar con: retargeting, avatar caliente que ya te conoce, ofertas fuertes. En tráfico frío compite con todos los que prometen lo mismo.
@@ -311,8 +311,8 @@ Regla: **cuanto menos consciente, más largo el camino narrativo y más indirect
 
 ## Eje 2 — Sofisticación del mercado (¿cuántas promesas parecidas ya escuchó?)
 
-- **Etapa 1-2 (mercado nuevo):** la promesa directa alcanza ("perdé peso"). Casi no existe hoy.
-- **Etapa 3 (promesas quemadas):** se compite con MECANISMO: "perdé peso CON [método distinto]". El "cómo nuevo" es el mensaje.
+- **Etapa 1-2 (mercado nuevo):** la promesa directa alcanza ("pierde peso"). Casi no existe hoy.
+- **Etapa 3 (promesas quemadas):** se compite con MECANISMO: "pierde peso CON [método distinto]". El "cómo nuevo" es el mensaje.
 - **Etapa 4 (mecanismos quemados):** mecanismo mejorado y específico: "la versión 2.0 de [mecanismo], que corrige por qué el original fallaba".
 - **Etapa 5 (saturación total):** ya no se compite por promesa: se compite por IDENTIFICACIÓN e identidad ("este es el sistema de los que odian X") o por experiencia nueva. El gancho contrarian y el de identificación brillan acá.
 
@@ -352,10 +352,10 @@ Regla: **cuanto menos consciente, más largo el camino narrativo y más indirect
 
 - **0:00–0:04 | Gancho de problema + interrupción visual:** el problema mostrado (no contado) en la escena más reconocible: la crema que no absorbe, la espalda que duele al levantarse. Locución: dolor o contrarian ("deja de comprar X: el problema nunca fue Y").
 - **0:04–0:15 | Agitación con identificación:** 2-3 escenas rápidas de los intentos fallidos típicos ("probaste A, B, y lo de siempre: nada"). El espectador tiene que tildar mentalmente "sí, sí, sí". Cada solución fallida nombrada = un competidor descartado.
-- **0:15–0:40 | Héroe + mecanismo demostrado:** entra el producto EN USO (nunca packshot estático primero). El mecanismo en una frase simple + demo visual del diferencial ("mirá lo que pasa cuando…"). Si hay un momento "wow" visual, va acá y se repite variado 2 veces.
+- **0:15–0:40 | Héroe + mecanismo demostrado:** entra el producto EN USO (nunca packshot estático primero). El mecanismo en una frase simple + demo visual del diferencial ("mira lo que pasa cuando…"). Si hay un momento "wow" visual, va acá y se repite variado 2 veces.
 - **0:40–0:55 | Ráfaga de prueba social:** 2-3 testimonios de una frase (texto en pantalla + cara real), un número agregado ("+12.000 clientas"), estrellas/reviews. Velocidad > profundidad: es una ráfaga, no una sección.
 - **0:55–1:15 | Oferta + reversión de riesgo:** el deal concreto (descuento/bundle/envío) con razón ("por lanzamiento de temporada"), garantía simple en lenguaje simple ("lo usás 30 días; si no te convence, te devolvemos todo").
-- **1:15–1:30 | CTA doble:** CTA directo ("tocá el botón y elegí tu color") + urgencia real (stock, fin de promo) + última escena del resultado (la vida CON el producto). Cierre en el beneficio, no en el logo.
+- **1:15–1:30 | CTA doble:** CTA directo ("toca el botón y elige tu color") + urgencia real (stock, fin de promo) + última escena del resultado (la vida CON el producto). Cierre en el beneficio, no en el logo.
 
 **Reglas del formato:** cambio visual cada 2-3s durante TODO el video; subtítulos siempre; el guion debe funcionar sin audio; primera mención de marca recién en el beat del héroe (0:15+) — antes de eso, el video es del problema, no de la marca. Error común: abrir con el producto y la marca — regala el skip.`,
   },
@@ -371,7 +371,7 @@ Regla: **cuanto menos consciente, más largo el camino narrativo y más indirect
 - **0:02–0:06 | Sub-gancho de retención:** la promesa de lo que viene si se queda ("te muestro las 3 en 30 segundos, la última es la que nadie hace"). El "índice comprimido" + loop del ítem final es el patrón de retención más robusto del formato.
 - **0:06–0:30 | Entrega en bloques de 6-8 segundos:** cada bloque = un paso/razón/error con su propio micro-gancho numerado ("La primera:…", "Ahora la que importa:…"). VISUAL cambia por bloque; TEXTO EN PANTALLA lleva el número y la keyword. El bloque más fuerte SIEMPRE al final (cumple el loop del sub-gancho).
 - **0:30–0:36 | Puente de valor a oferta:** la línea que convierte el tip en insuficiencia productiva: "esto te ordena, pero lo que mueve la aguja es [lo que está del otro lado del click]". Sin este puente, el reel educa y no convierte; con puente burdo, huele a venta desde el segundo 1. La forma: el contenido resuelve el QUÉ, el destino resuelve el CÓMO.
-- **0:36–0:42 | CTA específico + loop:** una sola acción, dicha en forma nativa ("comentá GUÍA y te la mando", "el link está en la bio, entrá que…") + última frase que reconecta con el gancho para cerrar el loop de re-reproducción.
+- **0:36–0:42 | CTA específico + loop:** una sola acción, dicha en forma nativa ("comenta GUÍA y te la mando", "el link está en la bio, entra que…") + última frase que reconecta con el gancho para cerrar el loop de re-reproducción.
 
 **Métricas mentales al escribir:** si el gancho no retiene, nada más importa (el 60-70% del resultado es el primer bloque); cada bloque del desarrollo debe sobrevivir la pregunta "¿alguien se va acá?"; el CTA por comentario (palabra clave) rinde mejor en orgánico, el de link directo en ads. Error común: gastar los primeros 5 segundos en contexto ("hola chicos, hoy les traigo") — el reel muerto más común del mundo.`,
   },
@@ -424,7 +424,7 @@ const REEL_FRAMEWORKS: Array<{
     slug: "reel-pov",
     description:
       "Escena en segunda persona con texto narrador (15-40s). Máxima identificación con mínima locución; ideal para awareness y nichos con identidad fuerte.",
-    structureMd: `1. **Situación reconocible (0:00–0:03):** "POV: son las 11 de la noche y seguís contestando mensajes de clientes". El TEXTO EN PANTALLA es el narrador principal.
+    structureMd: `1. **Situación reconocible (0:00–0:03):** "POV: son las 11 de la noche y sigues contestando mensajes de clientes". El TEXTO EN PANTALLA es el narrador principal.
 2. **Desarrollo de la escena (0:03–0:20):** la secuencia emocional que el avatar vive (frustración → deseo), contada en 2-4 pantallas de texto sobre b-roll/actuación mínima.
 3. **El giro (0:20–0:30):** aparece la alternativa/el después ("hasta que automatizaste las respuestas…").
 4. **Cierre + CTA liviano (0:30–0:40):** identidad compartida ("los que ya lo hicimos no volvemos atrás") + seguir/comentar/link.`,
@@ -437,7 +437,7 @@ const REEL_FRAMEWORKS: Array<{
     structureMd: `1. **Promesa directa (0:00–0:03):** resultado + plazo + sin el sacrificio odiado ("[Resultado] en [plazo], sin [X]").
 2. **Prueba en una frase (0:03–0:08):** un número, un testimonio de una línea o una demo ultrarrápida.
 3. **La oferta concreta (0:08–0:18):** qué recibe + el deal (descuento/bono/garantía) + razón de la urgencia real.
-4. **CTA doble (0:18–0:25):** la acción exacta ("tocá el botón / comentá X") repetida con la urgencia. Cierre en el beneficio, no en el logo.`,
+4. **CTA doble (0:18–0:25):** la acción exacta ("toca el botón / comenta X") repetida con la urgencia. Cierre en el beneficio, no en el logo.`,
   },
 ];
 
@@ -466,7 +466,7 @@ const TEMPLATES: Array<{
     contentMd: `# VSL — {{PRODUCTO}} para {{AUDIENCIA}}
 
 ## Gancho (0:00–0:25)
-> [GUÍA: elegí UN ángulo — dolor, curiosidad o contrarian. Sin saludos, sin logos: la primera frase ya vende la permanencia.]
+> [GUÍA: elige UN ángulo — dolor, curiosidad o contrarian. Sin saludos, sin logos: la primera frase ya vende la permanencia.]
 
 Si {{DOLOR}}, lo que vas a escuchar en los próximos minutos te va a cambiar la forma de verlo.
 
@@ -496,18 +496,18 @@ Ahí nació {{NOMBRE_DEL_METODO}}: {{EXPLICACION_SIMPLE_DEL_MECANISMO}}.
 ## La oferta (3:10–4:15)
 > [GUÍA: stack completo → ancla de precio → precio real → garantía inmediatamente después. Sin disculpas por el precio.]
 
-Esto es todo lo que te llevás con {{PRODUCTO}}: {{OFERTA}}.
+Esto es todo lo que te llevas con {{PRODUCTO}}: {{OFERTA}}.
 
 > [VISUAL: stack de la oferta en pantalla, componente por componente]
 
-Hacerlo por tu cuenta te costaría {{ANCLA_DE_PRECIO}}. Hoy accedés por {{PRECIO}}.
+Hacerlo por tu cuenta te costaría {{ANCLA_DE_PRECIO}}. Hoy accedes por {{PRECIO}}.
 
 Y lo haces sin riesgo: {{GARANTIA}}.
 
 ## Cierre y CTA (4:15–5:00)
-> [GUÍA: CTA doble — lógico primero, emocional después. Describí el paso siguiente exacto. Cortá seco tras el último CTA.]
+> [GUÍA: CTA doble — lógico primero, emocional después. Describe el paso siguiente exacto. Corta seco tras el último CTA.]
 
-{{CTA}}. Hacés clic, {{QUE_PASA_DESPUES}}, y empezás hoy mismo.
+{{CTA}}. Haces clic, {{QUE_PASA_DESPUES}}, y empiezas hoy mismo.
 
 Puedes cerrar este video y seguir como hasta ahora — o puedes ser la persona que en {{PLAZO}} mira para atrás y agradece haber empezado hoy. {{CTA}}.`,
   },
@@ -522,21 +522,21 @@ Puedes cerrar este video y seguir como hasta ahora — o puedes ser la persona q
     contentMd: `# Masterclass — {{PRODUCTO}}
 
 ## Gancho + contrato (0:00–1:00)
-> [GUÍA: promesa dimensionada + qué se lleva por quedarse + descalificación honesta ("esto NO es para..."). El primer loop: prometé revelar el método completo hacia el final.]
+> [GUÍA: promesa dimensionada + qué se lleva por quedarse + descalificación honesta ("esto NO es para..."). El primer loop: promete revelar el método completo hacia el final.]
 
 En los próximos minutos te voy a mostrar cómo {{PROMESA_PRINCIPAL}} — aunque {{OBJECION_PRINCIPAL}}.
 
-Esto no es para cualquiera: si buscás {{ATAJO_FALSO}}, cerrá el video. Pero si {{IDENTIDAD_DEL_AVATAR}}, esto te sirve.
+Esto no es para cualquiera: si buscas {{ATAJO_FALSO}}, cierra el video. Pero si {{IDENTIDAD_DEL_AVATAR}}, esto te sirve.
 
 ## La historia (1:00–4:00)
-> [GUÍA: puente de epifanía completo — mismo pozo que el avatar, intentos fallidos, el muro, la epifanía concreta, el plan. Incluí el conflicto interno: sin duda no hay historia creíble.]
+> [GUÍA: puente de epifanía completo — mismo pozo que el avatar, intentos fallidos, el muro, la epifanía concreta, el plan. Incluye el conflicto interno: sin duda no hay historia creíble.]
 
 {{HISTORIA_COMPLETA_DE_TRANSFORMACION}}
 
 ## Creencia falsa #1: el vehículo (4:00–7:00)
-> [GUÍA: "para lograr X necesitás Y" — la creencia que frena la compra. Validala, quebrala con datos/historia, reemplazala. Cerrá con prueba espejo.]
+> [GUÍA: "para lograr X necesitas Y" — la creencia que frena la compra. Válidala, quiébrala con datos/historia, reemplázala. Cierra con prueba espejo.]
 
-Seguro pensás que {{CREENCIA_FALSA_1}}. Es lógico — {{VALIDACION}}. Pero mirá esto: {{QUIEBRE_CON_EVIDENCIA}}.
+Seguro piensas que {{CREENCIA_FALSA_1}}. Es lógico — {{VALIDACION}}. Pero mira esto: {{QUIEBRE_CON_EVIDENCIA}}.
 
 ## Creencia falsa #2: interna (7:00–9:30)
 > [GUÍA: "yo no puedo porque..." — respondela con el testimonio de alguien MENOS preparado que el avatar.]
@@ -579,7 +579,7 @@ Seguro pensás que {{CREENCIA_FALSA_1}}. Es lógico — {{VALIDACION}}. Pero mir
 > [VISUAL: cara a cámara, luz natural, en medio de una acción cotidiana — nunca "acomodándose" para hablar]
 > [TEXTO EN PANTALLA: no puedo creer que ESTO funcionó]
 
-No puedo creer que esto me haya funcionado — y mirá que yo era de las que no creen en nada.
+No puedo creer que esto me haya funcionado — y mira que yo era de las que no creen en nada.
 
 ## El problema (0:03–0:10)
 > [VISUAL: b-roll del problema en la vida real]
@@ -603,7 +603,7 @@ Hasta que encontré {{PRODUCTO}}. Te juro que pensé que era humo… pero lo pro
 > [VISUAL: cara a cámara, tono de amiga]
 > [TEXTO EN PANTALLA: {{CTA}}]
 
-Si estás como yo estaba, {{CTA}}. Después me contás.`,
+Si estás como yo estaba, {{CTA}}. Después me cuentas.`,
   },
   {
     slug: "reel-autoridad-45s",
