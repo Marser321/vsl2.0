@@ -25,6 +25,15 @@ export type CategoriaPatron = (typeof CATEGORIAS_PATRON)[number];
 
 export type Patron = {
   categoria: CategoriaPatron;
+  /**
+   * Etiqueta corta y canónica del patrón ("contraste antes despues").
+   *
+   * Es la clave de agrupamiento. Sin ella la comparación se hace sobre la
+   * redacción libre, y dos modelos que ven el mismo patrón lo escriben tan
+   * distinto ("contradicción de expectativa" vs "afirmación que desafía una
+   * creencia común") que nunca colapsan: todo termina con evidencia 1.
+   */
+  etiqueta?: string;
   /** La regla en sí, redactada como algo accionable. */
   patron: string;
   /** Ejemplo parafraseado — nunca verbatim del guion del cliente. */
@@ -109,7 +118,7 @@ export function consolidarPatrones(patronesPorLote: Patron[][]): PatronConsolida
   patronesPorLote.forEach((patrones, indiceLote) => {
     for (const patron of patrones) {
       if (!patron.patron?.trim()) continue;
-      const clave = `${patron.categoria}::${clavePatron(patron.patron)}`;
+      const clave = `${patron.categoria}::${clavePatron(patron.etiqueta || patron.patron)}`;
       const grupo = grupos.get(clave);
       if (grupo) {
         grupo.lotes.add(indiceLote);
@@ -129,14 +138,22 @@ export function consolidarPatrones(patronesPorLote: Patron[][]): PatronConsolida
 /**
  * Los patrones que respalda más de un lote. Con un solo lote no hay
  * corroboración posible, así que todo pasa.
+ *
+ * `minimoResultados` evita que el filtro vacíe la destilación: el agrupamiento
+ * es léxico, y si los modelos redactaron cada patrón de forma muy distinta
+ * puede no corroborarse nada aunque el material sea bueno. En ese caso caen los
+ * mejores por evidencia y el consenso semántico lo resuelve después.
  */
 export function patronesCorroborados(
   patrones: PatronConsolidado[],
   totalLotes: number,
-  minimo = 2
+  minimo = 2,
+  minimoResultados = 12
 ): PatronConsolidado[] {
   if (totalLotes < 2) return patrones;
-  return patrones.filter((patron) => patron.evidencia >= minimo);
+  const corroborados = patrones.filter((patron) => patron.evidencia >= minimo);
+  if (corroborados.length >= minimoResultados) return corroborados;
+  return patrones.slice(0, Math.max(minimoResultados, corroborados.length));
 }
 
 const TITULOS_CATEGORIA: Record<CategoriaPatron, string> = {

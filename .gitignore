@@ -54,6 +54,12 @@ next-env.d.ts
 vendor/yt-dlp
 vendor/yt-dlp.exe
 
+# material de clientes: guiones, entregables y compilados que se importan al
+# corpus. Nunca se versionan — son confidenciales y viven en la DB, no en git.
+/*.pdf
+/*.docx
+/corpus-manifiesto.json
+
 # Worker Whisper (Python) — runtime local, no versionar
 worker/**/.venv/
 **/__pycache__/

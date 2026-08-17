@@ -125,13 +125,28 @@ describe("patronesCorroborados", () => {
   ]);
 
   it("filtra los que aparecen en un solo lote", () => {
-    const resultado = patronesCorroborados(patrones, 3);
+    const resultado = patronesCorroborados(patrones, 3, 2, 1);
     expect(resultado.map((p) => p.patron)).toEqual(["comun"]);
   });
 
   it("deja pasar todo cuando hubo un solo lote", () => {
     const uno = consolidarPatrones([[patron("ganchos", "unico")]]);
     expect(patronesCorroborados(uno, 1)).toHaveLength(1);
+  });
+
+  it("no vacía el resultado cuando casi nada se corroboró", () => {
+    // Sin la red de seguridad esto devolvería solo "comun" y la destilación
+    // se quedaría con un único patrón pese a tener material suficiente.
+    const resultado = patronesCorroborados(patrones, 3, 2, 12);
+    expect(resultado.length).toBeGreaterThan(1);
+  });
+
+  it("respeta el filtro estricto cuando hay corroborados de sobra", () => {
+    const muchos = consolidarPatrones(
+      Array.from({ length: 3 }, () => Array.from({ length: 15 }, (_, i) => patron("ganchos", `regla ${i}`)))
+    );
+    const resultado = patronesCorroborados(muchos, 3, 2, 12);
+    expect(resultado.every((p) => p.evidencia >= 2)).toBe(true);
   });
 });
 

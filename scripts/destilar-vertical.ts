@@ -40,6 +40,20 @@ import {
  * piso de 60k de contexto; 35k deja lugar de sobra para el prompt y la salida.
  */
 const PRESUPUESTO_LOTE = 35_000;
+/**
+ * Mínimo de lotes cuando el corpus es de piezas cortas.
+ *
+ * La evidencia de un patrón es en cuántos lotes INDEPENDIENTES apareció. Con
+ * cien reels de doscientos tokens el corpus entero entra en un solo lote, y un
+ * solo lote no corrobora nada: todo patrón tendría evidencia 1. Partirlo en
+ * varios grupos hace que la repetición signifique algo.
+ */
+const LOTES_MINIMOS = 6;
+
+/** Presupuesto por lote, achicado si con el tope el corpus daría muy pocos lotes. */
+function presupuestoPorLote(tokensTotales: number): number {
+  return Math.min(PRESUPUESTO_LOTE, Math.ceil(tokensTotales / LOTES_MINIMOS));
+}
 
 const PATRONES_SCHEMA = {
   type: "object",
@@ -51,9 +65,10 @@ const PATRONES_SCHEMA = {
       items: {
         type: "object",
         additionalProperties: false,
-        required: ["categoria", "patron", "ejemplo"],
+        required: ["categoria", "etiqueta", "patron", "ejemplo"],
         properties: {
           categoria: { type: "string", enum: [...CATEGORIAS_PATRON] },
+          etiqueta: { type: "string" },
           patron: { type: "string" },
           ejemplo: { type: "string" },
         },
@@ -107,7 +122,12 @@ async function mapearLote(args: {
       `- objeciones: qué resistencia atacan y con qué argumento.\n` +
       `- beats: la estructura recurrente, beat a beat.\n` +
       `- lexico: palabras y expresiones propias del avatar de este rubro.\n\n` +
-      `Cada patrón debe ser una regla accionable (no una descripción), con un ejemplo parafraseado.\n` +
+      `Cada patrón lleva:\n` +
+      `- etiqueta: nombre canónico de 2 a 4 palabras, en minúsculas, sin artículos ` +
+      `("contraste antes despues", "miedo perder casa", "objecion precio"). Usá el nombre más ` +
+      `estándar posible: la misma técnica tiene que recibir la misma etiqueta aunque el guion la ejecute distinto.\n` +
+      `- patron: la regla accionable (no una descripción).\n` +
+      `- ejemplo: parafraseado.\n` +
       `${INSTRUCCION_ANONIMATO}\n\n${cuerpo}`,
     schema: PATRONES_SCHEMA as unknown as Record<string, unknown>,
     // MAP es trabajo de volumen: un modelo por lote. El consenso se paga en REDUCE.
@@ -146,9 +166,12 @@ async function destilar() {
   }
 
   // Presupuesto: 1 llamada por lote (MAP) + 6 por formato (REDUCE).
-  const lotesPorFormato = formatos.map((formato) =>
-    armarLotes(paraFormato(corpus, formato), (doc) => doc.tokenCount || estimateTokens(doc.extractedText), PRESUPUESTO_LOTE)
-  );
+  const tokensDe = (doc: Document) => doc.tokenCount || estimateTokens(doc.extractedText);
+  const lotesPorFormato = formatos.map((formato) => {
+    const docs = paraFormato(corpus, formato);
+    const total = docs.reduce((suma, doc) => suma + tokensDe(doc), 0);
+    return armarLotes(docs, tokensDe, presupuestoPorLote(total));
+  });
   const llamadasEstimadas = lotesPorFormato.reduce((total, lotes) => total + lotes.length, 0) + formatos.length * 6;
   const cuota = await getOpenRouterQuota();
   console.log(

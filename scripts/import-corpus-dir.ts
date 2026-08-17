@@ -25,6 +25,7 @@ import { getDb } from "../src/db";
 import { documents, type DocumentKind, type ScriptFormat } from "../src/db/schema";
 import { extractText } from "../src/lib/ingest/extract";
 import { clasificar, contarPalabras, huellaContenido } from "../src/lib/ingest/classify";
+import { partirCompilado, tituloDeGuion } from "../src/lib/ingest/split";
 import { saveOriginal, safeFilename } from "../src/lib/ingest/storage";
 import { estimateTokens } from "../src/lib/ai/tokens";
 import { industrySlug } from "../src/lib/industry";
@@ -36,9 +37,21 @@ const MANIFIESTO_DEFAULT = "corpus-manifiesto.json";
 const LOTE_CLASIFICACION = 10;
 /** Cuánto texto de cada documento alcanza para clasificarlo. */
 const MUESTRA_CHARS = 1500;
+/**
+ * Un PDF de texto ronda las decenas de bytes por palabra extraída; uno de
+ * imágenes escaneadas, los miles. Por encima de este umbral lo que se extrajo
+ * son encabezados sueltos y el guion real vive en píxeles: importarlo cargaría
+ * basura al corpus sin que nadie lo note.
+ */
+const BYTES_POR_PALABRA_ESCANEADO = 2000;
 
 type EntradaManifiesto = {
   archivo: string;
+  /**
+   * Número del guion dentro de un compilado (0 = el insignia). Ausente cuando
+   * el archivo es un guion suelto.
+   */
+  guion?: number;
   titulo: string;
   formato: ScriptFormat | null;
   kind: DocumentKind;
@@ -84,6 +97,11 @@ const CLASIFICACION_SCHEMA = {
 function flag(nombre: string): string | null {
   const index = process.argv.indexOf(`--${nombre}`);
   return index !== -1 ? (process.argv[index + 1] ?? null) : null;
+}
+
+/** Identifica una entrada: el archivo, o el archivo y el guion dentro de él. */
+function claveTexto(entrada: Pick<EntradaManifiesto, "archivo" | "guion">): string {
+  return entrada.guion === undefined ? entrada.archivo : `${entrada.archivo}#${entrada.guion}`;
 }
 
 /** Lista recursiva de archivos importables bajo `dir`. */
@@ -136,10 +154,59 @@ async function escanear() {
   for (const archivo of archivos) {
     const buffer = await readFile(join(dir, archivo));
     const { text, warning } = await extractText(buffer, mimePorExtension(archivo), archivo);
+    const tituloArchivo = archivo.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ").trim();
+
+    const palabras = contarPalabras(text);
+    const escaneado = palabras > 0 && buffer.length / palabras > BYTES_POR_PALABRA_ESCANEADO;
+    if (!text || escaneado) {
+      const problema = escaneado
+        ? `Parece escaneado: ${buffer.length} bytes para ${palabras} palabras extraíbles. El texto está en imágenes.`
+        : (warning ?? "No se pudo extraer texto.");
+      entradas.push({
+        archivo,
+        titulo: tituloArchivo,
+        formato: null,
+        kind: "winning_script",
+        industria,
+        motivo: "sin texto",
+        palabras,
+        huella: "",
+        tags: [],
+        problema,
+      });
+      console.log(`  [✗] ${archivo} — ${escaneado ? "escaneado (texto en imágenes)" : "sin texto extraíble"}`);
+      continue;
+    }
+
+    // Un compilado de N guiones se carga como N documentos: uno solo arruina
+    // el armado de lotes de la destilación y no se puede elegir suelto.
+    const partes = partirCompilado(text);
+    if (partes.length >= 2) {
+      for (const parte of partes) {
+        const clasificacion = clasificar(parte.texto);
+        entradas.push({
+          archivo,
+          guion: parte.numero,
+          titulo: tituloDeGuion(parte, tituloArchivo),
+          formato: clasificacion.format,
+          kind: clasificacion.kind,
+          industria,
+          motivo: clasificacion.motivo,
+          palabras: contarPalabras(parte.texto),
+          huella: huellaContenido(parte.texto),
+          tags: parte.estilo ? [`estilo:${parte.estilo.toLowerCase()}`] : [],
+        });
+        textos.set(`${archivo}#${parte.numero}`, parte.texto);
+      }
+      const formatos = [...new Set(partes.map((p) => clasificar(p.texto).format ?? "?"))];
+      console.log(`  [${formatos.join("/")}] ${archivo} — compilado partido en ${partes.length} guiones`);
+      continue;
+    }
+
     const clasificacion = clasificar(text);
-    const entrada: EntradaManifiesto = {
+    entradas.push({
       archivo,
-      titulo: archivo.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ").trim(),
+      titulo: tituloArchivo,
       formato: clasificacion.format,
       kind: clasificacion.kind,
       industria,
@@ -147,12 +214,9 @@ async function escanear() {
       palabras: contarPalabras(text),
       huella: huellaContenido(text),
       tags: [],
-    };
-    if (!text) entrada.problema = warning ?? "No se pudo extraer texto.";
-    entradas.push(entrada);
+    });
     textos.set(archivo, text);
-    const estado = entrada.problema ? "✗" : entrada.formato ?? "?";
-    console.log(`  [${estado}] ${archivo} — ${entrada.motivo}`);
+    console.log(`  [${clasificacion.format ?? "?"}] ${archivo} — ${clasificacion.motivo}`);
   }
 
   // Pasada con modelo solo para lo que la heurística no pudo resolver.
@@ -162,7 +226,7 @@ async function escanear() {
     for (let i = 0; i < dudosos.length; i += LOTE_CLASIFICACION) {
       const lote = dudosos.slice(i, i + LOTE_CLASIFICACION);
       const muestras = lote
-        .map((e) => `### ${e.archivo}\n${(textos.get(e.archivo) ?? "").slice(0, MUESTRA_CHARS)}`)
+        .map((e) => `### ${claveTexto(e)}\n${(textos.get(claveTexto(e)) ?? "").slice(0, MUESTRA_CHARS)}`)
         .join("\n\n");
       try {
         const resultado = await generateJSON<{
@@ -179,7 +243,7 @@ async function escanear() {
           ensemble: false,
         });
         for (const doc of resultado.documentos) {
-          const entrada = entradas.find((e) => e.archivo === doc.archivo);
+          const entrada = entradas.find((e) => claveTexto(e) === doc.archivo);
           if (!entrada) continue;
           entrada.formato = doc.formato;
           entrada.motivo = `clasificado por modelo: ${doc.tema}`;
@@ -232,6 +296,8 @@ async function aplicar(rutaManifiesto: string) {
   let insertados = 0;
   let duplicados = 0;
   let fallidos = 0;
+  // Un compilado se extrae una sola vez aunque aporte cincuenta entradas.
+  const cacheTextos = new Map<string, string>();
 
   for (const entrada of utilizables) {
     if (yaCargadas.has(entrada.huella)) {
@@ -249,7 +315,23 @@ async function aplicar(rutaManifiesto: string) {
 
     try {
       const buffer = await readFile(join(manifiesto.dir, entrada.archivo));
-      const { text } = await extractText(buffer, mimePorExtension(entrada.archivo), entrada.archivo);
+      const textoArchivo = cacheTextos.get(entrada.archivo)
+        ?? (await extractText(buffer, mimePorExtension(entrada.archivo), entrada.archivo)).text;
+      cacheTextos.set(entrada.archivo, textoArchivo);
+
+      // En un compilado, cada entrada es un guion: hay que reencontrarlo por
+      // número, no cargar el archivo entero.
+      let text = textoArchivo;
+      if (entrada.guion !== undefined) {
+        const parte = partirCompilado(textoArchivo).find((p) => p.numero === entrada.guion);
+        if (!parte) {
+          console.warn(`  ✗ ${entrada.titulo}: no se reencontró el guion ${entrada.guion} en ${entrada.archivo}`);
+          fallidos++;
+          continue;
+        }
+        text = parte.texto;
+      }
+
       if (!text) {
         console.warn(`  ✗ ${entrada.archivo}: sin texto extraíble`);
         fallidos++;
@@ -271,7 +353,11 @@ async function aplicar(rutaManifiesto: string) {
           filename,
           mimeType: mimePorExtension(entrada.archivo),
           sourcePlatform: "upload",
-          sourceMetadata: { rutaOriginal: entrada.archivo, lote: manifiesto.lote },
+          sourceMetadata: {
+            rutaOriginal: entrada.archivo,
+            lote: manifiesto.lote,
+            ...(entrada.guion !== undefined ? { guionEnCompilado: entrada.guion } : {}),
+          },
           extractedText: text,
           tokenCount: estimateTokens(text),
           language: "es",
@@ -280,7 +366,10 @@ async function aplicar(rutaManifiesto: string) {
         })
         .returning();
 
-      if (!sinSubida) {
+      // El original de un compilado es el mismo PDF para todos sus guiones:
+      // subirlo una vez por guion multiplicaría el bucket sin ganar nada.
+      // Queda referenciado en `sourceMetadata.rutaOriginal`.
+      if (!sinSubida && entrada.guion === undefined) {
         const filePath = await saveOriginal({
           documentId: row.id,
           buffer,

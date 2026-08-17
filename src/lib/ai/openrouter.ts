@@ -9,6 +9,8 @@ const DAILY_LIMIT = 50;
 const ENSEMBLE_SIZE = 5;
 export const OPENROUTER_CALLS_PER_RUN = ENSEMBLE_SIZE + 1;
 const MODEL_CACHE_MS = 10 * 60 * 1000;
+/** Modelos a probar en cascada cuando se pide salida estructurada sin panel. */
+const SOLO_MODEL_ATTEMPTS = 3;
 
 const ROLES = [
   "Arquitecto senior de respuesta directa: priorizá estructura persuasiva, mecanismo y progresión emocional.",
@@ -286,7 +288,11 @@ export async function generateOpenRouterJSON<T>(args: {
   ensemble?: boolean;
 }): Promise<T> {
   const ensemble = args.ensemble ?? true;
-  const budget = ensemble ? OPENROUTER_CALLS_PER_RUN : 1;
+  // Sin panel se prueban modelos en cascada: el pool de modelos gratuitos es
+  // heterogéneo y varios ignoran el json_schema. El panel lo disimula porque le
+  // basta que uno de los cinco responda; en modo solo hay que reintentar con
+  // otro modelo o el primero que falle se lleva puesta toda la corrida.
+  const budget = ensemble ? OPENROUTER_CALLS_PER_RUN : SOLO_MODEL_ATTEMPTS;
   await reserveEnsembleCalls(budget);
   let attemptedCalls = 0;
   try {
@@ -296,9 +302,33 @@ export async function generateOpenRouterJSON<T>(args: {
     type: "json_schema" as const,
     json_schema: { name: "resultado", strict: true, schema: args.schema },
   };
-  const roles = ensemble ? ROLES : ROLES.slice(0, 1);
+
+  if (!ensemble) {
+    let ultimoError: unknown = new Error("Ningún modelo produjo JSON válido.");
+    for (let i = 0; i < Math.min(SOLO_MODEL_ATTEMPTS, models.length); i += 1) {
+      attemptedCalls += 1;
+      try {
+        const result = await executeWithRetry((api) => api.chat.completions.create({
+          model: models[i],
+          max_tokens: args.maxTokens ?? 8192,
+          response_format: responseFormat,
+          messages: [
+            { role: "system", content: `${baseSystem}\n\n# Rol\n${ROLES[0]}` },
+            { role: "user", content: args.userMessage },
+          ],
+        }));
+        const text = result.choices[0]?.message?.content;
+        if (!text) throw new Error("Respuesta estructurada vacía.");
+        return JSON.parse(text) as T;
+      } catch (error) {
+        ultimoError = error;
+      }
+    }
+    throw ultimoError;
+  }
+
   const attempts = await Promise.allSettled(
-    roles.map(async (role, index) => {
+    ROLES.map(async (role, index) => {
       attemptedCalls += 1;
       const result = await executeWithRetry((api) => api.chat.completions.create({
         model: models[index],
