@@ -133,7 +133,7 @@ Una promesa específica y dimensionada + un mecanismo que suene NUEVO: "cómo co
 
 ### 3. Prueba apilada
 
-Orden de poder: **demostración en vivo > resultados con números y nombres > testimonios en video > testimonios en texto > lógica del mecanismo > autoridad/credenciales**. Usá al menos 3 capas. La prueba no es una sección: se riega por todo el guion, una capa cada 60-90 segundos. Regla de especificidad: "Mariana pasó de 2 a 11 clientes en 90 días" > "cientos de alumnos lograron resultados".
+Orden de poder: **demostración en vivo > resultados con números y nombres > testimonios en video > testimonios en texto > lógica del mecanismo > autoridad/credenciales**. Usa al menos 3 capas. La prueba no es una sección: se riega por todo el guion, una capa cada 60-90 segundos. Regla de especificidad: "Mariana pasó de 2 a 11 clientes en 90 días" > "cientos de alumnos lograron resultados".
 
 ### 4. Oferta imposible de ignorar + CTA
 
