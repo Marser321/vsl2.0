@@ -41,10 +41,10 @@ El valor percibido de cualquier oferta se calcula así:
 
 Todo guion de venta trabaja las 4 variables:
 
-1. **Resultado soñado (subir):** no describas el producto, describí el estado final en escenas concretas de la vida del avatar. No "un curso de inglés" sino "responder ese mail de la empresa americana sin pasarlo por el traductor".
+1. **Resultado soñado (subir):** no describas el producto, describe el estado final en escenas concretas de la vida del avatar. No "un curso de inglés" sino "responder ese mail de la empresa americana sin pasarlo por el traductor".
 2. **Probabilidad percibida (subir):** prueba, mecanismo creíble, testimonios de gente PARECIDA al avatar, garantía. La frase interna que hay que producir: "esto le funcionó a alguien como yo, me puede funcionar a mí".
-3. **Tiempo hasta el resultado (bajar):** mostrá el primer resultado visible lo antes posible ("tu primer X en 7 días"), aunque el resultado completo tarde. La gente compra velocidad hacia la primera señal de progreso.
-4. **Esfuerzo y sacrificio (bajar):** "hecho para vos" > "hecho con vos" > "hacelo vos". Cada componente que reduce trabajo del cliente (plantillas, acompañamiento, automatización) vale más que contenido adicional.
+3. **Tiempo hasta el resultado (bajar):** muestra el primer resultado visible lo antes posible ("tu primer X en 7 días"), aunque el resultado completo tarde. La gente compra velocidad hacia la primera señal de progreso.
+4. **Esfuerzo y sacrificio (bajar):** "hecho para ti" > "hecho contigo" > "hazlo tú". Cada componente que reduce trabajo del cliente (plantillas, acompañamiento, automatización) vale más que contenido adicional.
 
 Regla: los amateurs solo inflan el numerador (prometen más). Los profesionales atacan el denominador (más rápido, más fácil) porque ahí vive la diferenciación creíble.
 
@@ -83,11 +83,11 @@ Cada frase tiene UN trabajo: lograr que se escuche la siguiente. Un VSL no es un
 ## Apertura
 
 - Prohibido: logos, presentaciones ("hola, soy…"), "en este video vas a ver…", contexto previo.
-- La primera frase ES el gancho: una promesa específica, una afirmación contraintuitiva o una escena de dolor reconocible. La segunda frase intensifica la primera. Recién hacia el minuto 1-2 podés presentarte, y solo con la credencial mínima que el avatar necesita.
+- La primera frase ES el gancho: una promesa específica, una afirmación contraintuitiva o una escena de dolor reconocible. La segunda frase intensifica la primera. Recién hacia el minuto 1-2 puedes presentarte, y solo con la credencial mínima que el avatar necesita.
 
 ## Micro-compromisos (escalera de síes)
 
-Encadenà afirmaciones que el avatar YA cree ("si tenés un negocio local, dependés de que te recomienden… y las recomendaciones no se pueden controlar…") antes de introducir la idea nueva. Cada "sí" mental baja la resistencia al siguiente. La venta grande se construye con acuerdos chicos.
+Encadena afirmaciones que el avatar YA cree ("si tienes un negocio local, dependes de que te recomienden… y las recomendaciones no se pueden controlar…") antes de introducir la idea nueva. Cada "sí" mental baja la resistencia al siguiente. La venta grande se construye con acuerdos chicos.
 
 ## Loops abiertos
 
@@ -125,7 +125,7 @@ Estructura de 4 partes, en este orden exacto:
 
 ### 1. Llamar al avatar (sin nombrarlo burdo)
 
-El avatar tiene que saber en 3 segundos que esto es PARA ÉL. Las formas elegantes: abrir con su dolor exacto en sus palabras ("si cada fin de mes mirás la facturación y no sabés de dónde va a salir el próximo cliente…"), con su identidad ("los que vendemos servicios sabemos que…") o con su situación ("tenés un local, hacés buen trabajo, y aun así el de la otra cuadra está lleno"). La forma burda ("¡Atención dueños de negocios!") solo para reels de respuesta directa donde la velocidad importa más que la elegancia.
+El avatar tiene que saber en 3 segundos que esto es PARA ÉL. Las formas elegantes: abrir con su dolor exacto en sus palabras ("si cada fin de mes miras la facturación y no sabes de dónde va a salir el próximo cliente…"), con su identidad ("los que vendemos servicios sabemos que…") o con su situación ("tienes un local, haces buen trabajo, y aun así el de la otra cuadra está lleno"). La forma burda ("¡Atención dueños de negocios!") solo para reels de respuesta directa donde la velocidad importa más que la elegancia.
 
 ### 2. Promesa grande + intriga (el "cómo raro")
 
@@ -245,13 +245,13 @@ Por beat: rango de segundos + locución exacta + [VISUAL: …] + [TEXTO EN PANTA
     text: `Los 10 ángulos de gancho de la agencia (usar estos nombres exactos). Para cada uno: plantilla, ejemplo genérico y cuándo conviene.
 
 1. **curiosidad** — Abrir un vacío de información que duele no cerrar. Plantilla: "El [elemento inesperado] que [resultado deseado] — y que casi nadie en [nicho] conoce". Ej.: "La pregunta de 10 segundos que me ahorró $40.000 en publicidad". Usar con: audiencias frías o saturadas de promesas directas. Riesgo: si el payoff no está a la altura, se percibe clickbait.
-2. **dolor** — Nombrar el dolor exacto en las palabras del avatar. Plantilla: "Si [situación dolorosa específica], esto es para vos". Ej.: "Si publicás todos los días y las ventas siguen igual, escuchá esto". Usar con: avatar consciente del problema. El dolor específico filtra mejor que la promesa amplia.
-3. **contrarian** — Contradecir una creencia establecida del nicho. Plantilla: "[Consejo popular] es exactamente por qué [problema persiste]". Ej.: "Publicar más contenido es la razón por la que vendés menos". Usar con: mercados sofisticados que ya escucharon todo. Riesgo: la contradicción se sostiene con el mecanismo, si no, es provocación vacía.
+2. **dolor** — Nombrar el dolor exacto en las palabras del avatar. Plantilla: "Si [situación dolorosa específica], esto es para ti". Ej.: "Si publicas todos los días y las ventas siguen igual, escucha esto". Usar con: avatar consciente del problema. El dolor específico filtra mejor que la promesa amplia.
+3. **contrarian** — Contradecir una creencia establecida del nicho. Plantilla: "[Consejo popular] es exactamente por qué [problema persiste]". Ej.: "Publicar más contenido es la razón por la que vendes menos". Usar con: mercados sofisticados que ya escucharon todo. Riesgo: la contradicción se sostiene con el mecanismo, si no, es provocación vacía.
 4. **prueba social** — Abrir con el resultado de un tercero verificable. Plantilla: "[Persona como el avatar] logró [resultado específico] en [plazo] — así". Ej.: "Una nutricionista de Montevideo llenó su agenda de octubre en 12 días". Usar con: avatar escéptico que ya conoce las promesas del nicho.
-5. **pregunta** — Pregunta que el avatar no puede no responderse. Plantilla: "¿Sabés cuánto te cuesta cada mes [problema oculto]?". Ej.: "¿Cuántos clientes perdiste este mes por responder tarde?". Usar con: problemas latentes o invisibles que hay que activar. La pregunta retórica floja ("¿querés ganar más?") está prohibida.
+5. **pregunta** — Pregunta que el avatar no puede no responderse. Plantilla: "¿Sabes cuánto te cuesta cada mes [problema oculto]?". Ej.: "¿Cuántos clientes perdiste este mes por responder tarde?". Usar con: problemas latentes o invisibles que hay que activar. La pregunta retórica floja ("¿quieres ganar más?") está prohibida.
 6. **historia** — Entrar en el medio de una escena concreta. Plantilla: "[Momento específico], y en ese momento [giro]". Ej.: "Eran las 2 de la mañana y estaba borrando la página de mi negocio". Usar con: tráfico frío, nichos de transformación personal, VSL largo. El mejor gancho para bajar defensas: nadie se resiste a una historia empezada.
 7. **estadística** — Un número que reencuadra el problema. Plantilla: "El [%] de [grupo] [dato contraintuitivo] — y la razón no es la que pensás". Ej.: "9 de cada 10 locales gastronómicos no llegan al año 3". Usar con: nichos B2B, audiencias analíticas, o para dar autoridad instantánea. El dato tiene que ser específico y defendible.
-8. **urgencia** — La ventana de acción se cierra. Plantilla: "Si [contexto temporal real], tenés [plazo] para [acción] antes de que [consecuencia]". Ej.: "Si vendés por Instagram, tenés hasta marzo antes de que este cambio te saque del feed". Usar con: eventos reales (cambios de plataforma, temporada, regulación). Urgencia inventada = confianza destruida.
+8. **urgencia** — La ventana de acción se cierra. Plantilla: "Si [contexto temporal real], tienes [plazo] para [acción] antes de que [consecuencia]". Ej.: "Si vendes por Instagram, tienes hasta marzo antes de que este cambio te saque del feed". Usar con: eventos reales (cambios de plataforma, temporada, regulación). Urgencia inventada = confianza destruida.
 9. **identificación** — Espejo de identidad: el avatar se ve descripto. Plantilla: "Los que [hábito/situación del avatar] sabemos que [verdad compartida]". Ej.: "Los que trabajamos solos sabemos que el problema no es la motivación: es que nadie te exige". Usar con: comunidades con identidad fuerte (freelancers, madres, dueños de X). Genera el "me está hablando a mí" más rápido que el dolor.
 10. **promesa directa** — El resultado, el plazo y el método en una frase. Plantilla: "[Resultado] en [plazo] con [mecanismo], sin [sacrificio odiado]". Ej.: "Tu agenda llena en 30 días con un solo video bien distribuido, sin bailar en TikTok". Usar con: retargeting, avatar caliente que ya te conoce, ofertas fuertes. En tráfico frío compite con todos los que prometen lo mismo.
 
@@ -269,9 +269,9 @@ Toda audiencia tiene estas 6. El brief aporta las específicas; estas se tratan 
 
 1. **"No tengo tiempo"** → Reencuadre: el método actual es lo que le roba tiempo. Mostrar el costo en horas del statu quo y el diseño "para gente sin tiempo" del producto (plantillas, duración de las lecciones, implementación mínima viable). Se trata DENTRO de la descripción del mecanismo.
 2. **"No tengo plata"** → Nunca discutir la plata: cambiar la categoría mental de gasto a inversión con matemática simple ("un cliente nuevo paga el programa entero"). Comparar contra el costo real de la alternativa (agencia, empleado, otro año igual). Se trata junto al precio.
-3. **"No te creo / ya me estafaron"** → No defenderse: darle la razón ("tenés razón en desconfiar, este rubro está lleno de humo") y diferenciarse con mecanismo + prueba verificable + garantía. La validación de la desconfianza ES la técnica.
+3. **"No te creo / ya me estafaron"** → No defenderse: darle la razón ("tienes razón en desconfiar, este rubro está lleno de humo") y diferenciarse con mecanismo + prueba verificable + garantía. La validación de la desconfianza ES la técnica.
 4. **"A mí no me va a funcionar / mi caso es distinto"** → Testimonio espejo: alguien con la MISMA restricción que el avatar (misma edad, mismo nicho, mismo país, menos recursos). Un testimonio espejo vale por diez genéricos.
-5. **"Ya probé algo parecido"** → El culpable es el método viejo, no el avatar: "no falló por vos, falló porque [pieza que faltaba]". Este reencuadre es obligatorio antes de presentar el mecanismo.
+5. **"Ya probé algo parecido"** → El culpable es el método viejo, no el avatar: "no falló por ti, falló porque [pieza que faltaba]". Este reencuadre es obligatorio antes de presentar el mecanismo.
 6. **"Lo dejo para después"** → El costo de esperar, calculado: qué pierde por mes en plata, avance o tranquilidad + escasez real si existe. Es la objeción final: se trata en el cierre, nunca antes.
 
 ## Coreografía del precio (orden exacto)
@@ -331,7 +331,7 @@ Regla: **cuanto menos consciente, más largo el camino narrativo y más indirect
     text: `Anatomía beat a beat del patrón dominante en VSLs de infoproductos/mentorías de ticket alto (patrón estructural recurrente en los VSLs ganadores del género, redactado como doctrina original). Porcentajes sobre duración total.
 
 - **0–3% | Gancho apilado:** promesa dimensionada + credencial mínima + primer loop ("al final te muestro exactamente cómo, pero antes…"). En los mejores: la promesa incluye al escéptico ("aunque ya hayas probado X").
-- **3–8% | Contrato de visualización:** qué va a recibir por quedarse (agenda del video, en beneficio, no en temas) + descalificación honesta ("esto NO es para vos si…"). La descalificación sube el valor percibido y la calidad del lead.
+- **3–8% | Contrato de visualización:** qué va a recibir por quedarse (agenda del video, en beneficio, no en temas) + descalificación honesta ("esto NO es para ti si…"). La descalificación sube el valor percibido y la calidad del lead.
 - **8–18% | Historia de origen:** puente de epifanía completo del fundador — mismo pozo que el avatar, intentos fallidos con los métodos que el avatar está considerando ahora, epifanía concreta. Se cierra con la primera prueba propia (resultado del fundador).
 - **18–45% | Demolición de creencias (el corazón):** las 3 falsas creencias (vehículo, interna, externa), cada una con el ciclo: enunciar la creencia en las palabras del avatar → validarla ("es lógico que pienses eso porque…") → quebrarla con historia/dato → reemplazarla → prueba espejo (testimonio de alguien definido por ESA objeción). Acá vive la mayor parte del tiempo y de la conversión.
 - **45–55% | El mecanismo con nombre:** el sistema presentado como framework propio (3-5 pasos con nombres memorables). El nombre convierte información en propiedad intelectual.
@@ -350,7 +350,7 @@ Regla: **cuanto menos consciente, más largo el camino narrativo y más indirect
     topics: ["desglose", "vsl", "ecommerce"],
     text: `Anatomía del video ad largo de producto físico/DTC que domina en Meta (patrón estructural recurrente de los ads ganadores del formato, redactado como doctrina original). Timing sobre un total de 90s, escala proporcional.
 
-- **0:00–0:04 | Gancho de problema + interrupción visual:** el problema mostrado (no contado) en la escena más reconocible: la crema que no absorbe, la espalda que duele al levantarse. Locución: dolor o contrarian ("dejá de comprar X: el problema nunca fue Y").
+- **0:00–0:04 | Gancho de problema + interrupción visual:** el problema mostrado (no contado) en la escena más reconocible: la crema que no absorbe, la espalda que duele al levantarse. Locución: dolor o contrarian ("deja de comprar X: el problema nunca fue Y").
 - **0:04–0:15 | Agitación con identificación:** 2-3 escenas rápidas de los intentos fallidos típicos ("probaste A, B, y lo de siempre: nada"). El espectador tiene que tildar mentalmente "sí, sí, sí". Cada solución fallida nombrada = un competidor descartado.
 - **0:15–0:40 | Héroe + mecanismo demostrado:** entra el producto EN USO (nunca packshot estático primero). El mecanismo en una frase simple + demo visual del diferencial ("mirá lo que pasa cuando…"). Si hay un momento "wow" visual, va acá y se repite variado 2 veces.
 - **0:40–0:55 | Ráfaga de prueba social:** 2-3 testimonios de una frase (texto en pantalla + cara real), un número agregado ("+12.000 clientas"), estrellas/reviews. Velocidad > profundidad: es una ráfaga, no una sección.
@@ -473,7 +473,7 @@ Si {{DOLOR}}, lo que vas a escuchar en los próximos minutos te va a cambiar la 
 Y no, no es lo que ya probaste. Quedate hasta el final porque te voy a mostrar exactamente cómo funciona — y por qué esta vez sí.
 
 ## El problema real (0:25–1:10)
-> [GUÍA: describí el dolor con detalles cotidianos que el avatar reconozca como propios. Terminá con la validación: no es su culpa, el método era el problema.]
+> [GUÍA: describe el dolor con detalles cotidianos que el avatar reconozca como propios. Termina con la validación: no es su culpa, el método era el problema.]
 
 Seguro te pasa esto: {{DOLOR}}. Y ya intentaste resolverlo — {{OTRAS_SOLUCIONES_FALLIDAS}}.
 
@@ -502,14 +502,14 @@ Esto es todo lo que te llevás con {{PRODUCTO}}: {{OFERTA}}.
 
 Hacerlo por tu cuenta te costaría {{ANCLA_DE_PRECIO}}. Hoy accedés por {{PRECIO}}.
 
-Y lo hacés sin riesgo: {{GARANTIA}}.
+Y lo haces sin riesgo: {{GARANTIA}}.
 
 ## Cierre y CTA (4:15–5:00)
 > [GUÍA: CTA doble — lógico primero, emocional después. Describí el paso siguiente exacto. Cortá seco tras el último CTA.]
 
 {{CTA}}. Hacés clic, {{QUE_PASA_DESPUES}}, y empezás hoy mismo.
 
-Podés cerrar este video y seguir como hasta ahora — o podés ser la persona que en {{PLAZO}} mira para atrás y agradece haber empezado hoy. {{CTA}}.`,
+Puedes cerrar este video y seguir como hasta ahora — o puedes ser la persona que en {{PLAZO}} mira para atrás y agradece haber empezado hoy. {{CTA}}.`,
   },
   {
     slug: "vsl-webinar-15min",
@@ -554,7 +554,7 @@ Seguro pensás que {{CREENCIA_FALSA_1}}. Es lógico — {{VALIDACION}}. Pero mir
 {{NOMBRE_DEL_METODO}}: {{PASOS_DEL_METODO}}
 
 ## Transición con permiso + oferta (12:30–14:00)
-> [GUÍA: pregunta puente ("¿querés que te acompañe a implementarlo?") → stack → ancla → precio → garantía.]
+> [GUÍA: pregunta puente ("¿quieres que te acompañe a implementarlo?") → stack → ancla → precio → garantía.]
 
 {{OFERTA}}
 
@@ -585,7 +585,7 @@ No puedo creer que esto me haya funcionado — y mirá que yo era de las que no 
 > [VISUAL: b-roll del problema en la vida real]
 > [GUÍA: el "antes" con un detalle cotidiano imperfecto que dé credibilidad]
 
-Yo estaba igual que vos: {{DOLOR}}. Probé de todo y nada.
+Yo estaba igual que tú: {{DOLOR}}. Probé de todo y nada.
 
 ## El descubrimiento (0:10–0:17)
 > [VISUAL: unboxing / primera vez usando {{PRODUCTO}}]
@@ -681,6 +681,13 @@ Si te viste en alguno, {{CTA}} — y guardate este video para no repetirlos.`,
 
 async function seedCorpus() {
   const db = getDb();
+  /**
+   * `--actualizar-textos` reescribe el cuerpo de los docs ya sembrados con el
+   * texto de este archivo. Por defecto el seed nunca pisa nada, para no borrar
+   * ediciones hechas desde la app; pero cuando la corrección es del corpus
+   * mismo (una errata, un cambio de registro) hace falta una vía explícita.
+   */
+  const actualizarTextos = process.argv.includes("--actualizar-textos");
 
   // Una sola consulta de docs globales; el match por tag se hace en JS.
   const existingGlobals = await db
@@ -690,11 +697,22 @@ async function seedCorpus() {
 
   let inserted = 0;
   let skipped = 0;
+  let updated = 0;
   for (const doc of CORPUS_DOCS) {
     const slugTag = `corpus:${doc.slug}`;
-    if (existingGlobals.some((d) => d.tags.includes(slugTag))) {
-      console.log(`  · skip (ya existe): ${doc.title}`);
-      skipped++;
+    const existente = existingGlobals.find((d) => d.tags.includes(slugTag));
+    if (existente) {
+      if (actualizarTextos) {
+        await db
+          .update(documents)
+          .set({ extractedText: doc.text, tokenCount: estimateTokens(doc.text), title: doc.title })
+          .where(eq(documents.id, existente.id));
+        console.log(`  ↻ actualizado: ${doc.title}`);
+        updated++;
+      } else {
+        console.log(`  · skip (ya existe): ${doc.title}`);
+        skipped++;
+      }
       continue;
     }
     const tokenCount = estimateTokens(doc.text);
@@ -753,7 +771,7 @@ async function seedCorpus() {
   }
 
   console.log(
-    `Corpus OK: ${inserted} docs nuevos, ${skipped} existentes, ${REEL_FRAMEWORKS.length} frameworks de reel (upsert), ${templatesInserted}/${TEMPLATES.length} plantillas nuevas.`
+    `Corpus OK: ${inserted} docs nuevos, ${updated} actualizados, ${skipped} existentes sin tocar, ${REEL_FRAMEWORKS.length} frameworks de reel (upsert), ${templatesInserted}/${TEMPLATES.length} plantillas nuevas.`
   );
 }
 
