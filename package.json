@@ -22,6 +22,7 @@
     "corpus:destilar": "dotenv -e .env.local -- tsx scripts/destilar-vertical.ts",
     "bateria": "dotenv -e .env.local -- tsx scripts/generar-bateria.ts",
     "guiones:normalizar": "dotenv -e .env.local -- tsx scripts/normalizar-guiones.ts",
+    "guiones:variantes": "dotenv -e .env.local -- tsx scripts/importar-variantes.ts",
     "smoke:ai": "tsx scripts/smoke-ai.ts",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
