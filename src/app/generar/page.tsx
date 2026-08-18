@@ -2,15 +2,17 @@
 
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowLeft, Clapperboard, Smartphone, Sparkles, Star, Zap } from "lucide-react";
+import { ArrowLeft, Clapperboard, Smartphone, Sparkles, Star, Users, Zap } from "lucide-react";
 import ScriptMarkdown from "@/components/ScriptMarkdown";
 import {
   Badge,
+  Stepper,
   AsyncStatus,
   Button,
   Card,
   ConfirmDialog,
   CopyButton,
+  EmptyState,
   InlineAlert,
   KIND_LABELS,
   KIND_TONES,
@@ -472,7 +474,10 @@ function GenerarWizard() {
   }
 
   const steps = ["Formato", "Cliente", "Brief y documentos", "Generación"];
-  const displayStep = step >= 5 ? 4 : step >= 4 ? 3 : step;
+  // El estado 3 es la elección manual de estructura: una opción avanzada dentro
+  // del paso de brief, no un paso propio. Se mapea al mismo indicador para que
+  // el stepper no ilumine un paso distinto del que estás viendo.
+  const displayStep = step >= 5 ? 3 : step >= 3 ? 2 : step - 1;
 
   return (
     <div className="max-w-4xl">
@@ -513,21 +518,12 @@ function GenerarWizard() {
         </div>
       )}
 
-      {/* Indicador de pasos */}
-      <div className="flex gap-2 mb-8">
-        {steps.map((label, i) => (
-          <div key={label} className="flex-1">
-            <div
-              className={`h-1.5 rounded-full mb-1.5 ${i + 1 <= displayStep ? "bg-brand-blue" : "bg-slate-200"}`}
-            />
-            <div
-              className={`text-xs ${i + 1 === displayStep ? "font-semibold text-brand-navy" : "text-slate-400"}`}
-            >
-              {i + 1}. {label}
-            </div>
-          </div>
-        ))}
-      </div>
+      <Stepper
+        steps={steps}
+        current={displayStep}
+        // Durante la generación ya no se puede volver: el guion se está escribiendo.
+        onGo={step >= 5 ? undefined : (i) => setStep(i === 2 ? 4 : i + 1)}
+      />
 
       {step === 1 && (
         <Card className="p-6">
@@ -584,13 +580,16 @@ function GenerarWizard() {
             ¿Para qué cliente es el guion?
           </h2>
           {clients.length === 0 ? (
-            <p className="text-sm text-slate-400">
-              No hay clientes.{" "}
-              <a href="/clientes" className="text-brand-blue underline">
-                Creá uno primero
-              </a>
-              .
-            </p>
+            <EmptyState
+              icon={Users}
+              title="Todavía no hay clientes"
+              description="Un guion se genera para un cliente: es lo que trae su contexto, sus documentos y su rubro. Creá el primero y volvé acá."
+              action={
+                <a href="/clientes" className={btnPrimary}>
+                  Crear cliente
+                </a>
+              }
+            />
           ) : (
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               {clients.map((c) => (
@@ -730,7 +729,10 @@ function GenerarWizard() {
             </div>
             {!campaignId && (
               <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-800">
-                Este guion se genera sin dossier aprobado (marca, oferta y campaña). Podés continuar, pero va a tener menos contexto verificado — lo recomendado es aprobar primero un relevamiento del cliente.
+                Este guion se genera sin dossier aprobado (marca, oferta y campaña). Podés continuar, pero va a tener menos contexto verificado — lo recomendado es aprobar primero un relevamiento del cliente.{" "}
+                <a href="/relevamientos" className="font-semibold underline">
+                  Ir a Relevamientos
+                </a>
               </div>
             )}
             {autofillError && (
@@ -903,11 +905,20 @@ function GenerarWizard() {
               </span>
             </div>
             {docs.length === 0 ? (
-              <p className="text-sm text-slate-400">
-                Este cliente no tiene documentos. El guion se generará solo con
-                el brief (subí briefs y guiones ganadores para mejorar la
-                calidad).
-              </p>
+              <InlineAlert tone="info">
+                <div>
+                  <strong>Este cliente no tiene documentos.</strong>
+                  <p className="mt-1">
+                    El guion se va a generar solo con el brief. Sumando briefs, transcripts y
+                    guiones ganadores a su ficha, la calidad sube bastante.
+                  </p>
+                  {clientId && (
+                    <a className={`${btnSecondary} mt-3 inline-flex`} href={`/clientes/${clientId}`}>
+                      Subir documentos del cliente
+                    </a>
+                  )}
+                </div>
+              </InlineAlert>
             ) : (
               <div className="space-y-5">
                 <div className="grid grid-cols-2 gap-2 rounded-lg border border-blue-100 bg-blue-50/70 p-3 text-xs text-brand-navy sm:grid-cols-4">

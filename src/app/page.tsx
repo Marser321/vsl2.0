@@ -5,7 +5,7 @@ import { desc, eq, sql } from "drizzle-orm";
 import { Badge, Card, EmptyState, PageTitle, btnPrimary } from "@/components/ui";
 import { isAdminSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
-import { ClipboardList, ScrollText, Sparkles, UserPlus } from "lucide-react";
+import { Check, ClipboardList, ScrollText, Sparkles, UserPlus } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -53,6 +53,47 @@ export default async function Home() {
     .orderBy(desc(scripts.createdAt))
     .limit(8);
 
+  // El onboarding refleja lo que ya está hecho: antes eran tres links fijos que
+  // decían "1. Creá el cliente" aunque tuvieras diez clientes cargados.
+  const pasos = [
+    {
+      n: 1,
+      href: "/clientes",
+      icon: UserPlus,
+      titulo: "Creá el cliente",
+      descripcion: "Define quién encarga el guion y centraliza sus documentos.",
+      hechoTexto: `${clientCount} ${clientCount === 1 ? "cliente cargado" : "clientes cargados"}.`,
+      hecho: clientCount > 0,
+    },
+    {
+      n: 2,
+      href: "/relevamientos",
+      icon: ClipboardList,
+      titulo: "Sumá su contexto",
+      descripcion:
+        "Un relevamiento aprobado crea marca, oferta y campaña. También sirven los documentos que subas a su ficha.",
+      hechoTexto: `${docCount} ${docCount === 1 ? "documento" : "documentos"} alimentando las generaciones.`,
+      hecho: docCount > 0,
+    },
+    {
+      n: 3,
+      href: "/generar",
+      icon: Sparkles,
+      titulo: "Generá el guion",
+      descripcion: "Elegís formato y brief; el contexto del cliente y de su rubro entra solo.",
+      hechoTexto: `${scriptCount} ${scriptCount === 1 ? "guion generado" : "guiones generados"}.`,
+      hecho: scriptCount > 0,
+    },
+  ].map((paso, i, todos) => ({
+    ...paso,
+    // El siguiente es el primero sin hacer: es el único que se resalta.
+    siguiente: !paso.hecho && todos.slice(0, i).every((p) => p.hecho),
+  }));
+
+  const tituloOnboarding = pasos.every((p) => p.hecho)
+    ? "El circuito está andando"
+    : "Cómo llegar a tu primer guion";
+
   const stats = [
     { label: "Clientes", value: clientCount, href: "/clientes" },
     { label: "Documentos en biblioteca", value: docCount, href: "/biblioteca" },
@@ -73,20 +114,38 @@ export default async function Home() {
       />
 
       <Card className="mb-8 p-5">
-        <h2 className="font-semibold text-brand-navy">Cómo llegar a tu primer guion</h2>
+        <h2 className="font-semibold text-brand-navy">{tituloOnboarding}</h2>
         <div className="mt-4 grid gap-3 md:grid-cols-3">
-          <Link href="/clientes" className="rounded-lg border border-slate-200 p-4 hover:border-brand-blue">
-            <div className="flex items-center gap-2 text-sm font-semibold text-brand-navy"><UserPlus size={17} /> 1. Creá el cliente</div>
-            <p className="mt-1 text-xs leading-5 text-slate-500">Define quién encarga el guion y centraliza sus documentos.</p>
-          </Link>
-          <Link href="/relevamientos" className="rounded-lg border border-slate-200 p-4 hover:border-brand-blue">
-            <div className="flex items-center gap-2 text-sm font-semibold text-brand-navy"><ClipboardList size={17} /> 2. Aprobá el relevamiento</div>
-            <p className="mt-1 text-xs leading-5 text-slate-500">El dossier crea marca, oferta y campaña con evidencia revisada.</p>
-          </Link>
-          <Link href="/generar" className="rounded-lg border border-slate-200 p-4 hover:border-brand-blue">
-            <div className="flex items-center gap-2 text-sm font-semibold text-brand-navy"><Sparkles size={17} /> 3. Generá con contexto</div>
-            <p className="mt-1 text-xs leading-5 text-slate-500">Revisá el brief; la IA elige la estructura y las opciones avanzadas quedan disponibles.</p>
-          </Link>
+          {pasos.map((paso) => {
+            const Icon = paso.hecho ? Check : paso.icon;
+            return (
+              <Link
+                key={paso.href}
+                href={paso.href}
+                className={`rounded-lg border p-4 transition-colors ${
+                  paso.siguiente
+                    ? "border-brand-blue bg-brand-mist"
+                    : "border-slate-200 hover:border-brand-blue"
+                }`}
+              >
+                <div
+                  className={`flex items-center gap-2 text-sm font-semibold ${
+                    paso.hecho ? "text-emerald-700" : "text-brand-navy"
+                  }`}
+                >
+                  <Icon size={17} strokeWidth={1.75} /> {paso.n}. {paso.titulo}
+                  {paso.siguiente && (
+                    <span className="ml-auto text-[10px] font-bold uppercase tracking-wide text-brand-blue">
+                      Seguí acá
+                    </span>
+                  )}
+                </div>
+                <p className="mt-1 text-xs leading-5 text-slate-500">
+                  {paso.hecho ? paso.hechoTexto : paso.descripcion}
+                </p>
+              </Link>
+            );
+          })}
         </div>
       </Card>
 
@@ -106,7 +165,7 @@ export default async function Home() {
       <h2 className="font-semibold text-brand-navy mb-3">Guiones recientes</h2>
       <Card>
         {recent.length === 0 ? (
-          <EmptyState icon={ScrollText} title="Todavía no hay guiones" description="Creá un cliente, subí sus documentos y generá el primero." action={<Link href="/clientes" className={btnPrimary}>Crear cliente</Link>} />
+          <EmptyState icon={ScrollText} title="Todavía no hay guiones" description="Creá un cliente, sumá su contexto y generá el primero." action={<Link href="/clientes" className={btnPrimary}>Crear cliente</Link>} />
         ) : (
           <ul className="divide-y divide-slate-100">
             {recent.map((s) => (

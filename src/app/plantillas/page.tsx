@@ -178,7 +178,7 @@ export default function PlantillasPage() {
       {!loaded ? (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">{Array.from({ length: 4 }).map((_, index) => <Card className="p-5" key={index}><Skeleton className="h-5 w-2/3" /><Skeleton className="mt-3 h-3 w-full" /><Skeleton className="mt-5 h-9 w-full" /></Card>)}</div>
       ) : rows.length === 0 ? (
-        <Card><EmptyState icon={LayoutTemplate} title="No hay plantillas" description={<>Corré <code className="text-brand-blue">npm run db:seed-corpus</code> para cargar las plantillas base, o guardá un guion como plantilla desde su página.</>} /></Card>
+        <Card><EmptyState icon={LayoutTemplate} title="No hay plantillas" description="Las plantillas se crean desde un guion que ya funcionó: abrí uno en Guiones y usá «Guardar como plantilla». Si el equipo todavía no cargó las plantillas base, pedíselo a quien administra el estudio." /></Card>
       ) : null}
       {vsl.length > 0 && (
         <>

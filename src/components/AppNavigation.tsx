@@ -15,18 +15,47 @@ import {
 } from "lucide-react";
 import Brandmark from "./Brandmark";
 
-const NAV = [
-  { href: "/", label: "Inicio", icon: Home },
-  { href: "/relevamientos", label: "Relevamientos", icon: ClipboardList },
-  { href: "/generar", label: "Generar guion", icon: Sparkles },
-  { href: "/plantillas", label: "Plantillas", icon: LayoutTemplate },
-  { href: "/guiones", label: "Guiones", icon: ScrollText },
-  { href: "/clientes", label: "Clientes", icon: Users },
-  { href: "/biblioteca", label: "Biblioteca", icon: Library },
-  { href: "/aprendizajes", label: "Aprendizajes", icon: Brain },
-  { href: "/analizador", label: "Analizar referencias", icon: ScanSearch },
-  { href: "/configuracion", label: "Configuración", icon: Settings },
+/**
+ * Agrupada por para qué sirve cada cosa, y en el orden real del trabajo.
+ *
+ * Antes era una lista plana de diez entradas donde Clientes aparecía sexto,
+ * aunque la propia home dice que el primer paso es crear el cliente: el menú
+ * contradecía al onboarding.
+ */
+type NavItem = { href: string; label: string; icon: typeof Home };
+
+const GRUPOS: Array<{ titulo: string | null; items: NavItem[] }> = [
+  {
+    titulo: null,
+    items: [{ href: "/", label: "Inicio", icon: Home }],
+  },
+  {
+    titulo: "Flujo",
+    items: [
+      { href: "/clientes", label: "Clientes", icon: Users },
+      { href: "/relevamientos", label: "Relevamientos", icon: ClipboardList },
+      { href: "/generar", label: "Generar guion", icon: Sparkles },
+      { href: "/guiones", label: "Guiones", icon: ScrollText },
+    ],
+  },
+  {
+    titulo: "Insumos",
+    items: [
+      { href: "/biblioteca", label: "Biblioteca", icon: Library },
+      { href: "/plantillas", label: "Plantillas", icon: LayoutTemplate },
+      { href: "/analizador", label: "Analizar referencias", icon: ScanSearch },
+    ],
+  },
+  {
+    titulo: "Mejora",
+    items: [{ href: "/aprendizajes", label: "Aprendizajes", icon: Brain }],
+  },
+  {
+    titulo: "Sistema",
+    items: [{ href: "/configuracion", label: "Configuración", icon: Settings }],
+  },
 ];
+
 
 export function AppNavigation({
   authEnabled,
@@ -48,25 +77,36 @@ export function AppNavigation({
           </div>
         </div>
       </div>
-      <nav className="flex-1 space-y-1 overflow-y-auto px-3" aria-label="Navegación principal">
-        {NAV.map((item) => {
-          const Icon = item.icon;
-          const active = item.href === "/"
-            ? pathname === "/"
-            : pathname === item.href || pathname.startsWith(`${item.href}/`);
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={onNavigate}
-              aria-current={active ? "page" : undefined}
-              className={`flex min-h-11 items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-sky/70 ${active ? "bg-white/15 text-white" : "text-blue-100 hover:bg-white/10 hover:text-white"}`}
-            >
-              <Icon className="w-4 text-brand-sky" size={17} strokeWidth={1.75} />
-              {item.label}
-            </Link>
-          );
-        })}
+      <nav className="flex-1 overflow-y-auto px-3" aria-label="Navegación principal">
+        {GRUPOS.map((grupo, i) => (
+          <div key={grupo.titulo ?? "inicio"} className={i > 0 ? "mt-4" : ""}>
+            {grupo.titulo && (
+              <div className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-blue-300/70">
+                {grupo.titulo}
+              </div>
+            )}
+            <div className="space-y-1">
+              {grupo.items.map((item) => {
+                const Icon = item.icon;
+                const active = item.href === "/"
+                  ? pathname === "/"
+                  : pathname === item.href || pathname.startsWith(`${item.href}/`);
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={onNavigate}
+                    aria-current={active ? "page" : undefined}
+                    className={`flex min-h-11 items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-sky/70 ${active ? "bg-white/15 text-white" : "text-blue-100 hover:bg-white/10 hover:text-white"}`}
+                  >
+                    <Icon className="w-4 text-brand-sky" size={17} strokeWidth={1.75} />
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </nav>
       {authEnabled && (
         <form action="/api/auth/logout" method="post" className="px-4 pb-3">

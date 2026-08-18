@@ -7,6 +7,7 @@ export * from "./FormControls";
 export * from "./InlineAlert";
 export * from "./SaveIndicator";
 export * from "./Skeleton";
+export * from "./Stepper";
 export * from "./Spinner";
 export * from "./Table";
 export * from "./core";
