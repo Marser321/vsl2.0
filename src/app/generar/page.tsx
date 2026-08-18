@@ -109,6 +109,9 @@ function GenerarWizard() {
   const [output, setOutput] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  // Qué campos obligatorios siguen vacíos, recalculado mientras se escribe.
+  // Antes esto solo se sabía al apretar Generar, después de recorrer 4 pantallas.
+  const [pendientes, setPendientes] = useState<string[]>([]);
   const [aiStatus, setAiStatus] = useState<ProcessStatus | null>(null);
   const [preflight, setPreflight] = useState<Preflight | null>(null);
   const [preflightError, setPreflightError] = useState<string | null>(null);
@@ -691,6 +694,13 @@ function GenerarWizard() {
         <form
           noValidate
           onSubmit={handleGenerate}
+          ref={(form) => {
+            // Al entrar al paso ya sabemos qué falta, sin esperar al submit.
+            if (form && pendientes.length === 0 && Object.keys(fieldErrors).length === 0) {
+              const vacios = camposVacios(form);
+              if (vacios.length) setPendientes(vacios);
+            }
+          }}
           onChange={(event) => {
             const target = event.nativeEvent.target as HTMLInputElement;
             if (target.name && fieldErrors[target.name]) {
@@ -700,7 +710,21 @@ function GenerarWizard() {
                 return next;
               });
             }
+            setPendientes(camposVacios(event.currentTarget));
             saveDraft(event.currentTarget);
+          }}
+          onBlur={(event) => {
+            // Marcar el campo al salir de él, no cuatro pantallas después.
+            // React tipa event.target del form como el form; el elemento real
+            // que perdió el foco viene en el evento nativo.
+            const target = event.nativeEvent.target as HTMLInputElement | null;
+            if (!target?.name) return;
+            const obligatorio = OBLIGATORIOS.find((c) => c.name === target.name);
+            if (!obligatorio || String(target.value ?? "").trim()) return;
+            setFieldErrors((current) => ({
+              ...current,
+              [obligatorio.name]: `Falta completar: ${obligatorio.label}.`,
+            }));
           }}
           className="space-y-6"
         >
@@ -978,9 +1002,35 @@ function GenerarWizard() {
             >
               <ArrowLeft size={16} strokeWidth={1.75} /> Volver
             </button>
-            <Button type="submit" disabled={!preflight?.available || !preflight.setup.hasSystemPrompt} loading={generating} loadingLabel="Preparando…" icon={<Sparkles size={16} strokeWidth={1.75} />}>
-              Generar {format === "reel" ? "reel" : "guion"}
-            </Button>
+            <div className="flex flex-wrap items-center justify-end gap-3">
+              {pendientes.length > 0 && (
+                <p className="text-xs text-amber-700" role="status">
+                  Falta{pendientes.length > 1 ? "n" : ""}:{" "}
+                  {pendientes
+                    .map((name) => OBLIGATORIOS.find((c) => c.name === name)?.label)
+                    .filter(Boolean)
+                    .join(" · ")}
+                </p>
+              )}
+              <Button
+                type="submit"
+                disabled={!preflight?.available || !preflight.setup.hasSystemPrompt}
+                loading={generating}
+                loadingLabel="Preparando…"
+                icon={<Sparkles size={16} strokeWidth={1.75} />}
+                // El botón deshabilitado dice por qué: antes el motivo estaba en
+                // una tarjeta más arriba y quedaba fuera de la vista.
+                title={
+                  !preflight?.available
+                    ? "El proveedor de IA no está disponible — revisá Configuración"
+                    : !preflight.setup.hasSystemPrompt
+                      ? "Falta el prompt maestro — cargalo en Configuración"
+                      : undefined
+                }
+              >
+                Generar {format === "reel" ? "reel" : "guion"}
+              </Button>
+            </div>
           </div>
         </form>
       )}
@@ -1042,6 +1092,26 @@ function GenerarWizard() {
       </ConfirmDialog>
     </div>
   );
+}
+
+/**
+ * Campos que el schema de generación exige, con su etiqueta visible.
+ * Se listan acá para poder avisar qué falta ANTES del submit; el schema sigue
+ * siendo la autoridad y valida igual al enviar.
+ */
+const OBLIGATORIOS: Array<{ name: string; label: string }> = [
+  { name: "title", label: "Título interno" },
+  { name: "producto", label: "Producto / servicio" },
+  { name: "audiencia", label: "Audiencia / avatar" },
+  { name: "oferta", label: "Oferta" },
+  { name: "dolores", label: "Dolores principales" },
+  { name: "cta", label: "CTA" },
+];
+
+/** Nombres de los campos obligatorios que están vacíos en el formulario. */
+function camposVacios(form: HTMLFormElement): string[] {
+  const fd = new FormData(form);
+  return OBLIGATORIOS.filter(({ name }) => !String(fd.get(name) ?? "").trim()).map((c) => c.name);
 }
 
 export default function GenerarPage() {
