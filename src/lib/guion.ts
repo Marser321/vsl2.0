@@ -126,6 +126,13 @@ export function separarGuion(markdown: string): BloqueGuion[] {
       continue;
     }
 
+    // Regla horizontal markdown: separador visual, no texto a decir.
+    if (/^\s*([-*_])\s*\1\s*\1[\s*_-]*$/.test(linea)) {
+      cerrarParrafo();
+      enBlockquote = false;
+      continue;
+    }
+
     const encabezado = linea.match(ENCABEZADO);
     if (encabezado) {
       enBlockquote = false;

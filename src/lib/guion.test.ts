@@ -155,3 +155,16 @@ Tiempo \tBloque \tQué se dice \tVisual
     expect(bloques[0].titulo).toBe("Gancho");
   });
 });
+
+describe("separadores markdown", () => {
+  it("no toma la regla horizontal como texto a locutar", () => {
+    const [bloque] = separarGuion("## Beat\n\nTexto real.\n\n---\n\nMás texto.");
+    expect(bloque.locucion).toEqual(["Texto real.", "Más texto."]);
+  });
+
+  it("ignora las variantes de regla horizontal", () => {
+    for (const sep of ["---", "***", "___", "- - -", "-----"]) {
+      expect(soloLocucion(`## B\n\nHola.\n\n${sep}\n`), sep).toBe("Hola.");
+    }
+  });
+});

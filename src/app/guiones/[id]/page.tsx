@@ -27,7 +27,7 @@ import {
   type ProcessStatus,
 } from "@/components/ui";
 import { slugify } from "@/lib/templates";
-import { ArrowLeft, ArrowRight, Download, LayoutTemplate, Pencil, Play, Star } from "lucide-react";
+import { ArrowLeft, ArrowRight, Download, FileDown, LayoutTemplate, Pencil, Play, Star } from "lucide-react";
 import { toast } from "sonner";
 import { fetchJson } from "@/lib/http/fetch-json";
 
@@ -385,6 +385,15 @@ function GuionDetail({ id }: { id: string }) {
             >
               <Play size={16} strokeWidth={1.75} /> Teleprompter
             </Link>
+            <a
+              className={btnSecondary}
+              href={`/api/scripts/${id}/pdf${current ? `?version=${current.versionNumber}` : ""}`}
+              // El navegador descarga el archivo con el nombre del
+              // Content-Disposition; no hace falta pasar por JS.
+              download
+            >
+              <FileDown size={16} strokeWidth={1.75} /> Exportar PDF
+            </a>
             <button className={btnSecondary} onClick={exportMd}>
               <Download size={16} strokeWidth={1.75} /> Exportar .md
             </button>

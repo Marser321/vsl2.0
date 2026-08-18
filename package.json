@@ -28,6 +28,7 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@react-pdf/renderer": "^4.6.1",
     "@supabase/supabase-js": "^2.110.2",
     "argon2": "^0.44.0",
     "better-sqlite3": "^12.11.1",
