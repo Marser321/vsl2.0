@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/db";
 import { documents, DOCUMENT_KINDS, type DocumentKind } from "@/db/schema";
-import { desc, eq, isNull } from "drizzle-orm";
+import { and, desc, eq, ilike, inArray, isNull, or, sql, type SQL } from "drizzle-orm";
 import { extractText } from "@/lib/ingest/extract";
 import { huellaContenido } from "@/lib/ingest/classify";
 import { saveOriginal, safeFilename } from "@/lib/ingest/storage";
@@ -10,34 +10,117 @@ import { suggestedDocuments } from "@/lib/ai/context-builder";
 import { guardAdminRequest } from "@/lib/auth/session";
 import { industrySlug } from "@/lib/industry";
 
+/**
+ * Columnas del listado. NO incluye `extractedText` a propósito: el texto
+ * completo de todo el corpus son megabytes por request, y el listado solo
+ * necesita metadata. El texto se sirve en `GET /api/documents/[id]`.
+ */
+const COLUMNAS_LISTADO = {
+  id: documents.id,
+  clientId: documents.clientId,
+  visibility: documents.visibility,
+  industry: documents.industry,
+  industrySlug: documents.industrySlug,
+  format: documents.format,
+  title: documents.title,
+  kind: documents.kind,
+  filename: documents.filename,
+  tokenCount: documents.tokenCount,
+  tags: documents.tags,
+  isActive: documents.isActive,
+  sourceScriptId: documents.sourceScriptId,
+  createdAt: documents.createdAt,
+};
+
+/**
+ * Traduce el parámetro `scope` a una condición.
+ *   agencia            → doctrina global de la agencia
+ *   industria:<slug>   → biblioteca de un vertical
+ *   <clientId>         → documentos privados de un cliente
+ *
+ * `agencia` existe porque los documentos de vertical también tienen
+ * `client_id = NULL`: sin distinguir por `visibility` se mezclaban con la
+ * doctrina global y la tapaban en el listado.
+ */
+function condicionDeScope(scope: string): SQL | undefined {
+  if (scope === "agencia") {
+    return and(isNull(documents.clientId), eq(documents.visibility, "global"));
+  }
+  if (scope.startsWith("industria:")) {
+    return and(
+      eq(documents.visibility, "industry"),
+      eq(documents.industrySlug, scope.slice("industria:".length))
+    );
+  }
+  // Compatibilidad con el parámetro viejo: "global" = todo lo que no es de un cliente.
+  if (scope === "global") return isNull(documents.clientId);
+  const id = Number(scope);
+  return Number.isFinite(id) ? eq(documents.clientId, id) : undefined;
+}
+
 export async function GET(req: NextRequest) {
   const guard = await guardAdminRequest(); if (guard) return guard;
   const sp = req.nextUrl.searchParams;
+  const db = getDb();
 
-  // Docs sugeridos para el wizard (cliente + ganadores globales)
+  // Docs sugeridos para el wizard (cliente + ganadores globales + del vertical)
   const suggestedFor = sp.get("suggestedFor");
   if (suggestedFor) {
     return NextResponse.json(await suggestedDocuments(Number(suggestedFor)));
   }
 
-  const clientId = sp.get("clientId");
-  const db = getDb();
-  const rows =
-    clientId === "global"
-      ? db
-          .select()
-          .from(documents)
-          .where(isNull(documents.clientId))
-          .orderBy(desc(documents.createdAt))
-      : clientId
-        ? db
-            .select()
-            .from(documents)
-            .where(eq(documents.clientId, Number(clientId)))
-            .orderBy(desc(documents.createdAt))
-        : db.select().from(documents).orderBy(desc(documents.createdAt));
+  // Índice de la biblioteca: cuántos documentos hay en cada sección.
+  if (sp.get("indice") === "1") {
+    const [agencia] = await db
+      .select({ n: sql<number>`count(*)::int` })
+      .from(documents)
+      .where(and(isNull(documents.clientId), eq(documents.visibility, "global")));
+    const verticales = await db
+      .select({
+        slug: documents.industrySlug,
+        industry: sql<string>`min(${documents.industry})`,
+        n: sql<number>`count(*)::int`,
+      })
+      .from(documents)
+      .where(and(eq(documents.visibility, "industry"), sql`${documents.industrySlug} is not null`))
+      .groupBy(documents.industrySlug)
+      .orderBy(documents.industrySlug);
+    return NextResponse.json({ agencia: agencia?.n ?? 0, verticales });
+  }
 
-  return NextResponse.json(await rows);
+  const scope = sp.get("scope") ?? sp.get("clientId");
+  const condiciones: Array<SQL | undefined> = [scope ? condicionDeScope(scope) : undefined];
+
+  const q = sp.get("q")?.trim();
+  if (q) {
+    // El título alcanza para casi todo; `enTexto=1` busca dentro del guion.
+    condiciones.push(
+      sp.get("enTexto") === "1"
+        ? or(ilike(documents.title, `%${q}%`), ilike(documents.extractedText, `%${q}%`))
+        : ilike(documents.title, `%${q}%`)
+    );
+  }
+
+  const kinds = sp.get("kind")?.split(",").filter(Boolean) as DocumentKind[] | undefined;
+  if (kinds?.length) condiciones.push(inArray(documents.kind, kinds));
+
+  const format = sp.get("format");
+  if (format === "vsl" || format === "reel") condiciones.push(eq(documents.format, format));
+  if (format === "agnostico") condiciones.push(isNull(documents.format));
+
+  const activo = sp.get("activo");
+  if (activo === "1") condiciones.push(eq(documents.isActive, true));
+  if (activo === "0") condiciones.push(eq(documents.isActive, false));
+
+  const filtros = condiciones.filter((c): c is SQL => c !== undefined);
+
+  const rows = await db
+    .select(COLUMNAS_LISTADO)
+    .from(documents)
+    .where(filtros.length ? and(...filtros) : undefined)
+    .orderBy(desc(documents.createdAt));
+
+  return NextResponse.json(rows);
 }
 
 export async function POST(req: NextRequest) {

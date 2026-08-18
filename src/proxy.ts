@@ -29,6 +29,7 @@ export const config = {
     "/guiones/:path*",
     "/plantillas/:path*",
     "/biblioteca/:path*",
+    "/documentos/:path*",
     "/analizador/:path*",
     "/configuracion/:path*",
   ],

@@ -1,7 +1,13 @@
 /**
  * Análisis de duración y retención de un guion en Markdown.
  * Heurístico y local — sin llamadas a IA.
+ *
+ * El troceo y el filtrado de acotaciones viven en `src/lib/guion.ts`: acá solo
+ * se cuenta y se estima. Antes esta función tenía su propia limpieza a medias
+ * (filtraba un único patrón de acotación), lo que inflaba el conteo de palabras
+ * y hacía que el teleprompter mostrara acotaciones como si fueran locución.
  */
+import { separarGuion } from "./guion";
 
 export type Section = {
   title: string;
@@ -26,43 +32,17 @@ function countWords(text: string): number {
 }
 
 export function analyzeScript(markdown: string, wpm = 150): ReadtimeAnalysis {
-  const lines = markdown.split("\n");
-  const sections: Section[] = [];
-  let currentTitle = "Apertura";
-  let buffer: string[] = [];
-
-  const flush = () => {
-    const text = buffer
-      .join("\n")
-      // sacar acotaciones visuales y formato antes de contar palabras
-      .replace(/^>\s?\[.*?\]\s*$/gm, "")
-      // Los headings ya se procesaron arriba. Quitamos énfasis/código, pero
-      // preservamos `_` porque forma parte de marcadores como {{NOMBRE_DEL_METODO}}.
-      .replace(/[*`]/g, "")
-      .trim();
-    if (text || sections.length === 0) {
-      sections.push({
-        title: currentTitle,
-        text,
-        words: countWords(text),
-        startSec: 0,
-        durationSec: 0,
-        leakFlags: [],
-      });
-    }
-    buffer = [];
-  };
-
-  for (const line of lines) {
-    const h = line.match(/^#{1,2}\s+(.*)$/);
-    if (h) {
-      if (buffer.length) flush();
-      currentTitle = h[1].replace(/\(.*?\)\s*$/, "").trim() || "Sección";
-      continue;
-    }
-    buffer.push(line);
-  }
-  flush();
+  const sections: Section[] = separarGuion(markdown).map((bloque) => {
+    const text = bloque.locucion.join("\n\n");
+    return {
+      title: bloque.titulo,
+      text,
+      words: countWords(text),
+      startSec: 0,
+      durationSec: 0,
+      leakFlags: [],
+    };
+  });
 
   const nonEmpty = sections.filter((s) => s.words > 0);
   const totalSecEstimate = Math.round(
@@ -74,7 +54,9 @@ export function analyzeScript(markdown: string, wpm = 150): ReadtimeAnalysis {
     s.durationSec = Math.round((s.words / wpm) * 60);
     cursor += s.durationSec;
 
-    // Heurísticas de fuga (la de sección larga no aplica a formatos cortos tipo reel)
+    // Heurísticas de fuga (la de sección larga no aplica a formatos cortos tipo reel).
+    // Corren sobre la locución: antes una acotación como "[VISUAL: mira a cámara]"
+    // contaba como apelación al espectador y tapaba la fuga real.
     if (s.durationSec > 120 && totalSecEstimate >= 120)
       s.leakFlags.push("Sección larga (>2 min) — considerá partirla o sumar un re-enganche");
     const paragraphs = s.text.split(/\n\n+/).filter(Boolean);

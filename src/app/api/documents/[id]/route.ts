@@ -3,6 +3,7 @@ import { getDb } from "@/db";
 import { documents } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { estimateTokens } from "@/lib/ai/tokens";
+import { huellaContenido } from "@/lib/ingest/classify";
 import { getSupabaseAdmin, INTAKE_BUCKET } from "@/lib/supabase";
 import { guardAdminRequest } from "@/lib/auth/session";
 
@@ -34,6 +35,10 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   if (body.extractedText !== undefined) {
     updates.extractedText = body.extractedText;
     updates.tokenCount = estimateTokens(body.extractedText);
+    // El hash tiene que seguir al texto: el importador masivo deduplica por
+    // `content_hash`, así que un documento editado con el hash viejo se
+    // saltearía en la próxima importación como si fuera el original.
+    updates.contentHash = huellaContenido(body.extractedText);
   }
 
   const [row] = await getDb()

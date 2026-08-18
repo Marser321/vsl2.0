@@ -1,55 +1,32 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  Badge,
-  Button,
-  Card,
-  ConfirmDialog,
-  EmptyState,
-  KIND_LABELS,
-  KIND_TONES,
-  btnSecondary,
-  inputCls,
-  Skeleton,
-} from "./ui";
-import { AlertTriangle, Library } from "lucide-react";
+import { useRef, useState } from "react";
+import { AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
+import { Button, Card, KIND_LABELS, btnSecondary, inputCls } from "./ui";
+import DocumentList from "./DocumentList";
 
-type Doc = {
-  id: number;
-  title: string;
-  kind: string;
-  filename: string | null;
-  tokenCount: number;
-  isActive: boolean;
-  createdAt: string;
-};
-
-/** Lista + subida de documentos. scope: "global" o un clientId numérico. */
-export default function DocumentManager({ scope }: { scope: string }) {
-  const [docs, setDocs] = useState<Doc[]>([]);
+/**
+ * Lista + subida de documentos.
+ * `scope`: "agencia" | "industria:<slug>" | "global" | un clientId numérico.
+ *
+ * La lista vive en `DocumentList` para poder reusarla en la biblioteca por
+ * rubro, donde no hace falta el formulario de subida.
+ */
+export default function DocumentManager({
+  scope,
+  industria,
+}: {
+  scope: string;
+  /** Si viene, el documento se sube a la biblioteca de ese rubro. */
+  industria?: string;
+}) {
   const [showForm, setShowForm] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [warning, setWarning] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [documentToDelete, setDocumentToDelete] = useState<Doc | null>(null);
-  const [togglingId, setTogglingId] = useState<number | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
   const formRef = useRef<HTMLFormElement>(null);
-
-  const load = useCallback(async () => {
-    try {
-      const res = await fetch(`/api/documents?clientId=${scope}`);
-      setDocs(await res.json());
-    } finally {
-      setLoading(false);
-    }
-  }, [scope]);
-
-  useEffect(() => {
-    load();
-  }, [load]);
 
   async function handleUpload(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -57,7 +34,12 @@ export default function DocumentManager({ scope }: { scope: string }) {
     setError(null);
     setWarning(null);
     const fd = new FormData(e.currentTarget);
-    fd.set("clientId", scope);
+    // El endpoint espera el clientId; para los scopes que no son de cliente
+    // manda "global" y deja que `industry` decida dónde aterriza.
+    const esCliente = /^\d+$/.test(scope);
+    fd.set("clientId", esCliente ? scope : "global");
+    if (industria) fd.set("industry", industria);
+
     const res = await fetch("/api/documents", { method: "POST", body: fd });
     const data = await res.json();
     setUploading(false);
@@ -75,55 +57,25 @@ export default function DocumentManager({ scope }: { scope: string }) {
     }
     formRef.current?.reset();
     setShowForm(false);
-    load();
-  }
-
-  async function toggleActive(doc: Doc) {
-    setTogglingId(doc.id);
-    const response = await fetch(`/api/documents/${doc.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ isActive: !doc.isActive }),
-    });
-    setTogglingId(null);
-    if (!response.ok) {
-      toast.error("No se pudo cambiar el estado del documento");
-      return;
-    }
-    toast.success(doc.isActive ? "Documento excluido del contexto" : "Documento incluido en el contexto");
-    await load();
-  }
-
-  async function remove() {
-    if (!documentToDelete) return;
-    const response = await fetch(`/api/documents/${documentToDelete.id}`, { method: "DELETE" });
-    if (!response.ok) {
-      toast.error("No se pudo eliminar el documento");
-      return;
-    }
-    setDocumentToDelete(null);
-    toast.success("Documento eliminado");
-    load();
+    setRefreshKey((k) => k + 1);
   }
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h2 className="font-semibold text-brand-navy">
-          Documentos ({docs.length})
-        </h2>
+      <div className="flex items-center justify-between">
+        <h2 className="font-semibold text-brand-navy">Documentos</h2>
         <button className={btnSecondary} onClick={() => setShowForm(!showForm)}>
           {showForm ? "Cancelar" : "+ Agregar documento"}
         </button>
       </div>
 
       {warning && (
-        <div className="rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800">
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
           <AlertTriangle className="mr-1 inline" size={16} strokeWidth={1.75} /> {warning}
         </div>
       )}
       {error && (
-        <div className="rounded-lg bg-rose-50 border border-rose-200 px-4 py-3 text-sm text-rose-800">
+        <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
           {error}
         </div>
       )}
@@ -133,19 +85,11 @@ export default function DocumentManager({ scope }: { scope: string }) {
           <form ref={formRef} onSubmit={handleUpload} className="space-y-4">
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
               <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">
-                  Título
-                </label>
-                <input
-                  name="title"
-                  className={inputCls}
-                  placeholder="Ej: Brief inicial del producto"
-                />
+                <label className="mb-1 block text-xs font-semibold text-slate-600">Título</label>
+                <input name="title" className={inputCls} placeholder="Ej: Brief inicial del producto" />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">
-                  Tipo de documento
-                </label>
+                <label className="mb-1 block text-xs font-semibold text-slate-600">Tipo de documento</label>
                 <select name="kind" className={inputCls} required>
                   {Object.entries(KIND_LABELS).map(([k, v]) => (
                     <option key={k} value={k}>
@@ -156,18 +100,13 @@ export default function DocumentManager({ scope }: { scope: string }) {
               </div>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">
+              <label className="mb-1 block text-xs font-semibold text-slate-600">
                 Archivo (PDF, DOCX, TXT, MD)
               </label>
-              <input
-                type="file"
-                name="file"
-                accept=".pdf,.docx,.txt,.md"
-                className="text-sm"
-              />
+              <input type="file" name="file" accept=".pdf,.docx,.txt,.md" className="text-sm" />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">
+              <label className="mb-1 block text-xs font-semibold text-slate-600">
                 … o pegá el texto directamente
               </label>
               <textarea
@@ -177,65 +116,21 @@ export default function DocumentManager({ scope }: { scope: string }) {
                 placeholder="Pegá aquí el contenido del documento (transcript, brief, guion...)"
               />
             </div>
-            <Button type="submit" loading={uploading} loadingLabel="Procesando…">Guardar documento</Button>
+            <Button type="submit" loading={uploading} loadingLabel="Procesando…">
+              Guardar documento
+            </Button>
           </form>
         </Card>
       )}
 
-      <Card>
-        {loading ? (
-          <div className="divide-y divide-slate-100">{Array.from({ length: 4 }).map((_, index) => <div className="flex gap-4 px-5 py-4" key={index}><Skeleton className="h-5 w-24 rounded-full" /><Skeleton className="h-4 flex-1" /><Skeleton className="h-4 w-20" /></div>)}</div>
-        ) : docs.length === 0 ? (
-          <EmptyState icon={Library} title="Todavía no hay documentos" description="Subí briefs, guiones ganadores y material de referencia para mejorar la calidad de los copys." action={<button className={btnSecondary} onClick={() => setShowForm(true)}>Agregar documento</button>} />
-        ) : (
-          <ul className="divide-y divide-slate-100">
-            {docs.map((doc) => (
-              <li
-                key={doc.id}
-                className="flex flex-wrap items-center gap-3 px-4 py-3 text-sm sm:px-5"
-              >
-                <Badge tone={KIND_TONES[doc.kind] ?? "gray"}>
-                  {KIND_LABELS[doc.kind] ?? doc.kind}
-                </Badge>
-                <span
-                  className={`min-w-48 flex-1 font-medium ${doc.isActive ? "" : "line-through text-slate-400"}`}
-                >
-                  {doc.title}
-                </span>
-                <span className="text-xs text-slate-400">
-                  {doc.tokenCount.toLocaleString("es")} tokens
-                </span>
-                <button
-                  onClick={() => toggleActive(doc)}
-                  disabled={togglingId === doc.id}
-                  className="text-xs text-slate-500 hover:text-brand-blue"
-                  title={
-                    doc.isActive
-                      ? "Excluir del contexto de generación"
-                      : "Incluir en el contexto de generación"
-                  }
-                >
-                  {togglingId === doc.id ? "Actualizando…" : doc.isActive ? "Activo" : "Inactivo"}
-                </button>
-                <button
-                  onClick={() => setDocumentToDelete(doc)}
-                  className="text-xs text-slate-400 hover:text-rose-600"
-                >
-                  Eliminar
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Card>
-      <ConfirmDialog
-        open={documentToDelete !== null}
-        onClose={() => setDocumentToDelete(null)}
-        onConfirm={remove}
-        title="Eliminar documento"
-        message={<>¿Eliminar <strong>“{documentToDelete?.title}”</strong>? Esta acción no se puede deshacer.</>}
-        confirmLabel="Eliminar"
-        destructive
+      <DocumentList
+        scope={scope}
+        refreshKey={refreshKey}
+        onEmptyAction={
+          <button className={btnSecondary} onClick={() => setShowForm(true)}>
+            Agregar documento
+          </button>
+        }
       />
     </div>
   );

@@ -55,7 +55,8 @@ export const SCRIPT_STATUSES = [
 ] as const;
 export type ScriptStatus = (typeof SCRIPT_STATUSES)[number];
 
-export const VERSION_SOURCES = ["ai", "manual", "template"] as const;
+// "document" = arrancado desde un documento de la biblioteca (POST /api/documents/[id]/use).
+export const VERSION_SOURCES = ["ai", "manual", "template", "document"] as const;
 export type VersionSource = (typeof VERSION_SOURCES)[number];
 
 export const RATING_TAGS = [
