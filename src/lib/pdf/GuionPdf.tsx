@@ -1,5 +1,7 @@
+import { join } from "node:path";
 import {
   Document,
+  Font,
   Page,
   Path,
   StyleSheet,
@@ -19,10 +21,33 @@ import { analyzeScript, fmtTime } from "@/lib/readtime";
  * cabecera y pie de marca, y los beats con su rango de tiempo. No es una
  * estética inventada — sale de los PDF reales del estudio.
  *
- * Tipografía: Helvetica, que viene incorporada en el motor de PDF. Registrar
- * la Geist de la app obligaría a descargar el archivo en cada render, que en
- * serverless es un punto de falla a cambio de muy poco.
+ * Tipografía: la Geist de la marca, empaquetada en el repo. Se registra desde
+ * el filesystem y no por URL para no depender de una descarga en cada render;
+ * `next.config.ts` la declara en `outputFileTracingIncludes` para que el
+ * archivo viaje al bundle de la función en Vercel.
  */
+
+const DIR_FUENTES = join(process.cwd(), "src/lib/pdf/fonts");
+
+/**
+ * El registro corre una sola vez por proceso. `Font.register` es idempotente
+ * pero el guard evita repetir el trabajo en cada request de una instancia viva.
+ */
+let fuentesListas = false;
+function registrarFuentes() {
+  if (fuentesListas) return;
+  Font.register({
+    family: "Geist",
+    fonts: [
+      { src: join(DIR_FUENTES, "Geist-Regular.ttf"), fontWeight: 400 },
+      { src: join(DIR_FUENTES, "Geist-Bold.ttf"), fontWeight: 700 },
+    ],
+  });
+  // Geist no trae itálica en los pesos que empaquetamos: sin esto, react-pdf
+  // buscaría una variante inexistente para las acotaciones y fallaría.
+  Font.registerHyphenationCallback((palabra) => [palabra]);
+  fuentesListas = true;
+}
 
 const C = {
   navy: "#01327f",
@@ -40,15 +65,15 @@ const C = {
 
 const s = StyleSheet.create({
   // ── Portada ──────────────────────────────────────────────────────────────
-  cover: { backgroundColor: C.cover, padding: 56, height: "100%" },
+  cover: { backgroundColor: C.cover, padding: 56, height: "100%", fontFamily: "Geist" },
   coverEyebrow: {
     color: C.sky,
     fontSize: 8,
     letterSpacing: 2.4,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: "Geist", fontWeight: 700,
     marginBottom: 18,
   },
-  coverTitle: { color: C.white, fontSize: 30, fontFamily: "Helvetica-Bold", lineHeight: 1.2 },
+  coverTitle: { color: C.white, fontSize: 30, fontFamily: "Geist", fontWeight: 700, lineHeight: 1.2 },
   coverSubtitle: { color: C.sky, fontSize: 15, marginTop: 8 },
   coverDesc: { color: C.grisClaro, fontSize: 9.5, lineHeight: 1.7, marginTop: 20, maxWidth: 380 },
   coverBoxes: { flexDirection: "row", gap: 14, marginTop: "auto" },
@@ -59,8 +84,8 @@ const s = StyleSheet.create({
     borderRadius: 6,
     padding: 12,
   },
-  coverBoxLabel: { color: C.gris, fontSize: 6.5, letterSpacing: 1.4, fontFamily: "Helvetica-Bold" },
-  coverBoxValue: { color: C.white, fontSize: 11, fontFamily: "Helvetica-Bold", marginTop: 5 },
+  coverBoxLabel: { color: C.gris, fontSize: 6.5, letterSpacing: 1.4, fontFamily: "Geist", fontWeight: 700 },
+  coverBoxValue: { color: C.white, fontSize: 11, fontFamily: "Geist", fontWeight: 700, marginTop: 5 },
   coverBoxHint: { color: C.gris, fontSize: 8, marginTop: 2 },
   chips: { flexDirection: "row", gap: 7, marginTop: 16, flexWrap: "wrap" },
   chip: {
@@ -77,7 +102,7 @@ const s = StyleSheet.create({
   coverUrl: { color: C.gris, fontSize: 7.5, letterSpacing: 1.6, marginTop: 22, textAlign: "right" },
 
   // ── Páginas de contenido ─────────────────────────────────────────────────
-  page: { paddingTop: 66, paddingBottom: 54, paddingHorizontal: 52, fontSize: 10, color: C.ink },
+  page: { fontFamily: "Geist", paddingTop: 66, paddingBottom: 54, paddingHorizontal: 52, fontSize: 10, color: C.ink },
   header: {
     position: "absolute",
     top: 26,
@@ -95,11 +120,11 @@ const s = StyleSheet.create({
 
   beat: { marginBottom: 20 },
   beatHead: { flexDirection: "row", alignItems: "baseline", gap: 8, marginBottom: 7 },
-  beatTitle: { color: C.blue, fontSize: 8.5, letterSpacing: 1.3, fontFamily: "Helvetica-Bold" },
+  beatTitle: { color: C.blue, fontSize: 8.5, letterSpacing: 1.3, fontFamily: "Geist", fontWeight: 700 },
   beatRange: { color: C.gris, fontSize: 8 },
   locucion: { fontSize: 11, lineHeight: 1.65, color: C.ink, marginBottom: 6 },
   cues: { borderLeftWidth: 2, borderLeftColor: C.linea, paddingLeft: 9, marginTop: 4, marginBottom: 4 },
-  cue: { color: C.gris, fontSize: 8, lineHeight: 1.5, fontFamily: "Helvetica-Oblique" },
+  cue: { color: C.gris, fontSize: 8, lineHeight: 1.5, fontFamily: "Geist" },
 
   footer: {
     position: "absolute",
@@ -177,6 +202,7 @@ function Beat({ bloque }: { bloque: BloqueGuion }) {
 }
 
 export function GuionPdf({ datos }: { datos: DatosGuionPdf }) {
+  registrarFuentes();
   const bloques = separarGuion(datos.contenido);
   const stats = analyzeScript(datos.contenido);
   const formato = datos.formato === "reel" ? "REEL" : "VSL";

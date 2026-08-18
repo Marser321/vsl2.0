@@ -11,6 +11,10 @@ const nextConfig: NextConfig = {
       "./vendor/yt-dlp",
       "./node_modules/ffmpeg-static/ffmpeg",
     ],
+    // Las Geist se leen del filesystem al generar el PDF; sin declararlas acá
+    // el file tracing de Next no las ve (la ruta se arma en runtime) y en
+    // Vercel el archivo no existiría.
+    "/api/scripts/[id]/pdf": ["./src/lib/pdf/fonts/*.ttf"],
   },
 };
 
