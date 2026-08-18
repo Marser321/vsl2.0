@@ -11,7 +11,12 @@ import { separarGuion } from "./guion";
 
 export type Section = {
   title: string;
+  /** Solo lo que se locuta: sin acotaciones, encabezados ni rótulos. */
   text: string;
+  /** Acotaciones de producción del beat, para mostrarlas aparte si se piden. */
+  cues: string[];
+  /** Rango declarado en el guion ("0:00–0:03"), si lo traía. */
+  range: string | null;
   words: number;
   /** segundos desde el inicio del video */
   startSec: number;
@@ -37,6 +42,8 @@ export function analyzeScript(markdown: string, wpm = 150): ReadtimeAnalysis {
     return {
       title: bloque.titulo,
       text,
+      cues: bloque.acotaciones,
+      range: bloque.rango,
       words: countWords(text),
       startSec: 0,
       durationSec: 0,

@@ -8,6 +8,8 @@ import { AlertTriangle, ArrowLeft, CheckCircle2, Pause, Play } from "lucide-reac
 import { Button, Card, InlineAlert, Skeleton } from "@/components/ui";
 import { fetchJson } from "@/lib/http/fetch-json";
 
+const PREFS_KEY = "vsl-studio:teleprompter-prefs:v1";
+
 type ScriptDetail = {
   id: number;
   title: string;
@@ -26,6 +28,8 @@ export default function TeleprompterPage({
   const [playing, setPlaying] = useState(false);
   const [fontSize, setFontSize] = useState(28);
   const [showMap, setShowMap] = useState(true);
+  // Al grabar se lee solo la locución; las acotaciones son para la edición.
+  const [showCues, setShowCues] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number | null>(null);
@@ -45,6 +49,43 @@ export default function TeleprompterPage({
   }, [id]);
 
   useEffect(() => { void load(); }, [load]);
+
+  // Tamaño y acotaciones son preferencias de quien graba, no del guion.
+  useEffect(() => {
+    const guardado = localStorage.getItem(PREFS_KEY);
+    if (!guardado) return;
+    try {
+      const prefs = JSON.parse(guardado) as { fontSize?: number; showCues?: boolean };
+      if (typeof prefs.fontSize === "number") setFontSize(prefs.fontSize);
+      if (typeof prefs.showCues === "boolean") setShowCues(prefs.showCues);
+    } catch {
+      // Preferencia corrupta: se ignora y se usan los valores por defecto.
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem(PREFS_KEY, JSON.stringify({ fontSize, showCues }));
+  }, [fontSize, showCues]);
+
+  // Con el teleprompter andando no se llega al mouse: espacio arranca y para,
+  // las flechas ajustan la velocidad sin cortar la lectura.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement) return;
+      if (e.code === "Space") {
+        e.preventDefault();
+        setPlaying((v) => !v);
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setWpm((v) => Math.min(220, v + 5));
+      } else if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setWpm((v) => Math.max(100, v - 5));
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   const content =
     script?.versions[script.versions.length - 1]?.content ?? "";
@@ -145,6 +186,14 @@ export default function TeleprompterPage({
             />
           </label>
           <button
+            onClick={() => setShowCues(!showCues)}
+            className="text-xs text-slate-300 hover:text-white"
+            title="Las acotaciones de cámara y texto en pantalla no se locutan"
+            aria-pressed={showCues}
+          >
+            {showCues ? "Ocultar acotaciones" : "Mostrar acotaciones"}
+          </button>
+          <button
             onClick={() => setShowMap(!showMap)}
             className="text-xs text-slate-300 hover:text-white"
           >
@@ -171,6 +220,15 @@ export default function TeleprompterPage({
               <div className="text-brand-sky text-sm font-bold uppercase tracking-widest mb-4 opacity-70">
                 {s.title} · {fmtTime(s.startSec)}
               </div>
+              {showCues && s.cues.length > 0 && (
+                <ul className="mb-5 space-y-1 border-l-2 border-white/15 pl-4">
+                  {s.cues.map((cue, j) => (
+                    <li key={j} className="text-[0.5em] italic leading-normal text-slate-500">
+                      {cue}
+                    </li>
+                  ))}
+                </ul>
+              )}
               {s.text.split(/\n\n+/).map((p, j) => (
                 <p key={j} className="mb-6">
                   {p}
