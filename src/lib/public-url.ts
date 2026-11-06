@@ -1,6 +1,6 @@
-type PublicUrlEnv = Pick<NodeJS.ProcessEnv,
+type PublicUrlEnv = Partial<Pick<NodeJS.ProcessEnv,
   "NEXT_PUBLIC_APP_URL" | "VERCEL_PROJECT_PRODUCTION_URL" | "VERCEL_ENV" | "NODE_ENV"
->;
+>>;
 
 function normalizeCandidate(raw: string | undefined) {
   if (!raw?.trim()) return null;
